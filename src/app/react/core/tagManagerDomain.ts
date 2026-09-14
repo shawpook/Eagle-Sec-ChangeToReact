@@ -8,7 +8,6 @@
  *   供给语义：bundle 在世时 s.TagManager 沿用其绑定；shim 世界由 applyDataMachineryScope
  *   调 machineryBuildTagManager(s) 挂 w.TagManager + s.TagManager。
  */
-// @ts-nocheck
 // b1-9k：bundle link 体内 $filter/$timeout 为 Angular 注入服务——本文件 1307/1319/1379/
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
@@ -39,8 +38,13 @@ import { blurEl, focusEl, hasClass, offEl, onEl, qaVisible, selectEl, selectText
 import { unescape } from '../utils/lang';
 import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize } from '../utils/normalize';
 import { getFilter } from './filterDomain';
+import { machineryGetAncestorFolders } from './libraryDomain';
 import { machineryRebindRefresh } from './itemDomain';
 import { machineryGetAllChildFolder, machinerySetLastFolder } from './libraryDomain';
+import { ContextMenu } from './contextMenuDomain';
+import { getIpcBus } from './channelBridge';
+import { openGeneralTagSelectPanel } from '../components/stage7/SelectPanels';
+import { IPCHelper } from './ipcHelper';
 
 import { machinerySelectFolder, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryOpenAll } from '../services/folderCoreService';
@@ -57,6 +61,14 @@ import { useItemState, writeImages } from '../store/itemState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { writeSelected } from '../store/selectionState';
+const ipcRenderer: any = getIpcBus();
+/* bundle 全局（bundleGlobals 安装 on window）与本轮补装的 global.js / japanese.js 三件：
+   typed ambient 声明，只补类型不改运行期。 */
+declare const tinyPinyin: any;
+declare const JAPANESE_CHAR_MAP: any;
+declare const canvasResizeTo: any;
+declare const paddingNumber: any;
+declare const require: any;
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -154,14 +166,14 @@ export function machineryBuildTagManager(): any {
 
             const sortTags = ( tags: any) => {
 
-                function sortByAZ(arr) {
+                function sortByAZ(arr: any) {
                     var collator = new Intl.Collator(w.languageBCP || "en", { numeric: true, sensitivity: 'base' });
                     return arr.sort(function (a: any, b: any) {
                         return collator.compare(a.name, b.name);
                     });
                 }
             
-                function sortByCount(arr) {
+                function sortByCount(arr: any) {
                     var collator = new Intl.Collator(w.languageBCP || "en", { numeric: true, sensitivity: 'base' });
                     return arr.sort(function (a: any, b: any) {
                         // 先按數量排序
@@ -202,7 +214,7 @@ export function machineryBuildTagManager(): any {
 
                 let groups = (useMiscRawState.getState().currentTagGroup)? [useMiscRawState.getState().currentTagGroup] : useMiscRawState.getState().TagManager.currentGroups || [];
                 let tags = [];
-                const tagsMap = {};
+                const tagsMap: Record<string, any> = {};
 
                 switch (useMiscRawState.getState().tagViewMode) {
                     case "ALL":
@@ -247,8 +259,8 @@ export function machineryBuildTagManager(): any {
                 }
             };
 
-            const generateDisplayData = ({ tags, tagsMap, groups }) => {
-                const listItems = [];
+            const generateDisplayData = ({ tags, tagsMap, groups }: any) => {
+                const listItems: any[] = [];
                 let displayGroups = [];
 
                 let filteredGroups;
@@ -271,7 +283,7 @@ export function machineryBuildTagManager(): any {
                 const columnWidth = parseInt((containerWidth / columnCount) as any);
 
                 let currentY = 0;
-                filteredGroups.forEach((group, index: any) => {
+                filteredGroups.forEach((group: any, index: any) => {
 
                     let tags = group.tags.filter(( tag: any) => {
                         return tagsMap[tag];
@@ -289,9 +301,9 @@ export function machineryBuildTagManager(): any {
                     });
                     currentY += 32;
 
-                    let row = [];
+                    let row: any[] = [];
 
-                    tags.forEach((tag, index: any) => {
+                    tags.forEach((tag: any, index: any) => {
                         row.push(tag);
                         if ((index + 1) % (n + 1) === 0) {
                             listItems.push({
@@ -363,7 +375,7 @@ export function machineryBuildTagManager(): any {
             return false;
         };
 
-        TagManager.createTag = function createTag (tagString) {
+        TagManager.createTag = function createTag (tagString: any) {
             const tags = tagString.split(/[，,;、\n]+/);
             tags.forEach(function (t: any) {
                 if (t && t.trim().length > 0) {
@@ -374,7 +386,7 @@ export function machineryBuildTagManager(): any {
             TagManager.focusTag(100);
         };
 
-        TagManager.toggleTag = function toggleTag (event, tag) {
+        TagManager.toggleTag = function toggleTag (event: any, tag: any) {
 
 			var selectedTags = w.eagle.inspector.calculateTags(useSelectionState.getState().selected);
 			var idx = selectedTags.indexOf(tag);
@@ -402,7 +414,7 @@ export function machineryBuildTagManager(): any {
             }
         };
 
-        TagManager.addTags = function addTags (tags) {
+        TagManager.addTags = function addTags (tags: any) {
             if (!tags || tags.length === 0) return;
             if (useSelectionState.getState().selected.length === 0) return;
 
@@ -449,7 +461,7 @@ export function machineryBuildTagManager(): any {
             w.electronLog.info(`[app] Add ${tags.length} tags to ${changedItems.length} files`);
         };
 
-        TagManager.addTag = function addTag (tag) {
+        TagManager.addTag = function addTag (tag: any) {
             if (tag === undefined || tag === "" ) return;
 
             let changedItems: any[] = [];
@@ -703,7 +715,7 @@ export function machineryBuildTagManager(): any {
         // 取得文件夹包含标签
         TagManager.getFolderTags = function (folderIds: any) {
 
-            var result = [];
+            var result: any[] = [];
 
             folderIds.forEach(function (folderId: any) {
                 var images = useItemState.getState().raw.filter(function (image: any) {
@@ -716,7 +728,9 @@ export function machineryBuildTagManager(): any {
                     return false;
                 });
                 var total = images.length;
-                var folderTags = machineryCalcuteContainTags(images).containTags || [];
+                // 注：machineryCalcuteContainTags 无返回值（结果写 containTags 到 store）。本方法与下方
+                // getSimilarTags 均无调用方（原调用点已注释），如需复活应先读 useMiscRawState.getState().containTags。
+                var folderTags = (machineryCalcuteContainTags(images) as any).containTags || [];
                 folderTags.forEach(function (tag: any) {
                     tag.ratio = tag.imageCount / total;
                     result.push(tag);
@@ -745,7 +759,7 @@ export function machineryBuildTagManager(): any {
                 return match == tags.length;
             });
             var total = images.length - 1;
-            var result = machineryCalcuteContainTags(images).containTags;
+            var result = (machineryCalcuteContainTags(images) as any).containTags;
             result = result.filter(function (tag: any) {
                 for (var i = 0; i < tags.length; i++) {
                     if (tags[i] === tag.name) {
@@ -776,7 +790,7 @@ export function machineryBuildTagManager(): any {
         };
 
         TagManager.print = function (tags: any) {
-            var result = [];
+            var result: any[] = [];
             tags.forEach(function (tag: any) {
                 if (tag.ratio > 0.2) {
                     result.push({
@@ -839,8 +853,8 @@ export function machineryBuildTagManager(): any {
             // 大批辆图片不进行推荐
             if (images.length > 500) return;
             // console.time("======== 取得推荐标签 ========");
-            var result = [];
-            var folderIdsMap = {};
+            var result: any[] = [];
+            var folderIdsMap: Record<string, any> = {};
             var tagsMap: any = {};
             var nameString = "";
 
@@ -855,7 +869,7 @@ export function machineryBuildTagManager(): any {
                         folderIdsMap[folderId] = true;
                         var folder = useItemState.getState().folderMappings[folderId];
                         if (folder && folder.name) {
-                            var ancestors = getAncestorFolders(folder, []);
+                            var ancestors = machineryGetAncestorFolders(folder, []);
                             if (ancestors && ancestors.length > 0) {
                                 ancestors.forEach(function (ancestor: any) {
                                     nameString += " " + ancestor.name.split(/[ ，）（(),;、\n]+/).join(" ");
@@ -926,7 +940,7 @@ export function machineryBuildTagManager(): any {
         };
 
         TagManager.coverToAZList = function (list: any) {
-            var azGroups = {};
+            var azGroups: Record<string, any> = {};
             azGroups["others"] = {
                 name: "＃",
                 tags: []
@@ -1034,7 +1048,7 @@ export function machineryBuildTagManager(): any {
                         // 没有任何图片包含的标签
                         var tagObject = TagManager.tagMappings[tag];
                         if (!tagObject) {
-                            var newTag = {
+                            var newTag: any = {
                                 name: tag,
                                 pinyin: tinyPinyin.convertToPinyin(tag),
                                 imageCount: 0,
@@ -1100,13 +1114,13 @@ export function machineryBuildTagManager(): any {
 
             // 建立 AZ Group
                         // 创建 a-z 列表
-            var azGroups = {};
+            var azGroups: Record<string, any> = {};
             azGroups["others"] = {
                 name: "＃",
                 tags: []
             };
 
-            TagManager.rawdata.forEach(function(tag) {
+            TagManager.rawdata.forEach(function(tag: any) {
 
                 if (!tag) return;
 
@@ -1187,7 +1201,7 @@ export function machineryBuildTagManager(): any {
         TagManager.calculateTagsDebounce = debounce(TagManager.calculateTags, 500);
 
         TagManager.createGroup = function (groupName: any) {
-            var newGroup = {
+            var newGroup: any = {
                 id: w.guid(),
                 name: groupName || "",
                 tags: []
@@ -1204,10 +1218,10 @@ export function machineryBuildTagManager(): any {
         };
 
         TagManager.createGroupWithTags = function (groupName: any, tags: any, color: any, description: any) {
-            if (!is.array(tags)) {
+            if (!Array.isArray(tags)) {
                 tags = [];
             }
-            var newGroup = {
+            var newGroup: any = {
                 id: w.guid(),
                 name: groupName || "",
                 tags: tags,
@@ -1397,7 +1411,7 @@ export function machineryBuildTagManager(): any {
 
         // selectTag（bundle 38870-38926 逐字；b1-9k 补端口——TagManager.tsx 标签点击
         // onClick=call('selectTag')，缺席时静默 no-op → 标签选中/多选整条死）
-        writeScopeField('selectTag', function (event, tag) {
+        writeScopeField('selectTag', function (event: any, tag: any) {
             event.stopPropagation();
 
             if (event.button !== 0 && useMiscRawState.getState().selectedTags[tag.name]) return;
@@ -1407,13 +1421,13 @@ export function machineryBuildTagManager(): any {
             // Shift 多選
             if (event.shiftKey) {
 
-                let selectedTags = [];
+                let selectedTags: any[] = [];
                 let found = 0;
 
-                TagManager.tagsResult.display.forEach((item, index) => {
+                TagManager.tagsResult.display.forEach((item: any, index: any) => {
                     if (item.type === "row") {
                         const tags = item.tags;
-                        tags.forEach((tagName) => {
+                        tags.forEach((tagName: any) => {
                             if (tagName === useMiscRawState.getState().lastSelectedTag || tagName === tag.name) {
                                 found++;
                                 selectedTags.push(tagName);
@@ -1540,12 +1554,12 @@ export function machineryBuildTagManager(): any {
         
         writeScopeField('addStarredTags', () => {
             getTimeout()(() => {
-                const originSelected = useMiscRawState.getState().TagManager.starredTags.reduce((acc, cur: any) => {
+                const originSelected = useMiscRawState.getState().TagManager.starredTags.reduce((acc: any, cur: any) => {
                     acc[cur] = true;
                     return acc;
                 }, {});
 
-                GeneralTagSelectPanel.open({
+                openGeneralTagSelectPanel({
                     tagManager: useMiscRawState.getState().TagManager,
                     selectedTags: originSelected,
                     pinSelected: false,
@@ -1554,7 +1568,7 @@ export function machineryBuildTagManager(): any {
                         const { selectedTags, deselectedTags } = result;
 
                         // 即將新增的標籤 
-                        let add = [];
+                        let add: any[] = [];
                         if (Object.keys(selectedTags).length > 0) {
                             Object.keys(selectedTags).forEach(( tag: any) => {
                                 if (originSelected[tag]) return;
@@ -1563,7 +1577,7 @@ export function machineryBuildTagManager(): any {
                         }
                         useMiscRawState.getState().TagManager.addStarredTags(add);
 
-                        let remove = [];
+                        let remove: any[] = [];
                         if (Object.keys(deselectedTags).length > 0) {
                             Object.keys(deselectedTags).forEach(( tag: any) => {
                                 remove.push(tag);
@@ -1578,12 +1592,12 @@ export function machineryBuildTagManager(): any {
 
         writeScopeField('addGroupTags', ( group: any) => {
             getTimeout()(() => {
-                const originSelected = group.tags.reduce((acc, cur: any) => {
+                const originSelected = group.tags.reduce((acc: any, cur: any) => {
                     acc[cur] = true;
                     return acc;
                 }, {});
 
-                GeneralTagSelectPanel.open({
+                openGeneralTagSelectPanel({
                     tagManager: useMiscRawState.getState().TagManager,
                     selectedTags: originSelected,
                     pinSelected: false,
@@ -1592,7 +1606,7 @@ export function machineryBuildTagManager(): any {
                         const { selectedTags, deselectedTags } = result;
 
                         // 即將新增的標籤 
-                        let add = [];
+                        let add: any[] = [];
                         if (Object.keys(selectedTags).length > 0) {
                             Object.keys(selectedTags).forEach(( tag: any) => {
                                 if (originSelected[tag]) return;
@@ -1601,7 +1615,7 @@ export function machineryBuildTagManager(): any {
                         }
                         useMiscRawState.getState().TagManager.addTagsToGroup(group.id, add, true);
 
-                        let remove = [];
+                        let remove: any[] = [];
                         if (Object.keys(deselectedTags).length > 0) {
                             Object.keys(deselectedTags).forEach(( tag: any) => {
                                 remove.push(tag);
@@ -1614,9 +1628,9 @@ export function machineryBuildTagManager(): any {
             }, 50);
         });
 
-        writeScopeField('openTagGroupContextMenu', (event, tagGroup: any) => {
+        writeScopeField('openTagGroupContextMenu', (event: any, tagGroup: any) => {
 
-            let historyLibraryMenu = {};
+            let historyLibraryMenu: any = {};
             historyLibraryMenu.items = getLibraryHistory().filter(( history: any) => {
                 var isCurrent = false;
                 const _ws: any = getWindowScope();
@@ -1634,7 +1648,7 @@ export function machineryBuildTagManager(): any {
                         if (!tagGroup || !history) return;
                         if (w.fs.existsSync(history.path)) {
                             addToLibraryChannel.emit({
-                                tagGroup, tagGroup,
+                                tagGroup,
                                 items: [],
                                 library: history
                             });
@@ -1808,8 +1822,8 @@ export function machineryBuildTagManager(): any {
         });
 
         // 標籤群組描述變更（使用防抖保存）
-        var tagGroupDescriptionChangeTimeout;
-        var tagGroupDescriptionOriginal; // 記錄 focus 時的原始值
+        var tagGroupDescriptionChangeTimeout: any;
+        var tagGroupDescriptionOriginal: any; // 記錄 focus 時的原始值
 
         writeScopeField('tagGroupDescriptionChange', function () {
             if (!useMiscRawState.getState().currentTagGroup) return;
@@ -1877,7 +1891,7 @@ export function machineryBuildTagManager(): any {
 
             // Note: 优先将已经有标签放在最前方，剩下的标签使用标题排序放在后面
             // console.log(TagManager.suggestions);
-            TagManager.suggestions = TagManager.suggestions.sort(function(a, b) {
+            TagManager.suggestions = TagManager.suggestions.sort(function(a: any, b: any) {
                 if (TagManager.tagMappings[a])
                     return -1;
                 if (TagManager.tagMappings[b])
@@ -1912,7 +1926,7 @@ export function machineryBuildTagManager(): any {
                 if (!f) return;
                 var b64 = f.base64;
                 var canvas = document.createElement('canvas');
-                var ctx = canvas.getContext('2d');
+                var ctx: any = canvas.getContext('2d');
                 var image = new Image();
                 image.onload = function() {
                     canvas.width = image.width;
@@ -2051,9 +2065,9 @@ export function machineryBuildTagManager(): any {
 
                 var gifPlayerResizeOriginalState = false;
                 var gifPlayerResizing = false;
-                var gifPlayerLastResizeLeft;
-                var gifPlayerLastResizeWidth;
-                var gifPlayerToolbarOffset;
+                var gifPlayerLastResizeLeft: any;
+                var gifPlayerLastResizeWidth: any;
+                var gifPlayerToolbarOffset: any;
                 // D-2f：jQuery-UI resizable → 自研
                 makeResizable(resizableBarEl as HTMLElement, {
                 	minWidth: 2,

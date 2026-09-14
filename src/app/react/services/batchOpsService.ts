@@ -18,7 +18,6 @@
  * - throttle → utils/func（b1-9bc 原生版）
  * - dialog/remote/currentWindow → electron 同源
  */
-// @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
 import { ContextMenu } from '../core/contextMenuDomain';
 import { scrollGridToItem } from '../components/grid/boxGridEngine';
@@ -54,13 +53,14 @@ import { useBodyState, writeCurrentFocus, writeRemoveProgress, writeIsCleaningTr
 import { usePreferencesState } from '../store/preferencesState';
 
 import { getIpcBus } from '../core/channelBridge';
+import { FileUrlHelper } from '../core/fileUrlHelper';
 import { writeSelected, writeCurrent } from '../store/selectionState';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
-var __lv_cleanSelectedTimeout;
-var __lv_TagManager;
+var __lv_cleanSelectedTimeout: any;
+var __lv_TagManager: any;
 const initLinkVars = () => {
 	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
@@ -78,6 +78,15 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
 const electronLog: any = (window as any).electronLog || console;
+const fs: any = _req('fs');
+const path: any = _req('path');
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const ayncsImagesChange: any;
+declare const hiddenByCurrentFilter: any;
+declare const ScrollbarSaver: any;
+declare const ayncsImagesRemove: any;
+
+let __cc_copyTags: any = null;
 const ipcRenderer: any = getIpcBus();
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
@@ -136,7 +145,7 @@ export function emptyTrash(...args: any[]) {
 
                     var removeCount = useItemState.getState().trash.length;
 
-                    var willDelete = {};
+                    var willDelete: Record<string, boolean> = {};
                     useItemState.getState().trash.forEach(function(r: any) {
                         if (r.id) {
                             willDelete[r.id] = true;
@@ -200,14 +209,14 @@ export function addToRecentFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (folderIDs) {
             if (!folderIDs || folderIDs.length == 0 ) return;
-            var recentMoveFolders = localStorage.getItem("recentMoveFolders");
+            var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
             if (recentMoveFolders) {
                 recentMoveFolders = JSON.parse(recentMoveFolders);
             }
             else {
                 recentMoveFolders = [];
             }
-            folderIDs.forEach(function (folderID) {
+            folderIDs.forEach(function (folderID: any) {
                 recentMoveFolders.unshift(folderID);
             });
             recentMoveFolders = recentMoveFolders.unique();
@@ -299,8 +308,8 @@ export function pasteTags(...args: any[]) {
         event && event.stopPropagation();
         var copiedTags = eagle.inspector.copiedTags;
         if (useSelectionState.getState().selected && useSelectionState.getState().selected.length > 0 && copiedTags && copiedTags.length > 0) {
-            useSelectionState.getState().selected.forEach(function (image) {
-                copiedTags.forEach(function (tag) {
+            useSelectionState.getState().selected.forEach(function (image: any) {
+                copiedTags.forEach(function (tag: any) {
                     if (image.tags.indexOf(tag) === -1) {
                         image.tags.push(tag);
                     }
@@ -324,9 +333,9 @@ export function removeFromFolder(...args: any[]) {
 
         if (!folderId && useSelectionState.getState().selected.length <= 0) return;
 
-        var origins = [];
+        var origins: any[] = [];
 
-        useSelectionState.getState().selected.forEach(function(image) {
+        useSelectionState.getState().selected.forEach(function(image: any) {
             var idx = image.folders.indexOf(folderId);
             if (idx !== -1) {
                 origins.push(image);
@@ -496,9 +505,9 @@ export function exportSelectedAsFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
-        exportFolder(function (savePath) {
+        exportFolder(function (savePath: any) {
             if (savePath) {
-                var imageNames = {};
+                var imageNames: Record<string, any> = {};
                 for (var i = 0; i < useSelectionState.getState().selected.length; i++) {
                     var image = useSelectionState.getState().selected[i];
                     imageNames[image.name + "." + image.ext] = image.name;
@@ -507,11 +516,11 @@ export function exportSelectedAsFolder(...args: any[]) {
                 var needSpace = eagle.inspector.calculateFileSize(useSelectionState.getState().selected);
                 checkDiskSpace(savePath, needSpace, function () {
 
-                    fs.readdir(savePath, function(err, files) {
+                    fs.readdir(savePath, function(err: any, files: any) {
 
                         var sameFileCount = 0;
 
-                        files.forEach(function (filename) {
+                        files.forEach(function (filename: any) {
                             if (imageNames[filename]) {
                                 sameFileCount++;
                             }
@@ -592,7 +601,7 @@ export function exportSelectedAsEaglepack(...args: any[]) {
             defaultPath: defaultPath,
             title: i18n.__('Context.Image.Export'),
             filters: [{ name: 'Eagle Package File', extensions: ['eaglepack'] }]
-        }).then(result => {
+        }).then((result: any) => {
             var savePath = result.filePath;
             if (!savePath) return;
             if ((window as any).backgroundWindowID === undefined) {
@@ -638,7 +647,7 @@ export function exportSelectedToCsv(...args: any[]) {
         if (!filePath) return;
 
         // CSV 字串轉義函數
-        function escapeCSV(str) {
+        function escapeCSV(str: any) {
             if (!str) return '';
             str = String(str);
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -648,7 +657,7 @@ export function exportSelectedToCsv(...args: any[]) {
         }
 
         // 日期格式化函數
-        function formatDate(timestamp) {
+        function formatDate(timestamp: any) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
             return date.toISOString().replace('T', ' ').slice(0, 19);
@@ -660,18 +669,18 @@ export function exportSelectedToCsv(...args: any[]) {
                              'URL', 'Annotation', 'Comments', 'Tags', 'Folders',
                              'Size', 'Rating', 'Imported At', 'Modified At', 'File Path'];
 
-            const rows = useSelectionState.getState().selected.map(item => {
+            const rows = useSelectionState.getState().selected.map((item: any) => {
                 // 獲取文件夾名稱
                 let folderNames = [];
                 if (item.folders && item.folders.length > 0) {
-                    folderNames = item.folders.map(folderId => {
+                    folderNames = item.folders.map((folderId: any) => {
                         // 使用 folderMappings 取得文件夾名稱
                         const folder = useItemState.getState().folderMappings[folderId];
                         return folder ? folder.name : folderId;
                     });
                 }
                 // item.comments[0].annotation
-                const commentString = item?.comments ? item?.comments?.map(comment => comment.annotation).join('\n') : '';
+                const commentString = item?.comments ? item?.comments?.map((comment: any) => comment.annotation).join('\n') : '';
 
                 return [
                     item.id,

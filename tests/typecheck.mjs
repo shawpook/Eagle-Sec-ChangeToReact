@@ -51,9 +51,6 @@ const NOCHECK_LEDGER = [
   'src/app/react/core/eagleClasses.ts',
   'src/app/react/core/hoverPreview.ts',
   'src/app/react/core/smoothZoomEngine.ts',
-  'src/app/react/core/tagManagerDomain.ts',
-  'src/app/react/services/batchOpsService.ts',
-  'src/app/react/services/folderCoreService.ts',
   'src/app/react/services/imageOpsService.ts',
   'src/app/react/services/itemMenuService.ts',
 ];

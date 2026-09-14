@@ -14,7 +14,6 @@
  * - $filter → 双轨 shim（scope $root → machinery getFilter）
  * - dialog/ipcRenderer → electron 同源
  */
-// @ts-nocheck
 
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -66,6 +65,17 @@ const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
 const ipcRenderer: any = getIpcBus();
 const electronLog: any = (window as any).electronLog || console;
+const eagle: any = (window as any).eagle;
+const swal: any = (...args: any[]) => (window as any).swal(...args);
+const fs: any = _req('fs');
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const guid: any;
+declare const analytics: any;
+declare const ayncsImagesChange: any;
+declare const hiddenByCurrentFilter: any;
+declare const cloneTree: any;
+declare const ScrollbarSaver: any;
+declare const UrlStateService: any;
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
@@ -80,7 +90,7 @@ export function createFolder(...args: any[]) {
             if (name === undefined) return;
 
             const folderId = guid();
-            const folder = {
+            const folder: any = {
                 id: folderId,
                 name: name,
                 folders: [],
@@ -150,7 +160,7 @@ export function newFolder(...args: any[]) {
     return (function(parent, isSubFolder, isSiblingFolder, ignoreAutoOpen) {
 
             var __lv_folderId = guid();
-            var folder = {
+            var folder: any = {
                 id: __lv_folderId,
                 name: $filter('i18n')('general.untitled.folder'),
                 images: [],
@@ -293,8 +303,8 @@ export function newFolderWidthSelection(...args: any[]) {
             input: 'text',
             inputPlaceholder: "",
             inputValue: '',
-        }).then(function (name) {
-            function sanitizeFolderName(folderName) {
+        }).then(function (name: any) {
+            function sanitizeFolderName(folderName: any) {
                 if (typeof folderName !== 'string') return '';
 
                 // 移除 tab，統一空白
@@ -330,7 +340,7 @@ export function newFolderWidthSelection(...args: any[]) {
             var folderName = sanitizeFolderName(name);
 
             var folderId = guid();
-            var folder = {
+            var folder: any = {
                 id: folderId,
                 name: folderName,
                 images: [],
@@ -348,7 +358,7 @@ export function newFolderWidthSelection(...args: any[]) {
             addToRecentFolders([folder.id]);
 
             // 添加圖片
-            useSelectionState.getState().selected.forEach(function(image) {
+            useSelectionState.getState().selected.forEach(function(image: any) {
                 if (!image.folders) image.folders = [];
                 image.folders.push(folderId);
             });
@@ -371,9 +381,9 @@ export function addImagesToFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (images, folder) {
 
-            var origin = [];
-            var originFolders = [];
-            var originTags = [];
+            var origin: any[] = [];
+            var originFolders: any[] = [];
+            var originTags: any[] = [];
 
             // 同一個資料夾，不需要移動
             if (images.length === 1 && images[0].folders.indexOf(folder.id) !== -1) {
@@ -381,7 +391,7 @@ export function addImagesToFolder(...args: any[]) {
             }
 
             // 移除當前文件夾，放到新的文件夾
-            images.forEach(function(image) {
+            images.forEach(function(image: any) {
 
                 origin.push(image);
                 originFolders.push(Array.isArray(image.folders) ? image.folders.slice() : image.folders);
@@ -392,7 +402,7 @@ export function addImagesToFolder(...args: any[]) {
                 if (image.folders.indexOf(folder.id) === -1) {
                     image.folders.push(folder.id);
                     if (folder.extendTags) {
-                        folder.extendTags.forEach(function(tag) {
+                        folder.extendTags.forEach(function(tag: any) {
                             if (image.tags.indexOf(tag) === -1) {
                                 image.tags.push(tag);
                             }
@@ -457,7 +467,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                 }
             }
 
-            var moved = {};
+            var moved: Record<string, any> = {};
             var children = machineryGetFolderParentChilder(folder);
             var __lv_idx = -1;
 
@@ -467,12 +477,12 @@ export function moveFoldersAsSibling(...args: any[]) {
 
             if (__lv_idx === -1)  return;
 
-            folders.forEach(function (folder) {
+            folders.forEach(function (folder: any) {
                 moved[folder.id] = folder;
             });
 
             // 重新排序资料夹（依据视觉顺序）
-            folders.sort(function (a, b) {
+            folders.sort(function (a: any, b: any) {
                 try {
                     var aIdx = offsetTopOf(q("#folder-" + a.id));
                     var bIdx = offsetTopOf(q("#folder-" + b.id));
@@ -482,13 +492,13 @@ export function moveFoldersAsSibling(...args: any[]) {
                         return 1;
                     return 0;
                 }
-                catch (err) {
+                catch (err: any) {
                     // debugger
                     return 0;
                 }
             });
 
-            var clone = [];
+            var clone: any[] = [];
             cloneTree(clone, useFolderState.getState().folders, true);
 
             try {
@@ -539,7 +549,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) sibling`);
                 } catch (err) {};
             }
-            catch (err) {
+            catch (err: any) {
                 writeFolders(clone);
                 electronLog && electronLog.error(err.stack || err);
             }
@@ -568,15 +578,15 @@ export function moveFoldersToFolder(...args: any[]) {
                 folder.children = [];
             }
 
-            var moved = {};
+            var moved: Record<string, any> = {};
             var children = folder.children;
 
-            folders.forEach(function (folder) {
+            folders.forEach(function (folder: any) {
                 moved[folder.id] = folder;
             });
 
             // 重新排序资料夹（依据视觉顺序）
-            folders.sort(function (a, b) {
+            folders.sort(function (a: any, b: any) {
                 try {
                     var aIdx = offsetTopOf(q("#folder-" + a.id));
                     var bIdx = offsetTopOf(q("#folder-" + b.id));
@@ -586,13 +596,13 @@ export function moveFoldersToFolder(...args: any[]) {
                         return 1;
                     return 0;
                 }
-                catch (err) {
+                catch (err: any) {
                     // debugger
                     return 0;
                 }
             });
 
-            var clone = [];
+            var clone: any[] = [];
             cloneTree(clone, useFolderState.getState().folders, true);
 
             try {
@@ -634,7 +644,7 @@ export function moveFoldersToFolder(...args: any[]) {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) children`);
                 } catch (err) {};
             }
-            catch (err) {
+            catch (err: any) {
                 writeFolders(clone);
                 electronLog && electronLog.error(err.stack || err);
             }
@@ -659,7 +669,7 @@ export function emptyRestore(...args: any[]) {
                     confirmButtonText: i18n.__('dialog.restoreAll.button'),
                     cancelButtonText: i18n.__("general.cancel"),
                 }).then(function () {
-                    var changes = [];
+                    var changes: any[] = [];
                     let now = Date.now();
                     useItemState.getState().trash.forEach(function(image: any) {
                         image.isDeleted = false;
@@ -741,8 +751,8 @@ const initLinkVars = () => {
 export function getLibraryHistory(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (length) {
-            let result = [];
-            useMiscRawState.getState().libraryHistory.forEach(function (history, index) {
+            let result: any[] = [];
+            useMiscRawState.getState().libraryHistory.forEach(function (history: any, index: any) {
 
                 var libraryName = __lv_path.basename(history).replace('.library', '');
                 var libraryPath = __lv_path.dirname(history).replace(/\\$/g, "").replace(/\/$/, "");
@@ -830,9 +840,9 @@ export function openFolder(...args: any[]) {
                 });
             }
 
-            var __lv_height = localStorage.getItem("eagle.list.thumbSize." + folder.id) || 150;
+            var __lv_height: any = localStorage.getItem("eagle.list.thumbSize." + folder.id) || 150;
             __lv_height = parseInt(__lv_height);
-            useLayoutState.getState().imageSize.height = parseInt(__lv_height / 5) * 5;
+            useLayoutState.getState().imageSize.height = parseInt(String(__lv_height / 5)) * 5;
             syncToolbarFromScope();
             syncBodyFromScope();
             syncDetailFromScope();
@@ -995,7 +1005,7 @@ export function exportFolder(...args: any[]) {
             filters: [],
             properties: ['openDirectory', 'createDirectory'],
             buttonLabel: $filter('i18n')("dialog.exportAsFolder.botton")
-        }).then(result => {
+        }).then((result: any) => {
             var paths = result.filePaths;
             if (paths && paths[0]) {
                 var savePath = paths[0];

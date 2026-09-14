@@ -9,7 +9,7 @@ const ipcRenderer: any = ipcRendererFn();
 const electronLog: any = (window as any).electronLog || console;
 
 export const IPCHelper = {
-	send: function (channel: any, params: any, ignoreLogging: any = false) {
+	send: function (channel: any, params?: any, ignoreLogging: any = false) {
 		try {
 			ipcRenderer.send(channel, params);
 			if (!ignoreLogging) {
@@ -20,7 +20,7 @@ export const IPCHelper = {
 
 		}
 	},
-	sendTo: function (id: any, channel: any, params: any, ignoreLogging: any = false) {
+	sendTo: function (id: any, channel: any, params?: any, ignoreLogging: any = false) {
 		try {
 			ipcRenderer.sendTo(id, channel, params);
 			if (!ignoreLogging) {

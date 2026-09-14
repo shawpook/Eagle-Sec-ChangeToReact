@@ -8657,3 +8657,45 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   batchOpsService}.ts`（实测 1568 条：itemMenuService 207、folderCoreService 90、
   imageOpsService 126、batchOpsService 50、eagleClasses 297、smoothZoomEngine 292、
   hoverPreview 273、bitmapViewer 141、tagManagerDomain 92）。
+
+### R3 收尾：撤销 `@ts-nocheck`（第二批 3 个文件）+ 缺失全局缺陷修复
+
+- **撤销对象**（232 条诊断清零，三文件的 `// @ts-nocheck` 删除）：`services/batchOpsService.ts`
+  （47）、`services/folderCoreService.ts`（90）、`core/tagManagerDomain.ts`（92）。累计已撤销
+  **6 个**，台账 14 个（8 个 `core/shim/*` + 6 个待撤销）。
+- **本批最大发现：一批「引用已消失全局」的真实缺陷**（@ts-nocheck 长期掩盖）。类型检查把
+  `Cannot find name` 变成必须表态的问题，逐个核对运行期供给面后分为两类：
+  - **bundleGlobals 已装，只是缺类型**：`guid analytics cloneTree ScrollbarSaver UrlStateService
+    ayncsImagesChange hiddenByCurrentFilter tinyPinyin` 等 → 按仓库既有约定加 typed
+    ambient `declare const`（只补类型，不改运行期）。
+  - **运行期真的没人装（缺陷）**，逐个给出处置：
+    1. `paddingNumber` / `canvasResizeTo`（原 `js/global.js`）与 `JAPANESE_CHAR_MAP`
+       （原 `js/japanese.js`）：**主窗 `index.html` 不加载这两个文件**（preview-window.html 才加载
+       global.js），而 `tagManagerDomain` 的 GIF 工具栏帧号、缩略图重生成、日文五十音归组三条
+       路径就在主窗运行——运行期必抛 ReferenceError。**修法**：按 `core/bundleGlobals.ts`
+       既定的「Tier 2 全局补装（if-absent）」面，把三个符号**逐字移植**进该模块并登记进
+       `__eagleBundleGlobals.present` 诊断清单。既有干净文件里 `(window as any).paddingNumber(...)`
+       的调用（preview-window/controller.ts:1711,1530）同批受益。
+    2. `GeneralTagSelectPanel.open({...})`：旧 Angular 指令类已被删除（index.html:131 注释
+       「React 接管，舊島已刪」），运行期必抛 ReferenceError。**修法**：改用 React 等价实现
+       `openGeneralTagSelectPanel`（`components/stage7/SelectPanels.tsx`，同广播载荷）。
+    3. `getAllChildFolder`（本批前一提交已修）→ `machineryGetAllChildFolder`。
+    4. `getAncestorFolders` → 应为已导出的 `machineryGetAncestorFolders`（同类漏改）。
+    5. `ContextMenu`：本文件漏 import（其余 4 个菜单服务均 `import { ContextMenu } from
+       './contextMenuDomain'`）→ 补 import；`ipcRenderer` 漏初始化 → 补 `getIpcBus()`。
+    6. `is.array(tags)` → `Array.isArray(tags)`：`is_js` 的 `is` 全局在本仓**无任何来源**
+       （`src/my_modules/` 与 node_modules 均无）；仓库既有先例是**内联等价实现**而非补装
+       （见 `components/inspector/inspectorActions.ts:46` 注释与 `bundleGlobals.ts:2025`），
+       故此处同样内联。
+- **另修两处被掩盖的构造缺陷**：①`tagManagerDomain` 的 `addToLibraryChannel.emit({ tagGroup, tagGroup,
+  ... })` **对象字面量重复键**（TS1117；两值相同故行为等价，删去重复项）。②`folderCoreService`
+  上一提交已修的 `exportFolder` 同名遮蔽。
+- **一处死代码缺陷（如实登记，未改行为）**：`tagManagerDomain` 的 `TagManager.getFolderTags` /
+  `getSimilarTags` 调 `machineryCalcuteContainTags(images).containTags`，而该函数**无返回值**
+  （结果写 store），运行期必抛 TypeError。二者**无调用方**（原调用点已注释），故只做
+  `as any` 转换 + 注释标注「如需复活应先读 store」，不擅自改行为。留待 R6 清理死代码时处置。
+- **新增门禁**：`tests/typecheck.mjs` 的 `@ts-nocheck` 面台账同步收缩（双向校验生效：
+  本批两次因「已撤销却仍在台账」而被门禁挡下，正说明台账在起作用）。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`d3-alltags-view`（标签管理器族：
+  建组/改色/描述/右键菜单）、`menu-popup`（folder/smart-folder 右键菜单）、
+  `empty-trash`（batchOpsService 的 trash 族）、`library-switch-ui` 全绿。

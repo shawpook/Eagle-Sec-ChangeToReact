@@ -181,6 +181,174 @@ function _decodeBase64Image(dataString: string): any {
   return response;
 }
 
+/**
+ * 缺失全局补装（主窗 index.html 不加载 js/global.js 与 js/japanese.js，而消费方存在）：
+ * - paddingNumber/canvasResizeTo（js/global.js 逐字）：主窗 tagManagerDomain 的 GIF 工具栏
+ *   帧号与缩略图重生成路径使用；预览窗另有 global.js 供给，二者互不影响。
+ * - JAPANESE_CHAR_MAP（js/japanese.js 逐字）：日文标签按五十音归组的映射表。
+ */
+function _paddingNumber(num: any, length: any): string {
+  return (Array(length).join("0") + num).slice(-length);
+}
+
+function _canvasResizeTo(canvas: any, pct: any): void {
+  var cw = canvas.width;
+  var ch = canvas.height;
+  var tempCanvas: any = document.createElement('canvas');
+  var tctx: any = tempCanvas.getContext("2d");
+  tempCanvas.width = cw;
+  tempCanvas.height = ch;
+  tctx.drawImage(canvas, 0, 0);
+  canvas.width *= pct;
+  canvas.height *= pct;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(tempCanvas, 0, 0, cw, ch, 0, 0, cw * pct, ch * pct);
+}
+
+/* JAPANESE_CHAR_MAP（js/japanese.js 逐字） */
+const _JAPANESE_CHAR_MAP: Record<string, string> = {
+    "あ": "あ",
+    "ア": "あ",
+    "い": "あ",
+    "イ": "あ",
+    "う": "あ",
+    "ウ": "あ",
+    "え": "あ",
+    "エ": "あ",
+    "お": "あ",
+    "オ": "あ",
+    "か": "か",
+    "が": "か",
+    "カ": "か",
+    "ガ": "か",
+    "き": "か",
+    "ぎ": "か",
+    "キ": "か",
+    "ギ": "か",
+    "く": "か",
+    "ぐ": "か",
+    "ク": "か",
+    "グ": "か",
+    "け": "か",
+    "げ": "か",
+    "ケ": "か",
+    "ゲ": "か",
+    "こ": "か",
+    "ご": "か",
+    "コ": "か",
+    "ゴ": "か",
+    "さ": "さ",
+    "ざ": "さ",
+    "サ": "さ",
+    "ザ": "さ",
+    "し": "さ",
+    "じ": "さ",
+    "シ": "さ",
+    "ジ": "さ",
+    "す": "さ",
+    "ず": "さ",
+    "ス": "さ",
+    "ズ": "さ",
+    "せ": "さ",
+    "ぜ": "さ",
+    "セ": "さ",
+    "ゼ": "さ",
+    "そ": "さ",
+    "ぞ": "さ",
+    "ソ": "さ",
+    "ゾ": "さ",
+    "た": "た",
+    "だ": "た",
+    "タ": "た",
+    "ダ": "た",
+    "ち": "た",
+    "ぢ": "た",
+    "チ": "た",
+    "ヂ": "た",
+    "つ": "た",
+    "づ": "た",
+    "ツ": "た",
+    "ヅ": "た",
+    "て": "た",
+    "で": "た",
+    "テ": "た",
+    "デ": "た",
+    "と": "た",
+    "ど": "た",
+    "ト": "た",
+    "ド": "た",
+    "な": "な",
+    "ば": "な",
+    "ナ": "な",
+      "に": "な",
+    "ニ": "な",
+    "ぬ": "な",
+    "ヌ": "な",
+    "ね": "な",
+    "ネ": "な",
+    "の": "な",
+    "ノ": "な",
+    "は": "は",
+    "ぱ": "は",
+    "ハ": "は",
+    "バ": "は",
+    "パ": "は",
+    "ひ": "は",
+    "び": "は",
+    "ぴ": "は",
+    "ヒ": "は",
+    "ビ": "は",
+    "ピ": "は",
+    "ふ": "は",
+    "ぶ": "は",
+    "ぷ": "は",
+    "フ": "は",
+    "ブ": "は",
+    "プ": "は",
+    "へ": "は",
+    "べ": "は",
+    "ぺ": "は",
+    "ヘ": "は",
+    "ベ": "は",
+    "ペ": "は",
+    "ほ": "は",
+    "ぼ": "は",
+    "ぽ": "は",
+    "ホ": "は",
+    "ボ": "は",
+    "ポ": "は",
+    "ま": "ま",
+    "マ": "ま",
+    "み": "ま",
+    "ミ": "ま",
+    "む": "ま",
+    "ム": "ま",
+    "め": "ま",
+    "メ": "ま",
+    "も": "ま",
+    "モ": "ま",
+    "や": "や",
+    "ヤ": "や",
+    "ゆ": "や",
+    "ユ": "や",
+    "よ": "や",
+    "ヨ": "や",
+    "ら": "ら",
+    "ラ": "ら",
+    "り": "ら",
+    "リ": "ら",
+    "る": "ら",
+    "ル": "ら",
+    "れ": "ら",
+    "レ": "ら",
+    "ろ": "ら",
+    "ロ": "ら",
+    "わ": "わ",
+    "ワ": "わ",
+    "を": "わ",
+    "ヲ": "わ",
+};
+
 /* cloneTree（bundle 8207-8242 逐字） */
 function _cloneTree(newTree: any[], tree: any, extraInfo: any): void {
   var arr: any;
@@ -1979,6 +2147,9 @@ export function installBundleGlobals(): void {
   if (!w.getHashID) w.getHashID = _getHashID;
   if (!w.hiddenByCurrentFilter) w.hiddenByCurrentFilter = _hiddenByCurrentFilter;
   if (!w.ayncsImagesChange) w.ayncsImagesChange = _ayncsImagesChange;
+  if (!w.paddingNumber) w.paddingNumber = _paddingNumber;
+  if (!w.canvasResizeTo) w.canvasResizeTo = _canvasResizeTo;
+  if (!w.JAPANESE_CHAR_MAP) w.JAPANESE_CHAR_MAP = _JAPANESE_CHAR_MAP;
   if (!w.startAPIServer) w.startAPIServer = _startAPIServer;
   if (!w.stopAPIServer) w.stopAPIServer = _stopAPIServer;
   if (!w.checkBackgroundHeartbeat) w.checkBackgroundHeartbeat = _checkBackgroundHeartbeat;
@@ -2225,7 +2396,7 @@ export function installBundleGlobals(): void {
       'sanitize', 'unicodeNormalize', 'chineseConvert', 'colorConvert', 'DeltaE', 'installedFonts',
       'fontFolder', 'FileUrlHelper',
       'guid', 'videoHelper', 'getDurationString', 'throttle', 'debounce', 'fuzzy_match', 'decodeBase64Image', 'cloneTree', 'getHashID',
-      'hiddenByCurrentFilter', 'ayncsImagesChange', 'startAPIServer', 'stopAPIServer',
+      'hiddenByCurrentFilter', 'ayncsImagesChange', 'paddingNumber', 'canvasResizeTo', 'JAPANESE_CHAR_MAP', 'startAPIServer', 'stopAPIServer',
       'checkBackgroundHeartbeat', 'ipcRenderer', 'currentWindow', 'app', 'VIDEO_TYPES_GLOBAL',
       'pluginModule',
       'electronLog', 'getRawPath', 'getThumbnailPath', 'getExt', 'ayncsImagesRemove',

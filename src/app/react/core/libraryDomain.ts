@@ -2996,7 +2996,7 @@ export function machineryToggleCurrentLevelSmartFoldersInner(smartFolders: any, 
   machineryUpdateSidebarList();
 }
 
-export async function machineryUnlockFolderWithTouchID(event: any): Promise<void> {
+export async function machineryUnlockFolderWithTouchID(event?: any): Promise<void> {
   const w = window as any;
   // 防止事件冒泡
   if (event) {

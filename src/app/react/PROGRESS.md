@@ -8893,3 +8893,30 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   此前记录为环境级偶发的 `main-ui-workflow-closed-loop` 本轮亦通过。
 - **R3 完成后的状态**：R0–R4 全部完成；`@ts-nocheck` 仅剩设计内的 8 个 shim 文件；
   `writeScopeField` 字符串键数据写入为 0（剩余 57 个挂载槽归 R6）。**下一阶段 = R5**。
+
+## R5 起步（2026-09-15）：预览窗口侦察 + 一次被测试证伪的删除
+
+### 结论：预览窗口的 `$watch/$on/$evalAsync/$apply` 门面**不是死代码**，删除被测试当场拦下
+
+- **尝试**：源码检索（`src/app/react/{preview-window,viewers,collect-window,preferences}` 全目录）
+  显示 `$watch/$on/$evalAsync/$apply` **零调用方**，仅 `subscribeController/notify/applyController`
+  是活跃的订阅模型。据此删除了 `preview-window/controller.ts` 的门面块（含 `watchers`/`runWatchers`
+  与 `notify()` 内的 `runWatchers()` 调用），并把 `preview-window` 从哨兵 `scopedOut` 豁免中移出
+  （移除后哨兵仍 OK，且反向验证：往该目录植入 `$evalAsync` 会被同时判为 metric 回归与 C-6 禁项）。
+- **测试证伪**：`preview-delivery-closed-loop` 直接失败：
+  ```
+  PREVIEW_DELIVERY_SMOKE_ERROR Error: selectNext error: scope.$evalAsync is not a function
+  ```
+  同一轮输出里伴随 `Service plugin load failed: Plugin manifest not found: H:\dev\plugins\…`。
+- **复查与撤回**：改用**属性 getter 探针**（把 `scope.$evalAsync` 改成打印调用栈的 getter）后连续
+  三次跑该测试均通过且探针未触发——说明该消费者**只在特定环境条件下**（与插件清单缺失同现）被走到，
+  无法按需复现。为避免在无法复现的条件下做行为改动，**两处改动全部撤回**（`git checkout`），
+  撤回后该测试恢复通过。
+- **处置与前置条件（给后续 R5 实施者）**：
+  1. 预览窗口门面与 `scopedOut` 豁免**一并保留**；替换门面前必须先**定位该环境相关消费者**
+     （可用同一 getter 探针 + 人为构造「插件清单缺失」条件复现取栈）。
+  2. 观察到的触发条件与插件加载失败同现，消费者很可能在**插件/旧脚本**一侧（React 树外的动态
+     注入代码），这同时解释了该窗为何在 `scopedOut` 中。
+  3. 教训入档：**「某目录内零调用方」不等于死代码**——跨树（classic script / 动态注入 / 插件）
+     的消费者不会被 `src/app/react` 内的检索覆盖；此类删除必须以可复现的测试证据为前提。
+- **本阶段净产出**：0 处代码改动（动过又撤回）；1 条 R5 前置条件 + 1 个可复用的定位技术。

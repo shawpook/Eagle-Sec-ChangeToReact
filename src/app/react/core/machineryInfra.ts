@@ -25,7 +25,7 @@ import { machineryChangeSortIncrease, machineryCreateLibrary, machineryImportLib
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
-import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio, writeLibraryHistory, writeQuickAccess, writeSidebarList, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeIsHideMainNav, writeContainTags, writeHistorySearchKeywords, writePage } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState, writeContainerSize, writeImageSize } from '../store/layoutState';
@@ -341,11 +341,11 @@ export const machineryCalls: Record<string, number> = { rebindRefresh: 0, update
 
 export function machinerySeedControllerState(): void {
   const w = window as any;
-        writeScopeField('libraryHistory', []);  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
+        writeLibraryHistory([]);  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
         writeScopeField('MAX_LIST_WIDTH', 900);
         syncToolbarFromScope();
         writeScopeField('MAX_DIMENSION', 120000000);
-        writeScopeField('isHideMainNav', true);	// 3.0 侧栏
+        writeIsHideMainNav(true);	// 3.0 侧栏
         writeIsHideSidebar(false);
         writeIsHideSubFolder(true);
         writeIsHideNavigator(false);
@@ -410,25 +410,25 @@ export function machinerySeedControllerState(): void {
         // containTags（bundle 20533 `$scope.containTags = []`——updateSuggestions/
         // machineryCalcuteFilterBadge 读取；缺席时 search 链在 updateSuggestions 处
         // TypeError 断链、filterContent 永不执行（b1-9o 探针实证））
-        writeScopeField('containTags', []);
+        writeContainTags([]);
         syncFilterFromScope();
         // page（bundle 21062 `$scope.page = 1`——rebindRefresh 的
         // `s.filtereds = s.allData.slice(0, s.len * s.page)` 乘数；缺席时 NaN →
         // filtereds 恒空数组（b1-9o 探针实证 a4 空态无法闭合））
-        writeScopeField('page', 1);
+        writePage(1);
         // historySearchKeywords（bundle 21097-21103 逐字——updateSuggestions 首行读取，
         // 缺席时 search 防抖体 TypeError 断链、filterContent 永不执行（b1-9o 计数探针实证））
         var historySearchKeywords = localStorage.getItem("historySearchKeywords");
         if (historySearchKeywords) {
             try {
-                writeScopeField('historySearchKeywords', JSON.parse(historySearchKeywords));
+                writeHistorySearchKeywords(JSON.parse(historySearchKeywords));
             }
             catch (err) {
-                writeScopeField('historySearchKeywords', []);
+                writeHistorySearchKeywords([]);
             }
         }
         else {
-            writeScopeField('historySearchKeywords', []);
+            writeHistorySearchKeywords([]);
         }
         // initPlugins（bundle 20028 RootController init 调用——scope.inspector.inspectorItems
         // 只由它填充，stage6 的 tags/folders/annotations/information 分区渲染数据源；
@@ -447,7 +447,7 @@ export function machinerySeedControllerState(): void {
             w.eagle.inspector.width = 300;
         }
         writeScopeField('len', 100);
-        writeScopeField('sidebarList', []);
+        writeSidebarList([]);
         syncSidebarFromScope();
         useMiscRawState.getState().sidebarIndex;
         writeAll([]);
@@ -717,7 +717,7 @@ export function machinerySeedControllerState(): void {
         ]);
 
         if (localStorage.getItem("isHideMainNav") == 'true') {
-            writeScopeField('isHideMainNav', true);
+            writeIsHideMainNav(true);
         }
 
         if (localStorage.getItem("isHideSidebar") == 'true') {
@@ -831,25 +831,25 @@ export function machinerySeedControllerState(): void {
         writeScopeField('tagsSuggestion', []);
         writeFolders([]);
         writeSmartFolders([]);
-        writeScopeField('quickAccess', []);
+        writeQuickAccess([]);
         syncSidebarFromScope();
-        writeScopeField('isExpandFolder', true);
+        writeIsExpandFolder(true);
         syncSidebarFromScope();
-        writeScopeField('isExpandSmartFolder', true);
+        writeIsExpandSmartFolder(true);
         syncSidebarFromScope();
-        writeScopeField('isExpandQuickAccess', true);
+        writeIsExpandQuickAccess(true);
         syncSidebarFromScope();
 
         if (localStorage.getItem("eagle.sidebar.folder.expand") == 'false') {
-            writeScopeField('isExpandFolder', false);
+            writeIsExpandFolder(false);
             syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.smartFolder.expand") == 'false') {
-            writeScopeField('isExpandSmartFolder', false);
+            writeIsExpandSmartFolder(false);
             syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.quickAccess.expand") == 'false') {
-            writeScopeField('isExpandQuickAccess', false);
+            writeIsExpandQuickAccess(false);
             syncSidebarFromScope();
         }
 

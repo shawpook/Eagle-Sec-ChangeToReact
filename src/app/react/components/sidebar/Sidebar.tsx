@@ -8,7 +8,7 @@ import { clickNode, clickSmartNode, dblclickSidebarFolder, dblclickSidebarSmartF
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { findLiveNode, runInBodyScope } from '../../core/appCore';
 import { getMigratedScopeField, writeScopeField } from '../../core/scopeFieldBridge';
-import { useMiscRawState } from '../../store/miscRawState';
+import { useMiscRawState, writeDraggedQuickAccess, writeFolderKeyword } from '../../store/miscRawState';
 
 import { machineryOpenQuickSearch } from '../../core/keymapActions';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
@@ -182,7 +182,7 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
         dragged.push(last);
       }
       writeScopeField(dragKey, dragged);
-      writeScopeField('draggedQuickAccess', live);
+      writeDraggedQuickAccess(live);
       const count = dragged.length || 1;
       const folderName = (last && last.name) || '';
       const folderIcon = (last && last.icon) || 'folder-close';
@@ -946,13 +946,13 @@ function FolderSearchInput({ keyword }: { keyword: string }) {
         setDraft(value);
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          runInBodyScope(() => { writeScopeField('folderKeyword', value); });
+          runInBodyScope(() => { writeFolderKeyword(value); });
           syncSidebarFromScope();
         }, 50);
       }}
       onBlur={() => {
         clearTimeout(debounceRef.current);
-        runInBodyScope(() => { writeScopeField('folderKeyword', draft); });
+        runInBodyScope(() => { writeFolderKeyword(draft); });
         syncSidebarFromScope();
       }}
     />

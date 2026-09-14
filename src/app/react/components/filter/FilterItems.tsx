@@ -13,8 +13,8 @@ import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
-import { useMiscRawState, writeHexColor } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState, writeHexColor, writeTagKeyword, writePage } from '../../store/miscRawState';
+
 import { useItemState } from '../../store/itemState';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
@@ -385,7 +385,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
       syncFilterFromScope();
       const selectedCount = (useMiscRawState.getState().containFolders || []).filter((f: any) => f && f.isSelected).length;
       if (selectedCount > 0) {
-        writeScopeField('page', 1);
+        writePage(1);
         machineryFilterContent();
       }
     });
@@ -612,7 +612,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
       syncFilterFromScope();
       const sel = (useMiscRawState.getState().containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
       if (sel > 0) {
-        writeScopeField('page', 1);
+        writePage(1);
         machineryFilterContent();
       }
     });
@@ -661,7 +661,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   setSearchDraft(e.target.value);
                   clearTimeout((window as any).__tagsSearchTimer);
                   (window as any).__tagsSearchTimer = setTimeout(() => {
-                    runInBodyScope(() => { writeScopeField('tagKeyword', e.target.value); });
+                    runInBodyScope(() => { writeTagKeyword(e.target.value); });
                     syncFilterFromScope();
                   }, 100);
                 }}

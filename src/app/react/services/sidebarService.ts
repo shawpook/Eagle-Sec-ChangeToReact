@@ -28,11 +28,11 @@ import { machineryRelayout } from './gridService';
 import { machineryChangeSidebarIndex, machineryMultipleOpenFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList } from '../core/libraryDomain';
 import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
 import { getOffsetScrollbarFn } from './gridService';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSidebarIndex } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState, writeCurrentFolderChildren } from '../store/folderState';
 import { useItemState } from '../store/itemState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 
@@ -499,7 +499,7 @@ export function toggleAllFolderExpand(...args: any[]) {
             }
           }
         }
-        if (!expand) writeScopeField('sidebarIndex', 0);
+        if (!expand) writeSidebarIndex(0);
         toggleAllFolders(useFolderState.getState().folders, expand);
         machineryUpdateSidebarList();
       }

@@ -47,7 +47,7 @@ import { machineryOpenAll } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
-import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders, writeGifPlayer, writeGifUpadteInterval } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders, writeGifPlayer, writeGifUpadteInterval, writeTagKeyword, writeContainTags } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
@@ -1391,7 +1391,7 @@ export function machineryBuildTagManager(): any {
                     }
                 });
             });
-            writeScopeField('tagKeyword', "");
+            writeTagKeyword("");
             machineryFilterContent();
         });
 
@@ -2368,7 +2368,7 @@ export function machineryCalcuteContainTags(data: any[]): void {
     });
   });
 
-  writeScopeField('containTags', []);
+  writeContainTags([]);
   syncFilterFromScope();
 
   var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });

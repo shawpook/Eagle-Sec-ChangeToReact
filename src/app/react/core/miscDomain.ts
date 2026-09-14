@@ -73,7 +73,7 @@ import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState, writeCurrentOrderBy, writeCurrentSortIncrease } from '../store/listState';
-import { useMiscRawState, writeIsGifReady, writeSelectedFolder, writeBoxContianerWidth, writeBoxContianerHeight, writeShowDetailImage, writeGifPlayer, writeUsingGifPlayer, writeCommentRect, writeIsPreviewing } from '../store/miscRawState';
+import { useMiscRawState, writeIsGifReady, writeSelectedFolder, writeBoxContianerWidth, writeBoxContianerHeight, writeShowDetailImage, writeGifPlayer, writeUsingGifPlayer, writeCommentRect, writeIsPreviewing, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeKeyword_cn, writeKeyword_tw, writeIsKeywordCN, writeIsKeywordTW, writeIsEnglish, writeHsks, writeKeywordSuggestions, writeShowSuggestions, writeSearchIndex } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLockState, writeIsAppLocked } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -1195,7 +1195,7 @@ export function openErrorModal(...args: any[]) {
 export function toggleFolderVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-            writeScopeField('isExpandFolder', !useMiscRawState.getState().isExpandFolder);
+            writeIsExpandFolder(!useMiscRawState.getState().isExpandFolder);
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.folder.expand", useMiscRawState.getState().isExpandFolder);
             machineryUpdateSidebarList();
@@ -1217,7 +1217,7 @@ export function togglePaletteProcessing(...args: any[]) {
 export function toggleQuickAccessVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-            writeScopeField('isExpandQuickAccess', !useMiscRawState.getState().isExpandQuickAccess);
+            writeIsExpandQuickAccess(!useMiscRawState.getState().isExpandQuickAccess);
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.quickAccess.expand", useMiscRawState.getState().isExpandQuickAccess);
             machineryUpdateSidebarList();
@@ -1227,7 +1227,7 @@ export function toggleQuickAccessVisible(...args: any[]) {
 export function toggleSmartFolderVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-            writeScopeField('isExpandSmartFolder', !useMiscRawState.getState().isExpandSmartFolder);
+            writeIsExpandSmartFolder(!useMiscRawState.getState().isExpandSmartFolder);
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.smartFolder.expand", useMiscRawState.getState().isExpandSmartFolder);
             machineryUpdateSidebarList();
@@ -1271,14 +1271,14 @@ export function updateCurrentOrderAndIncrease () {
 
 export function updateSuggestions() {
             console.time("updateSuggestions");
-            writeScopeField('searchIndex', -1);
+            writeSearchIndex(-1);
             syncToolbarFromScope();
             var keyword = "";
             if (useListState.getState().keyword) {
                 keyword = useListState.getState().keyword.toLowerCase();
             }
 
-            writeScopeField('hsks', useMiscRawState.getState().historySearchKeywords.filter(function (word: any) {
+            writeHsks(useMiscRawState.getState().historySearchKeywords.filter(function (word: any) {
                 if (!keyword || keyword == "") return true;
                 if (word) {
                     return fuzzy_match(word, keyword).length > 0;
@@ -1326,9 +1326,9 @@ export function updateSuggestions() {
 	            // if (suggestions.length > 5) {
 	            //     suggestions.length = 5;
 	            // }
-            	writeScopeField('keywordSuggestions', suggestions);
+            	writeKeywordSuggestions(suggestions);
             	syncToolbarFromScope();
-                writeScopeField('keywordSuggestions', useMiscRawState.getState().keywordSuggestions.filter((suggestion: any) => {
+                writeKeywordSuggestions(useMiscRawState.getState().keywordSuggestions.filter((suggestion: any) => {
                     return useMiscRawState.getState().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
                 }));
                 syncToolbarFromScope();
@@ -1340,11 +1340,11 @@ export function updateSuggestions() {
             	dataset = currPageTags.concat(useMiscRawState.getState().globalKeywords);
             }
 
-            writeScopeField('keyword_cn', chineseConvert.tw2cn(keyword));
-            writeScopeField('keyword_tw', chineseConvert.cn2tw(keyword));
-            writeScopeField('isKeywordTW', keyword === useMiscRawState.getState().keyword_tw);
-            writeScopeField('isKeywordCN', keyword === useMiscRawState.getState().keyword_cn);
-            writeScopeField('isEnglish', useMiscRawState.getState().isKeywordTW === useMiscRawState.getState().isKeywordCN);
+            writeKeyword_cn(chineseConvert.tw2cn(keyword));
+            writeKeyword_tw(chineseConvert.cn2tw(keyword));
+            writeIsKeywordTW(keyword === useMiscRawState.getState().keyword_tw);
+            writeIsKeywordCN(keyword === useMiscRawState.getState().keyword_cn);
+            writeIsEnglish(useMiscRawState.getState().isKeywordTW === useMiscRawState.getState().isKeywordCN);
 
             if (keyword.length === 1 && useMiscRawState.getState().isContainAlphabet) {
                 suggestions = dataset.filter(function(suggestion) {
@@ -1401,11 +1401,11 @@ export function updateSuggestions() {
                 }
             }
             else {
-                writeScopeField('showSuggestions', false);
+                writeShowSuggestions(false);
                 syncToolbarFromScope();
             }
 
-            writeScopeField('keywordSuggestions', suggestions);
+            writeKeywordSuggestions(suggestions);
             syncToolbarFromScope();
             console.timeEnd("updateSuggestions");
         }

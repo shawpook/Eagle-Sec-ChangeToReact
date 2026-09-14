@@ -46,7 +46,7 @@ import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryAutoScroll, machineryResetPage } from './gridService';
-import { useMiscRawState, writeLastIndex } from '../store/miscRawState';
+import { useMiscRawState, writeLastIndex, writeTagKeyword } from '../store/miscRawState';
 import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState, writeCurrentFolder, writeCurrentFolderChildren } from '../store/folderState';
@@ -472,7 +472,7 @@ export function excludeWithTag(...args: any[]) {
                 }
             }
 
-            writeScopeField('tagKeyword', "");
+            writeTagKeyword("");
             syncFilterFromScope();
             machineryFilterContent();
         } as (...__args: any[]) => any).apply(null, args);

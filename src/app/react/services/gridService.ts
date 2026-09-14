@@ -30,7 +30,7 @@ import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useItemState, writeSelectedFolderMappings, writeLastItemStates } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeBoxContianerWidth, writeBoxContianerHeight, writeZoomFitSize, writeLastZoomMode, writeLastImageHeight } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeBoxContianerWidth, writeBoxContianerHeight, writeZoomFitSize, writeLastZoomMode, writeLastImageHeight, writeCurrentId, writeCurrentTag } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { autoscrollChannel } from '../global/bus';
 import { getGridScrollPosition, restoreGridScrollPosition, scrollGridToBottom, scrollGridToOffset, scrollGridToItem } from '../components/grid/boxGridEngine';
@@ -549,7 +549,7 @@ export function machineryResetPage(): void {
   // Clear the old view now; a delayed clear can erase a destination that has already loaded.
   w.ig?.clear();
   writeScopeField('isOpenWebpagePanel', false);
-  writeScopeField('currentTag', undefined);
+  writeCurrentTag(undefined);
   syncToolbarFromScope();
   writeStartCursor(0);
   writeCurrentFolder(undefined);
@@ -568,7 +568,7 @@ export function machineryResetPage(): void {
   syncListFromScope();
   writeSelectedSmartFoldersMappings({});
   writeSelectedSmartFolders([]);
-  writeScopeField('currentId', undefined);
+  writeCurrentId(undefined);
   syncSidebarFromScope();
   writeLayout(localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout");
 

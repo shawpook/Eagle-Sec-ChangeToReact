@@ -63,7 +63,7 @@ import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
 import { useFolderState, writeStartCursor, writeTags, writeFolderList } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState, writeHexColor, writeBoxContianerWidth, writeLastImageHeight, writeContentFilterCache } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor, writeBoxContianerWidth, writeLastImageHeight, writeContentFilterCache, writeKeywordDebounce } from '../store/miscRawState';
 import { useItemState, writeRaw, writeTrash, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings } from '../store/itemState';
 import { useBodyState, writeCurrentFocus, writeIsCommentMode } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
@@ -2391,16 +2391,16 @@ export async function machineryRebindRefresh(muteMode?: any, contentFilterCache?
 
   let currentViewDataLength = useItemState.getState().allData.length;
   if (currentViewDataLength < 200) {
-    writeScopeField('keywordDebounce', 50);
+    writeKeywordDebounce(50);
   }
   else if (currentViewDataLength < 50000) {
-    writeScopeField('keywordDebounce', 200);
+    writeKeywordDebounce(200);
   }
   else if (currentViewDataLength < 100000) {
-    writeScopeField('keywordDebounce', 250);
+    writeKeywordDebounce(250);
   }
   else {
-    writeScopeField('keywordDebounce', 300);
+    writeKeywordDebounce(300);
   }
 
   console.timeEnd("rebindRefresh");

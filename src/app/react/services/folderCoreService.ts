@@ -49,11 +49,11 @@ import { machinerySetLastFolder } from '../core/libraryDomain';
 import { machineryLeaveDetailMode, machineryNotify } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
-import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeCurrentFolderPath, writeCurrentId } from '../store/miscRawState';
 import { useItemState, writeTrash, writeImages } from '../store/itemState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeFolders, writeCurrentFolderChildren } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { getIpcBus } from '../core/channelBridge';
@@ -792,9 +792,9 @@ export function openFolder(...args: any[]) {
             writeCurrentFocus(focus || "sidebar");
             machineryResetPage();
             writeViewMode(undefined);
-            writeScopeField('currentId', currentId || "folder-" + folder.id);
+            writeCurrentId(currentId || "folder-" + folder.id);
             syncSidebarFromScope();
-            writeScopeField('currentFolderPath', getFolderFullPath(folder));
+            writeCurrentFolderPath(getFolderFullPath(folder));
             syncToolbarFromScope();
             if (useFolderState.getState().currentFolder != folder) {
                 writeCurrentFolder(folder);
@@ -892,7 +892,7 @@ export function openSmartFolder(...args: any[]) {
             writeCurrentFocus("sidebar");
             machineryResetPage();
             writeViewMode(undefined);
-            writeScopeField('currentId', currentId || "smart-folder-" + smartFolder.id);
+            writeCurrentId(currentId || "smart-folder-" + smartFolder.id);
             syncSidebarFromScope();
 
             if (useFolderState.getState().currentSmartFolder != smartFolder) {
@@ -1161,7 +1161,7 @@ export const machineryChangeFolderName = throttle(function changeFolderName (fol
   folder.name = name;
 
   if (useBodyState.getState().currentFocus && useFolderState.getState().currentFolder === folder) {
-    writeScopeField('currentFolderPath', getFolderFullPath(folder));
+    writeCurrentFolderPath(getFolderFullPath(folder));
   }
 
   if (typeof folder.name === "string") {

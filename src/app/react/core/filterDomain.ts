@@ -48,7 +48,7 @@ import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './ta
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState, writeShuffle } from '../store/itemState';
-import { useMiscRawState, writeHexColor, writeContentFilterCache } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor, writeContentFilterCache, writeContainFolders, writeContainTags, writePreelaborations, writeKeywords, writeKeywords_cn, writeKeywords_tw, writeIsContainAlphabet, writeSearchRegexGroup, writeGlobalKeywords, writeShowSuggestions, writePage, writeColorDistancesMap } from '../store/miscRawState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useBodyState, writeIsDetailMode } from '../store/bodyState';
 declare const RecentFileManager: any;
@@ -110,7 +110,7 @@ export function takeoverFilterDomain(): void {
   // keyword-suggestion（23520）
   ipc.on('keyword-suggestion', function (_event: any, keywords: any) {
     if (keywords) {
-      writeScopeField('globalKeywords', keywords);
+      writeGlobalKeywords(keywords);
     }
   });
 
@@ -318,7 +318,7 @@ export function calcuteContainFolders(...args: any[]) {
             var __lv_result = machineryCalcuteContainFolders(data);
             var foldersMappings = __lv_result.containFoldersMappings;
             
-            writeScopeField('containFolders', []);
+            writeContainFolders([]);
             syncFilterFromScope();
 
             if (__lv_result.noFoldersCount > 0) {
@@ -497,7 +497,7 @@ export function filterWithColor(...args: any[]) {
             syncFilterFromScope();
             writeIsDetailMode(false);
             machineryUpdateContainerHieght();
-            writeScopeField('page', 1);
+            writePage(1);
 
             // Add URL state management for color filtering
             if (!ignoreHistory && (eagle.filter.filterRules.color.value || eagle.filter.filterRules.color.gray)) {
@@ -610,9 +610,9 @@ export function resetFilter(...args: any[]) {
 
             eagle.filter.resetFilterRules();
 
-            writeScopeField('containTags', []);
+            writeContainTags([]);
             syncFilterFromScope();
-            writeScopeField('containFolders', []);
+            writeContainFolders([]);
             syncFilterFromScope();
 
             eagle.filter.filterRules.import.selectedMonths = {};
@@ -633,14 +633,14 @@ export function search(...args: any[]) {
                 if (useListState.getState().keyword === undefined) return;
                 if (useBodyState.getState().viewMode !=='alltags') {
                     var keyword = useListState.getState().keyword.toLowerCase();
-                    writeScopeField('isContainAlphabet', keyword.match(/^[A-Za-z0-9]+$/));
+                    writeIsContainAlphabet(keyword.match(/^[A-Za-z0-9]+$/));
                     
                     // 使用新的解析函數支援 OR 語法
                     let keywordStr = useListState.getState().keyword; // 保留原始大小寫以識別 OR
-                    writeScopeField('keywords', parseKeywordsWithOR(keywordStr));
+                    writeKeywords(parseKeywordsWithOR(keywordStr));
                     
                     // 將所有關鍵字轉為小寫（但保留結構）
-                    writeScopeField('keywords', useMiscRawState.getState().keywords.map((kw: any) => {
+                    writeKeywords(useMiscRawState.getState().keywords.map((kw: any) => {
                         if (Array.isArray(kw)) {
                             return kw.map(k => k.toLowerCase());
                         } else {
@@ -651,7 +651,7 @@ export function search(...args: any[]) {
                     // 處理繁簡體轉換
                     if (keyword && !useMiscRawState.getState().isContainAlphabet) {
                         // 需要處理 OR 群組的繁簡體轉換
-                        writeScopeField('keywords_cn', useMiscRawState.getState().keywords.map((kw: any) => {
+                        writeKeywords_cn(useMiscRawState.getState().keywords.map((kw: any) => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -669,7 +669,7 @@ export function search(...args: any[]) {
                             }
                         }));
                         
-                        writeScopeField('keywords_tw', useMiscRawState.getState().keywords.map((kw: any) => {
+                        writeKeywords_tw(useMiscRawState.getState().keywords.map((kw: any) => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -686,12 +686,12 @@ export function search(...args: any[]) {
                         }));
                     }
                     else {
-                        writeScopeField('keywords_cn', []);
-                        writeScopeField('keywords_tw', []);
+                        writeKeywords_cn([]);
+                        writeKeywords_tw([]);
                     }
                     
                     // 清除 RegEx 快取，下次搜尋時會重新建立
-                    writeScopeField('searchRegexGroup', null);
+                    writeSearchRegexGroup(null);
                     
                     updateSuggestions();
                     writeStartCursor(0);
@@ -716,13 +716,13 @@ export function searchFocus(...args: any[]) {
     return (function () {
             // 標籤管理模式下，不需要顯示搜尋建議
             if (useBodyState.getState().viewMode === 'alltags') {
-                writeScopeField('showSuggestions', false);
+                writeShowSuggestions(false);
                 syncToolbarFromScope();
                 return;
             }
             if (rectSelecting) return;
             updateSuggestions();
-            writeScopeField('showSuggestions', true);
+            writeShowSuggestions(true);
             syncToolbarFromScope();
         } as (...__args: any[]) => any).apply(null, args);
   }
@@ -1288,7 +1288,7 @@ export function machineryCalcuteFilterBadge(): void {
 
 /* calcuteFilterResult（bundle 27634-27653 逐字） */
 export async function machineryCalcuteFilterResult(data: any[], contentFilterCache: any): Promise<any[]> {
-  writeScopeField('colorDistancesMap', {});
+  writeColorDistancesMap({});
   return new Promise<any[]>(async (resolve, reject) => {
     try {
       let result: any[];
@@ -2070,7 +2070,7 @@ function machineryFilterDataPart2(w: any, data: any): any[] {
     console.timeEnd("shuffle");
   }
 
-  writeScopeField('preelaborations', []);
+  writePreelaborations([]);
   if (w.eagle.filter.filterBadge > 0) {
     if (w.eagle.filter.folderFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "OR") {
       data.forEach(function (image: any) {
@@ -2078,11 +2078,11 @@ function machineryFilterDataPart2(w: any, data: any): any[] {
       });
     }
     else {
-      writeScopeField('preelaborations', data);
+      writePreelaborations(data);
     }
   }
   else {
-    writeScopeField('preelaborations', data);
+    writePreelaborations(data);
   }
 
   return data;
@@ -2092,7 +2092,7 @@ function machineryFilterDataPart2(w: any, data: any): any[] {
 export function machineryFocusSeach(): void {
   const w = window as any;
   focusEl("#search"); selectEl("#search");
-  writeScopeField('showSuggestions', true);
+  writeShowSuggestions(true);
   syncToolbarFromScope();
 }
 
@@ -2616,7 +2616,7 @@ function machinerySearchFilter(image: any): any {
     try {
         // 如果還沒有建立 RegEx 群組，先建立
         if (!useMiscRawState.getState().searchRegexGroup) {
-            writeScopeField('searchRegexGroup', machineryConvertToRegexGroup(
+            writeSearchRegexGroup(machineryConvertToRegexGroup(
                 useMiscRawState.getState().keywords,
                 useMiscRawState.getState().keywords_cn,
                 useMiscRawState.getState().keywords_tw

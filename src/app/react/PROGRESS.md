@@ -8559,3 +8559,17 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     `continuous-grid-layout`（boxContianer* 几何/锚点恢复）、`d3-detail-mode`
     （showDetailImage/showLargeImage）、`d3-selection`（lastIndex/选区映射）、
     `react-stage11b0-smoke` 全绿。
+
+- **R4 切片⑨（miscRawState 长尾 B 组：库/文件夹/侧栏/筛选/搜索 44 字段）**：收敛
+  **44 个字段 / 94 处**——currentFolderPath currentId currentTag imagesDir libraryName
+  libraryImagesPath libraryPath libraryModificationTime libraryLoadedProgress libraryHistory
+  rootDir quickAccess draggedQuickAccess sidebarIndex sidebarList isExpandFolder
+  isExpandSmartFolder isExpandQuickAccess isHideMainNav smartFolderList folderKeyword tagKeyword
+  containFolders containTags preelaborations keywords keywords_cn keywords_tw keyword_cn
+  keyword_tw isKeywordCN isKeywordTW isEnglish isContainAlphabet searchRegexGroup
+  globalKeywords historySearchKeywords hsks keywordSuggestions keywordDebounce showSuggestions
+  page colorDistancesMap searchIndex。
+  - 累计 R4 已收敛 **135 个字段 / 531 处 / 10 个域**；待办数据字段 108 → **64**（143 处）。
+  - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
+    `library-switch-ui`（切库 + 库路径族）、`d3-alltags-view`、`d3-focus`（sidebarIndex/
+    导航历史）、`d3-search-empty`（关键词/建议词族）全绿。

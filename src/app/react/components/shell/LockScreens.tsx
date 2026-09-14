@@ -12,7 +12,8 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { runInBodyScope } from '../../core/appCore';
 
 import { machineryUnlockFolderWithTouchID } from '../../core/libraryDomain';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
+import { writeUnlockPassword } from '../../store/miscRawState';
 /**
  * 11-pre a3：文件夹密码锁 + 应用锁屏（index.html 156-170 / 424-444 逐字）。
  *
@@ -72,7 +73,7 @@ export function FolderLockScreen() {
             type="password"
             placeholder={t('pages.unlock.placeholder')}
             onInput={(e) => {
-              writeScopeField('unlockPassword', (e.target as HTMLInputElement).value);
+              writeUnlockPassword((e.target as HTMLInputElement).value);
             }}
             onFocus={(e) => (e.target as HTMLInputElement).select()}
             onKeyUp={(e) => runInBodyScope(() => unlockPasswordKeyup(e))}

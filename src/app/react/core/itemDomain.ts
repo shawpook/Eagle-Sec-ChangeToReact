@@ -63,10 +63,10 @@ import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
 import { useFolderState, writeStartCursor, writeTags, writeFolderList } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState, writeHexColor, writeBoxContianerWidth, writeLastImageHeight, writeContentFilterCache, writeKeywordDebounce } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor, writeBoxContianerWidth, writeLastImageHeight, writeContentFilterCache, writeKeywordDebounce, writeAddImageStartTime, writeAddImageTimeLeftInSeconds, writeDuplicateGroupings, writeDuplicateQueue, writeDuplicateTarget, writeDuplicates, writeFiltereds, writeFinishQueue, writeLastestAddItem, writeListMetaType, writeLoadMoreDisable, writeTagsSuggestion, writeUnlockPassword, writeUntagged, writeUploadQueue } from '../store/miscRawState';
 import { useItemState, writeRaw, writeTrash, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings } from '../store/itemState';
 import { useBodyState, writeCurrentFocus, writeIsCommentMode } from '../store/bodyState';
-import { writeScopeField } from './scopeFieldBridge';
+
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeSelected, writeLastSelectedIndex } from '../store/selectionState';
@@ -498,7 +498,7 @@ export function takeoverItemDomain(): void {
         }
         return;
       }
-      writeScopeField('lastestAddItem', image);
+      writeLastestAddItem(image);
       useItemState.getState().itemMappings[image.id] = image;
       // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
       writeContentFilterCache(null);
@@ -1245,9 +1245,9 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
 
     if (!useItemState.getState().raw || useItemState.getState().raw.length === 0) {
       if (useMiscRawState.getState().finishQueue.length > 0 && useMiscRawState.getState().finishQueue.length === useMiscRawState.getState().uploadQueue.length) {
-        writeScopeField('finishQueue', []);
+        writeFinishQueue([]);
         syncUploadFromScope();
-        writeScopeField('uploadQueue', []);
+        writeUploadQueue([]);
         syncUploadFromScope();
         machineryHideUploadQueue();
       }
@@ -1256,7 +1256,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
 
     if (useMiscRawState.getState().finishQueue.length > 0 && useMiscRawState.getState().finishQueue.length >= useMiscRawState.getState().uploadQueue.length) {
       // 清除倒数计时工具
-      writeScopeField('addImageStartTime', undefined);
+      writeAddImageStartTime(undefined);
       clearInterval(domainAddImageTimeLeftInterval);
 
       var total = useMiscRawState.getState().uploadQueue.length;
@@ -1271,9 +1271,9 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
         }
       });
 
-      writeScopeField('finishQueue', []);
+      writeFinishQueue([]);
       syncUploadFromScope();
-      writeScopeField('uploadQueue', []);
+      writeUploadQueue([]);
       syncUploadFromScope();
       setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
       setWidthEl(findEl(q("#upload-queue-progress"), ".current"), useMiscRawState.getState().finishQueue.length / useMiscRawState.getState().uploadQueue.length * 100 + "%");
@@ -1290,7 +1290,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
           if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false') {
             useMiscRawState.getState().duplicateSound && useMiscRawState.getState().duplicateSound.play();
           }
-          writeScopeField('duplicateQueue', []);
+          writeDuplicateQueue([]);
         }
       }
       // 如果沒有啟動重複通知，一律圖片直接添加上來
@@ -1300,7 +1300,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
           if (useItemState.getState().raw) { useItemState.getState().raw.unshift(img); }
           syncListFromScope();
         });
-        writeScopeField('duplicateQueue', []);
+        writeDuplicateQueue([]);
       }
 
       function autoSelectUploadedItems() {
@@ -1492,14 +1492,14 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
       var exts: any = {};
       writeAll([]);
       syncSidebarFromScope();
-      writeScopeField('untagged', []);
+      writeUntagged([]);
       writeUnfiledCount(0);
       writeUntaggedCount(0);
       writeTrash([]);
       syncSidebarFromScope();
       syncListFromScope();
       writeFolderMappings({});
-      writeScopeField('tagsSuggestion', []);
+      writeTagsSuggestion([]);
       writeFolderList([]);
       syncSidebarFromScope();
       writeLockedImages({});
@@ -1756,14 +1756,14 @@ function machineryCalcuteAddImageTimeLeft(): void {
   const w = window as any;
   if (useMiscRawState.getState().uploadQueue.length > 0) {
     if (!useMiscRawState.getState().addImageStartTime) {
-      writeScopeField('addImageStartTime', Date.now());
+      writeAddImageStartTime(Date.now());
     }
     var elapsedTime = (new Date().getTime()) - useMiscRawState.getState().addImageStartTime;
     var chunksPerTime = useMiscRawState.getState().finishQueue.length / elapsedTime;
     var estimatedTotalTime = useMiscRawState.getState().uploadQueue.length / chunksPerTime;
     var remain = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
     if (w.is.number(remain)) {
-      writeScopeField('addImageTimeLeftInSeconds', remain);
+      writeAddImageTimeLeftInSeconds(remain);
       syncUploadFromScope();
     }
   }
@@ -1772,7 +1772,7 @@ function machineryCalcuteAddImageTimeLeft(): void {
 /* changeMetaItems（bundle 37273-37278 逐字） */
 export function machineryChangeMetaItems(type: any): void {
   const w = window as any;
-  writeScopeField('listMetaType', type);
+  writeListMetaType(type);
   syncPanelFromScope();
   w.localStorage.setItem("eagle.list.meta.type", useMiscRawState.getState().listMetaType);
   machineryUpdateItemsView(useItemState.getState().allData);
@@ -2023,8 +2023,8 @@ export function machineryFindDupclipate(currentFolder?: any, hasColorInfo?: any)
   var pushedMapping: any = {};
   var duplicateMappings: any = {};
 
-  writeScopeField('duplicates', []);
-  writeScopeField('duplicateGroupings', {});
+  writeDuplicates([]);
+  writeDuplicateGroupings({});
 
   if (!useItemState.getState().raw) return;
 
@@ -2035,7 +2035,7 @@ export function machineryFindDupclipate(currentFolder?: any, hasColorInfo?: any)
     duplicateMappings = {};
   }
 
-  writeScopeField('duplicateTarget', currentFolder);
+  writeDuplicateTarget(currentFolder);
 
   // 全部圖片
   if (!currentFolder) {
@@ -2171,14 +2171,14 @@ export function machineryFindDupclipate(currentFolder?: any, hasColorInfo?: any)
     }
   }
 
-  writeScopeField('duplicates', duplicates);
+  writeDuplicates(duplicates);
 
   if (hasColorInfo) {
     var duplicateGroupings = Object.keys(useMiscRawState.getState().duplicateGroupings).map(function (key: any) { return useMiscRawState.getState().duplicateGroupings[key]; });
     duplicateGroupings = duplicateGroupings.filter(function (group: any) {
       return group.length > 1;
     });
-    writeScopeField('duplicateGroupings', duplicateGroupings);
+    writeDuplicateGroupings(duplicateGroupings);
   }
 }
 
@@ -2377,7 +2377,7 @@ export async function machineryRebindRefresh(muteMode?: any, contentFilterCache?
     } catch (err) { /* noop */ }
   }
 
-  writeScopeField('filtereds', useItemState.getState().allData.slice(0, useMiscRawState.getState().len * useMiscRawState.getState().page));
+  writeFiltereds(useItemState.getState().allData.slice(0, useMiscRawState.getState().len * useMiscRawState.getState().page));
   syncListFromScope();
 
   machineryRefreshSubfolderList();
@@ -2469,7 +2469,7 @@ export function machineryScrollToCurrentItem(): void {
 export function machineryShowUploadQueue(): void {
   const w = window as any;
   if (!useMiscRawState.getState().addImageStartTime) {
-    writeScopeField('addImageStartTime', Date.now());
+    writeAddImageStartTime(Date.now());
   }
   addClass("body", "is-uploading");
   addClass("#upload-queue-progress", "open");
@@ -2870,7 +2870,7 @@ export function machineryReload(): any {
   const w = window as any;
   return debounce(function reload(keepDetailMode: any) {
     writeHexColor(undefined);
-    writeScopeField('unlockPassword', "");
+    writeUnlockPassword("");
 
     if (!keepDetailMode) {
       if (useBodyState.getState().isDetailMode) {
@@ -2883,7 +2883,7 @@ export function machineryReload(): any {
       }
     }
 
-    writeScopeField('loadMoreDisable', false);
+    writeLoadMoreDisable(false);
     writeLastImageHeight(useLayoutState.getState().imageSize.height);
     writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
     machineryRebindRefresh();

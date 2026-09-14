@@ -18,7 +18,7 @@
 
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeShowSlowNotify } from '../store/miscRawState';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
 import { installKeymap } from './keymap';
@@ -38,7 +38,7 @@ import { machinerySmartZoom } from '../services/viewOpsService';
 import { buildScrollbarSaver } from '../services/gridService';
 import { machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryContentFilter, machineryFilterData } from './filterDomain';
-import { writeScopeField } from './scopeFieldBridge';
+
 import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
@@ -971,7 +971,7 @@ function _buildSlowNotify(): any {
       }
     },
     show: function () {
-      writeScopeField('showSlowNotify', true);
+      writeShowSlowNotify(true);
       (function () {
         setTimeout(function () {
           addClass("#library-warning", "show active");

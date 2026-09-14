@@ -8573,3 +8573,45 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
     `library-switch-ui`（切库 + 库路径族）、`d3-alltags-view`、`d3-focus`（sidebarIndex/
     导航历史）、`d3-search-empty`（关键词/建议词族）全绿。
+
+- **R4 切片⑩（miscRawState 长尾 C 组 64 字段 / 143 处）——R4 收敛完成**：最后一组收敛
+  `Registration addImageStartTime addImageTimeLeftInSeconds availableHistoryTags canUseTouchID
+  currentProcessCount currentTrashRemoved downloadQueueLength duplicateGroupings duplicateQueue
+  duplicateTarget duplicates errorList filtereds finishGenerateQueue finishQueue initDetailMode
+  isItemBindCalculated isLibrarySaving isOpenWebpagePanel isSearchScope*（8）isUILoaded
+  lastProcessCount lastSelectedTag lastestAddItem len listLayoutSettings listMetaType
+  loadMoreDisable metadataQueueLength newGroupName openWithInfo orderBy orderByName
+  paletteQueueDelay paletteQueueLength paletteQueuePaused progress regenerateThumbnailQueue
+  saveFolderDebounceTimeout selectingTags showAnnotation showFileExtension showFileExtensionLabel
+  showMetas showNTFSWarning showName showOriginalImageWhenLarge showSlowNotify sortIncrease
+  tagsSuggestion trashRemoved unlockPassword untagged uploadQueue usingCache winMenu`。
+
+### R4 收官（2026-09-14）
+
+- **收敛规模**：**199 个字段 / 10 个域**改用具名写点，`writeScopeField` 站点从 **868 → 59**
+  （本会话完成 172 个字段 / 464 处；切片①②③此前完成 27 个字段 / 345 处）。
+- **剩余 59 处 / 57 个字段全部是 `LEGACY_SCOPE_SLOTS`**（旧 scope **挂载槽**：函数、单例、
+  命名空间对象、常量）——写入的是 `machinery*` 函数、`TagManager`/`eagle`/`inspector` 单例、
+  音效对象、`MAX_*` 常量等，不是业务数据。它们在守卫中**逐项登记归类理由**，并校验
+  「登记项必须仍有写入点」以防清单僵尸化。
+- **对 R4 完成判据的逐条对照**（诚实口径）：
+  1. ✅「每域改为具体 selector/action」——199 个字段都有 store 导出的具名写点，拼写错误
+     由静默落 plain 槽变成**编译错误**；写点与注册表**共用同一 writer**（同值守卫只有一处）。
+  2. ⚠️「删除普通对象回退」——**未完成，且已量化为精确阻塞面**：回退分支
+     （`scope[name] = value`）现存唯一使用者是 **16 个旧面板派发函数槽**
+     （changeSmartFolderName / toggleSidebar / createLibrary / refresh / onListSizeChange …）。
+     其余 41 个挂载槽已注册在 store，不走回退。删回退 = 摘掉这 16 个槽 = **R6**。
+  3. ⚠️「删除字符串函数挂载」——同上，57 个挂载槽是 R6 的退役对象；本批只做到
+     **新增函数挂载即失败**（守卫的函数值站点判定，实测 24 处全部在册）。
+  4. ⚠️**未做（明确登记，不计入 R4 成绩）**：`miscRawState` 仍是 172 字段的**汇总桶**，
+    本批只收敛了**访问方式**（字符串键 → 具名写点），**没有**把字段重新归位到
+     按域拆分的 store。存储组织的重排是独立工作项（依赖读点 selector 化），
+     不属于 R4 的可测判据，此处如实标注以免把「零字符串键」误读成「状态架构已按域拆分」。
+- **守卫最终形态**（`tests/scope-field-convergence.mjs`，套件内为一项）：闭合分类台账
+  = `CONVERGED`（199 字段，规格源 `.tmp/r4/domains.json`，写点名由字段推导）
+  ∪ `LEGACY_SCOPE_SLOTS`（57，附理由，不得僵尸化）∪ `PENDING_DATA_FIELDS`（**0**）。
+  任一未分类字符串键写入、任一已收敛字段回退、任一函数值写入未登记 → FAIL。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK（待办 0）；
+  本批针对性闭环 `image-import`（uploadQueue/finishQueue/addImageStartTime）、
+  `empty-trash`（trashRemoved/currentTrashRemoved）、`d3-alltags-view`、
+  `residue`（含 `zero-console-errors`）全绿。

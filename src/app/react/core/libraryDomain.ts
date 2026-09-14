@@ -68,7 +68,7 @@ import { machineryAutoScroll, machineryResetPage } from '../services/gridService
 import { getTimeout } from './machineryInfra';
 import { usePreferencesState, writeTrialRemain } from '../store/preferencesState';
 import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings, writeLastItemStates, writeImages, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings, writeItemMappings, writeSmartFolderMappings } from '../store/itemState';
-import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastIndex, writeShowDetailImage, writeUsingGifPlayer, writeContentFilterCache, writeCurrentId, writeCurrentTag, writeImagesDir, writeLibraryName, writeLibraryImagesPath, writeLibraryPath, writeLibraryModificationTime, writeLibraryLoadedProgress, writeRootDir, writeQuickAccess, writeSidebarIndex, writeSidebarList, writeSmartFolderList, writeFolderKeyword } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastIndex, writeShowDetailImage, writeUsingGifPlayer, writeContentFilterCache, writeCurrentId, writeCurrentTag, writeImagesDir, writeLibraryName, writeLibraryImagesPath, writeLibraryPath, writeLibraryModificationTime, writeLibraryLoadedProgress, writeRootDir, writeQuickAccess, writeSidebarIndex, writeSidebarList, writeSmartFolderList, writeFolderKeyword, writeRegistration, writeCurrentProcessCount, writeDownloadQueueLength, writeErrorList, writeFinishQueue, writeIsItemBindCalculated, writeIsLibrarySaving, writeIsUILoaded, writeLastProcessCount, writeMetadataQueueLength, writeOrderBy, writePaletteQueueDelay, writePaletteQueueLength, writePaletteQueuePaused, writeSaveFolderDebounceTimeout, writeSelectingTags, writeShowNTFSWarning, writeShowSlowNotify, writeSortIncrease, writeUnlockPassword, writeUploadQueue, writeUsingCache, writeWinMenu } from '../store/miscRawState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeFolders, writeCurrentFolderChildren, writeTags, writeSmartFolders, writeNavigationHistory, writeNavigationHistoryIndex } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
@@ -207,7 +207,7 @@ export function takeoverLibraryDomain(): void {
     writeTrialRemain(params.trialRemain);
     syncInspectorFromScope();
     w.Registration = params.Registration;
-    writeScopeField('Registration', params.Registration);
+    writeRegistration(params.Registration);
     w.machineID = params.machineID;
 
     if (params.Registration && params.Registration.machineID !== params.machineID) {
@@ -421,9 +421,9 @@ export function takeoverLibraryDomain(): void {
   ipc.on('app-status-loading', function () {
     const w = window as any;
     if (w.ig && w.ig.clear) w.ig.clear();
-    writeScopeField('isUILoaded', false);
+    writeIsUILoaded(false);
     syncSidebarFromScope();
-    writeScopeField('isItemBindCalculated', false);
+    writeIsItemBindCalculated(false);
     closeTagsPopupChannel.emit();
     writeAllData([]);
     syncListFromScope();
@@ -511,7 +511,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     if (!useMiscRawState.getState().isUILoaded) {
-      writeScopeField('isUILoaded', true);
+      writeIsUILoaded(true);
       syncSidebarFromScope();
     }
 
@@ -528,9 +528,9 @@ export function takeoverLibraryDomain(): void {
     }
 
     const usingCache = params.usingCache;
-    writeScopeField('usingCache', usingCache);
+    writeUsingCache(usingCache);
     w.dragging = false;
-    writeScopeField('winMenu', []);
+    writeWinMenu([]);
     writeAll([]);
     syncSidebarFromScope();
     writeShuffle([]);
@@ -543,7 +543,7 @@ export function takeoverLibraryDomain(): void {
     syncSidebarFromScope();
     writeSelectedTags({});
     syncTagManagerFromScope();
-    writeScopeField('selectingTags', {});
+    writeSelectingTags({});
     syncTagManagerFromScope();
     // allTags = {} —— bundle 闭包死变量（全 bundle 零消费点），略去
     writeLockedImages({});
@@ -576,9 +576,9 @@ export function takeoverLibraryDomain(): void {
     syncPanelFromScope();
     syncListFromScope();
     writeSmartFolderMappings({});
-    writeScopeField('uploadQueue', []);
+    writeUploadQueue([]);
     syncUploadFromScope();
-    writeScopeField('finishQueue', []);
+    writeFinishQueue([]);
     syncUploadFromScope();
     writeIsDetailMode(false);
     writeIsInlineMode(false);
@@ -597,7 +597,7 @@ export function takeoverLibraryDomain(): void {
       w.eagle.filter.filterRules.color.gray = false;
     }
     w.hardDiskSpeed = undefined;
-    writeScopeField('showSlowNotify', false);
+    writeShowSlowNotify(false);
     syncSidebarFromScope();
     if (w.SlowNotify) {
       w.SlowNotify.hasShow = false;
@@ -628,12 +628,12 @@ export function takeoverLibraryDomain(): void {
       writeScopeField('fontFolder', w.fontFolder);
     }
 
-    writeScopeField('orderBy', localStorage.getItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.orderBy") || "IMPORT");
+    writeOrderBy(localStorage.getItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.orderBy") || "IMPORT");
     syncBodyFromScope();
     const userLayout = localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
 
     if (localStorage.getItem(`eagle.list.sortIncrease.${useMiscRawState.getState().rootDir}`)) {
-      writeScopeField('sortIncrease', localStorage.getItem(`eagle.list.sortIncrease.${useMiscRawState.getState().rootDir}`) === 'true');
+      writeSortIncrease(localStorage.getItem(`eagle.list.sortIncrease.${useMiscRawState.getState().rootDir}`) === 'true');
     }
 
     const userLayoutOptions = localStorage.getItem("eagle.list.layout.options") || "Fit";
@@ -760,7 +760,7 @@ export function takeoverLibraryDomain(): void {
 
     machineryCalculateImageBinding({}, function () {
       writeViewMode(localStorage.getItem(`eagle.viewMode.${useMiscRawState.getState().rootDir}`) || "all");
-      writeScopeField('isItemBindCalculated', true);
+      writeIsItemBindCalculated(true);
       if (useBodyState.getState().viewMode == "all") {
         const lastFolderId = localStorage.getItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`);
         const lastItem = useItemState.getState().itemMappings[localStorage.getItem(`eagle.lastViewItem.${useMiscRawState.getState().rootDir}`) as any];
@@ -963,19 +963,19 @@ export function takeoverLibraryDomain(): void {
       let savingNumber = 0;
       if (state && isNumber(state.paletteQueueLength)) {
         number += state.paletteQueueLength;
-        writeScopeField('paletteQueueLength', state.paletteQueueLength);
+        writePaletteQueueLength(state.paletteQueueLength);
       }
       if (state && isNumber(state.metadataQueueLength)) {
         savingNumber += state.metadataQueueLength;
-        writeScopeField('metadataQueueLength', state.metadataQueueLength);
+        writeMetadataQueueLength(state.metadataQueueLength);
       }
       if (state && isNumber(state.downloadQueueLength)) {
-        writeScopeField('downloadQueueLength', state.downloadQueueLength);
+        writeDownloadQueueLength(state.downloadQueueLength);
       }
 
       // 需要判断什么时候在更新画面，什么时候不需要
-      writeScopeField('paletteQueueDelay', state.paletteQueueDelay);
-      writeScopeField('currentProcessCount', number);
+      writePaletteQueueDelay(state.paletteQueueDelay);
+      writeCurrentProcessCount(number);
       syncSidebarFromScope();
       void useMiscRawState.getState().lastProcessCount;
 
@@ -1007,7 +1007,7 @@ export function takeoverLibraryDomain(): void {
         else {
           hideEl(backgroundStateComponentEl);
         }
-        writeScopeField('paletteQueuePaused', state.paletteQueuePaused);
+        writePaletteQueuePaused(state.paletteQueuePaused);
         syncSidebarFromScope();
         if (!useMiscRawState.getState().paletteQueuePaused) {
           addClassEl(backgroundStateSpinnerEl, "has-animation");
@@ -1018,7 +1018,7 @@ export function takeoverLibraryDomain(): void {
           hideEl(backgroundStateSpinnerIconEl);
         }
 
-        writeScopeField('lastProcessCount', useMiscRawState.getState().currentProcessCount);
+        writeLastProcessCount(useMiscRawState.getState().currentProcessCount);
       });
     });
 
@@ -1036,7 +1036,7 @@ export function takeoverLibraryDomain(): void {
 
     console.timeEnd("前台总耗时");
 
-    writeScopeField('errorList', []);
+    writeErrorList([]);
     syncErrorCount();
 
     // 检查 localhost 是否可以连线，如果无法练接，通常是本地代理搞鬼，提示用户关闭或调整代理工具
@@ -1092,16 +1092,16 @@ export function takeoverLibraryDomain(): void {
         const driveType = getDriveType(useMiscRawState.getState().libraryPath).toLowerCase();
         if (driveType.indexOf("ntfs") > -1 || driveType.indexOf("lifs") > -1) {
           if ((window as any).isVentura) {
-            writeScopeField('showNTFSWarning', isNTFS(useMiscRawState.getState().libraryPath));
+            writeShowNTFSWarning(isNTFS(useMiscRawState.getState().libraryPath));
             syncSidebarFromScope();
           }
           else {
-            writeScopeField('showNTFSWarning', true);
+            writeShowNTFSWarning(true);
             syncSidebarFromScope();
           }
         }
         else {
-          writeScopeField('showNTFSWarning', false);
+          writeShowNTFSWarning(false);
           syncSidebarFromScope();
         }
       }
@@ -2782,11 +2782,11 @@ export function machineryResetFolderCover(folder: any): void {
 
 export function machinerySaveFolderDebounce(): void {
   const w = window as any;
-  writeScopeField('isLibrarySaving', true);
+  writeIsLibrarySaving(true);
   clearTimeout(useMiscRawState.getState().saveFolderDebounceTimeout);
-  writeScopeField('saveFolderDebounceTimeout', setTimeout(() => {
+  writeSaveFolderDebounceTimeout(setTimeout(() => {
     machinerySaveFolder();
-    writeScopeField('isLibrarySaving', false);
+    writeIsLibrarySaving(false);
   }, 1000));
 }
 
@@ -3020,7 +3020,7 @@ export async function machineryUnlockFolderWithTouchID(event: any): Promise<void
       useMiscRawState.getState().reload();
       machineryUpdateSelection();
       writeIsLoading(false);
-      writeScopeField('unlockPassword', "");
+      writeUnlockPassword("");
     });
   } catch (err) {
     // 驗證失敗或用戶取消

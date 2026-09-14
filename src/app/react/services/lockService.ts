@@ -15,8 +15,8 @@ import { machineryCalculateImageBinding } from '../core/itemDomain';
 import { machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryFocusAppUnlockPassword } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
-import { useMiscRawState } from '../store/miscRawState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+import { useMiscRawState, writeUnlockPassword } from '../store/miscRawState';
+
 import { useFolderState } from '../store/folderState';
 import { writeIsLoading } from '../store/bodyState';
 
@@ -130,7 +130,7 @@ export function unlockPasswordKeyup(...args: any[]) {
                         useMiscRawState.getState().reload();
                         machineryUpdateSelection();
                         writeIsLoading(false);
-                        writeScopeField('unlockPassword', "");
+                        writeUnlockPassword("");
                     });
                 }
                 else {

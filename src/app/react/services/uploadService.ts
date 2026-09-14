@@ -15,9 +15,9 @@ import { machineryUpdateSidebarList, machinerySaveFolderDebounce, machineryChang
 import { openFolder } from './folderCoreService';
 import { getFilter } from '../core/filterDomain';
 import { useFolderState } from '../store/folderState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeFinishQueue, writeUploadQueue } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { getIpcBus } from '../core/channelBridge';
 
 // R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
@@ -74,9 +74,9 @@ const initLinkVars = () => {
 export function cancelAllTasks(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function() {
-            writeScopeField('uploadQueue', []);
+            writeUploadQueue([]);
             syncUploadFromScope();
-            writeScopeField('finishQueue', []);
+            writeFinishQueue([]);
             syncUploadFromScope();
 
             (window as any).IPCHelper.send('cancel.all');

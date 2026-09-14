@@ -73,7 +73,7 @@ import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState, writeCurrentOrderBy, writeCurrentSortIncrease } from '../store/listState';
-import { useMiscRawState, writeIsGifReady, writeSelectedFolder, writeBoxContianerWidth, writeBoxContianerHeight, writeShowDetailImage, writeGifPlayer, writeUsingGifPlayer, writeCommentRect, writeIsPreviewing, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeKeyword_cn, writeKeyword_tw, writeIsKeywordCN, writeIsKeywordTW, writeIsEnglish, writeHsks, writeKeywordSuggestions, writeShowSuggestions, writeSearchIndex } from '../store/miscRawState';
+import { useMiscRawState, writeIsGifReady, writeSelectedFolder, writeBoxContianerWidth, writeBoxContianerHeight, writeShowDetailImage, writeGifPlayer, writeUsingGifPlayer, writeCommentRect, writeIsPreviewing, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeKeyword_cn, writeKeyword_tw, writeIsKeywordCN, writeIsKeywordTW, writeIsEnglish, writeHsks, writeKeywordSuggestions, writeShowSuggestions, writeSearchIndex, writeAvailableHistoryTags, writeCanUseTouchID, writeCurrentTrashRemoved, writeInitDetailMode, writeOpenWithInfo, writeOrderBy, writeOrderByName, writePaletteQueuePaused, writeProgress, writeShowAnnotation, writeShowFileExtension, writeShowFileExtensionLabel, writeShowMetas, writeShowName, writeShowOriginalImageWhenLarge, writeSortIncrease, writeTrashRemoved } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLockState, writeIsAppLocked } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -494,7 +494,7 @@ export function takeoverMiscDomain(): void {
   // ── update-progress / add-download-task(s) / extension-server-init-failed（22639-22662 逐字）──
   ipc.on('update-progress', function (_e: any, progress: any) {
     (function () {
-      writeScopeField('progress', progress);
+      writeProgress(progress);
       syncUploadFromScope();
     })();
   });
@@ -520,7 +520,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('load-open-with', function (_e: any, openWithInfo: any) {
     if (openWithInfo && openWithInfo["png"]) {
       openWithInfo["jpg"] = openWithInfo["jpeg"];
-      writeScopeField('openWithInfo', openWithInfo);
+      writeOpenWithInfo(openWithInfo);
     }
   });
 
@@ -599,7 +599,7 @@ export function takeoverMiscDomain(): void {
     useMiscRawState.getState().TagManager.historyTags = [];
     syncFilterFromScope();
     syncTagManagerFromScope();
-    writeScopeField('availableHistoryTags', []);
+    writeAvailableHistoryTags([]);
     useMiscRawState.getState().TagManager.save();
   });
   ipc.on('prepend-folder', function (_e: any, folder: any) {
@@ -857,14 +857,14 @@ export function takeoverMiscDomain(): void {
 
   // ── remove-trash-item（36999 逐字）──
   ipc.on('remove-trash-item', function (_e: any) {
-    writeScopeField('currentTrashRemoved', useMiscRawState.getState().currentTrashRemoved + 1);
+    writeCurrentTrashRemoved(useMiscRawState.getState().currentTrashRemoved + 1);
     writeRemoveProgress(useMiscRawState.getState().currentTrashRemoved / useMiscRawState.getState().trashRemoved * 100);
     writeRemoveProgress((useBodyState.getState().removeProgress > 100) ? 100 : useBodyState.getState().removeProgress);
     if (useMiscRawState.getState().currentTrashRemoved >= useMiscRawState.getState().trashRemoved || useBodyState.getState().removeProgress > 98) {
       writeIsCleaningTrash(false);
       syncSidebarFromScope();
-      writeScopeField('trashRemoved', 0);
-      writeScopeField('currentTrashRemoved', 0);
+      writeTrashRemoved(0);
+      writeCurrentTrashRemoved(0);
       IPCHelper.send('palette-resume');
     }
   });
@@ -1015,9 +1015,9 @@ export function changeOrderBy(...args: any[]) {
             }
             else {
                 if (orderBy) {
-                    writeScopeField('orderBy', orderBy);
+                    writeOrderBy(orderBy);
                     syncBodyFromScope();
-                    writeScopeField('orderByName', i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
+                    writeOrderByName(i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
                     localStorage.setItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`, useMiscRawState.getState().orderBy);
                     machinerySortRawData(useMiscRawState.getState().orderBy);
                     machineryRebindRefresh();
@@ -1416,7 +1416,7 @@ export function machineryMoveToFolders(_e: any): void {}
 
 export function machineryPausePalette(): void {
   const w = window as any;
-  writeScopeField('paletteQueuePaused', true);
+  writePaletteQueuePaused(true);
   syncSidebarFromScope();
   removeClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-pause');
@@ -1424,7 +1424,7 @@ export function machineryPausePalette(): void {
 
 export function machineryResumePalette(): void {
   const w = window as any;
-  writeScopeField('paletteQueuePaused', false);
+  writePaletteQueuePaused(false);
   syncSidebarFromScope();
   addClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-resume');
@@ -1498,10 +1498,10 @@ export function machineryCheckTouchIDSupport(): void {
   } catch (err) { /* noop */ }
   if (w.process && w.process.platform === 'darwin' && systemPreferences && systemPreferences.canPromptTouchID) {
     try {
-      writeScopeField('canUseTouchID', systemPreferences.canPromptTouchID());
+      writeCanUseTouchID(systemPreferences.canPromptTouchID());
     } catch (err) {
       console.error('檢查 Touch ID 支援時發生錯誤:', err);
-      writeScopeField('canUseTouchID', false);
+      writeCanUseTouchID(false);
     }
   }
 }
@@ -1546,7 +1546,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
   $timeout.cancel(zoomInitTimeout);
   zoomInitTimeout = $timeout(function () {
     if (!useMiscRawState.getState().initDetailMode) {
-      writeScopeField('initDetailMode', true);
+      writeInitDetailMode(true);
       syncDetailFromScope();
       ensureDetailZoom({
         width: '100%',
@@ -1907,7 +1907,7 @@ export function machineryChangeSortIncrease(sortIncrease: any): void {
   }
   else {
     if (sortIncrease !== undefined) {
-      writeScopeField('sortIncrease', sortIncrease);
+      writeSortIncrease(sortIncrease);
       localStorage.setItem("eagle.list.sortIncrease", sortIncrease);
       localStorage.setItem("eagle.list.sortIncrease." + w.rootDir, sortIncrease);
       machineryRebindRefresh(undefined, undefined, undefined);
@@ -1919,7 +1919,7 @@ export function machineryChangeSortIncrease(sortIncrease: any): void {
 /* toggleShowOriginalImageWhenLarge（bundle 45346 逐字） */
 export function machineryToggleShowOriginalImageWhenLarge(): void {
   const w = window as any;
-  writeScopeField('showOriginalImageWhenLarge', !useMiscRawState.getState().showOriginalImageWhenLarge);
+  writeShowOriginalImageWhenLarge(!useMiscRawState.getState().showOriginalImageWhenLarge);
   localStorage.setItem("eagle.list.show.originalImageWhenLarge", useMiscRawState.getState().showOriginalImageWhenLarge);
   if (useLayoutState.getState().imageSize.height > 600 && useMiscRawState.getState().showOriginalImageWhenLarge) {
     machineryEnlargeThumbnails();
@@ -1932,7 +1932,7 @@ export function machineryToggleShowOriginalImageWhenLarge(): void {
 /* showListName（bundle 45360 逐字） */
 export function machineryShowListName(): void {
   const w = window as any;
-  writeScopeField('showName', !useMiscRawState.getState().showName);
+  writeShowName(!useMiscRawState.getState().showName);
   localStorage.setItem("eagle.list.show.name", useMiscRawState.getState().showName);
   const bc = q("#box-container");
   if (bc) {
@@ -1948,7 +1948,7 @@ export function machineryShowListName(): void {
 export function machineryShowListMetas(event: any): void {
   const w = window as any;
   event && event.stopPropagation && event.stopPropagation();
-  writeScopeField('showMetas', !useMiscRawState.getState().showMetas);
+  writeShowMetas(!useMiscRawState.getState().showMetas);
   localStorage.setItem("eagle.list.show.meta", useMiscRawState.getState().showMetas);
   const bc = q("#box-container");
   if (bc) {
@@ -1963,7 +1963,7 @@ export function machineryShowListMetas(event: any): void {
 /* showListAnnotation（bundle 45388 逐字） */
 export function machineryShowListAnnotation(): void {
   const w = window as any;
-  writeScopeField('showAnnotation', !useMiscRawState.getState().showAnnotation);
+  writeShowAnnotation(!useMiscRawState.getState().showAnnotation);
   localStorage.setItem("eagle.list.show.annotation", useMiscRawState.getState().showAnnotation);
   const bc = q("#box-container");
   if (bc) {
@@ -1977,7 +1977,7 @@ export function machineryShowListAnnotation(): void {
 /* showListExtension（bundle 45398 逐字） */
 export function machineryShowListExtension(): void {
   const w = window as any;
-  writeScopeField('showFileExtension', !useMiscRawState.getState().showFileExtension);
+  writeShowFileExtension(!useMiscRawState.getState().showFileExtension);
   localStorage.setItem("eagle.list.show.extension", useMiscRawState.getState().showFileExtension);
   const bc = q("#box-container");
   if (bc) {
@@ -1990,7 +1990,7 @@ export function machineryShowListExtension(): void {
 /* showListExtensionLabel（bundle 45407 逐字） */
 export function machineryShowListExtensionLabel(): void {
   const w = window as any;
-  writeScopeField('showFileExtensionLabel', !useMiscRawState.getState().showFileExtensionLabel);
+  writeShowFileExtensionLabel(!useMiscRawState.getState().showFileExtensionLabel);
   localStorage.setItem("eagle.list.show.extension_LABEL", useMiscRawState.getState().showFileExtensionLabel);
   const bc = q("#box-container");
   if (bc) {

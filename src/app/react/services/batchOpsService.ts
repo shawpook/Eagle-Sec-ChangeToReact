@@ -46,13 +46,13 @@ import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryAutoScroll, machineryResetPage } from './gridService';
-import { useMiscRawState, writeLastIndex, writeTagKeyword } from '../store/miscRawState';
+import { useMiscRawState, writeLastIndex, writeTagKeyword, writeCurrentTrashRemoved, writeTrashRemoved } from '../store/miscRawState';
 import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState, writeCurrentFolder, writeCurrentFolderChildren } from '../store/folderState';
 import { useBodyState, writeCurrentFocus, writeRemoveProgress, writeIsCleaningTrash } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { getIpcBus } from '../core/channelBridge';
 import { writeSelected, writeCurrent } from '../store/selectionState';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
@@ -108,8 +108,8 @@ export function cancelEmptyTrash(...args: any[]) {
     return (function () {
             writeIsCleaningTrash(false);
             syncSidebarFromScope();
-            writeScopeField('trashRemoved', 0);
-            writeScopeField('currentTrashRemoved', 0);
+            writeTrashRemoved(0);
+            writeCurrentTrashRemoved(0);
             IPCHelper.send('palette-resume');
             IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
     } as (...__args: any[]) => any).apply(null, args);
@@ -166,8 +166,8 @@ export function emptyTrash(...args: any[]) {
 
                     // 更新進度
                     writeRemoveProgress(0);
-                    writeScopeField('currentTrashRemoved', 0);
-                    writeScopeField('trashRemoved', useMiscRawState.getState().trashRemoved + (removeCount));
+                    writeCurrentTrashRemoved(0);
+                    writeTrashRemoved(useMiscRawState.getState().trashRemoved + (removeCount));
                     writeIsCleaningTrash(true);
                     syncSidebarFromScope();
                     // 觸發 AI Search 全量同步

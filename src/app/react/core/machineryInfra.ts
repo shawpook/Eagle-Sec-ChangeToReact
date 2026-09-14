@@ -25,7 +25,7 @@ import { machineryChangeSortIncrease, machineryCreateLibrary, machineryImportLib
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
-import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio, writeLibraryHistory, writeQuickAccess, writeSidebarList, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeIsHideMainNav, writeContainTags, writeHistorySearchKeywords, writePage } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio, writeLibraryHistory, writeQuickAccess, writeSidebarList, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeIsHideMainNav, writeContainTags, writeHistorySearchKeywords, writePage, writeDuplicateQueue, writeFiltereds, writeFinishGenerateQueue, writeFinishQueue, writeIsSearchScopeAnnotation, writeIsSearchScopeExt, writeIsSearchScopeFolderDesc, writeIsSearchScopeFolderName, writeIsSearchScopeName, writeIsSearchScopeNote, writeIsSearchScopeTag, writeIsSearchScopeUrl, writeLen, writeListLayoutSettings, writeListMetaType, writeOrderBy, writeOrderByName, writePaletteQueueDelay, writePaletteQueuePaused, writeRegenerateThumbnailQueue, writeShowAnnotation, writeShowFileExtension, writeShowFileExtensionLabel, writeShowMetas, writeShowName, writeShowOriginalImageWhenLarge, writeSortIncrease, writeTagsSuggestion, writeUnlockPassword, writeUploadQueue } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState, writeContainerSize, writeImageSize } from '../store/layoutState';
@@ -349,7 +349,7 @@ export function machinerySeedControllerState(): void {
         writeIsHideSidebar(false);
         writeIsHideSubFolder(true);
         writeIsHideNavigator(false);
-        writeScopeField('unlockPassword', "");
+        writeUnlockPassword("");
         // 音效三件套（bundle 20238-20254 逐字；$.playSound 由 js/vendors/jquery-audio.js 提供，
         // 该插件原内联在 app.bundle.js 内，b1-9d 后由 index.html 独立引入）
         writeScopeField('removeSound', {
@@ -446,7 +446,7 @@ export function machinerySeedControllerState(): void {
         if (w.eagle && w.eagle.inspector && w.eagle.inspector.width === undefined) {
             w.eagle.inspector.width = 300;
         }
-        writeScopeField('len', 100);
+        writeLen(100);
         writeSidebarList([]);
         syncSidebarFromScope();
         useMiscRawState.getState().sidebarIndex;
@@ -462,7 +462,7 @@ export function machinerySeedControllerState(): void {
         syncInspectorFromScope();
         writeSelectedMappings({});
         writeLockedImages({});
-        writeScopeField('filtereds', []);
+        writeFiltereds([]);
         syncListFromScope();
         writeAllData([]);
         syncListFromScope();
@@ -474,48 +474,48 @@ export function machinerySeedControllerState(): void {
         writeSelectedSmartFoldersMappings({});
         writeFolderMappings({});
         writeSmartFolderMappings({});
-        writeScopeField('uploadQueue', []);
+        writeUploadQueue([]);
         syncUploadFromScope();
-        writeScopeField('finishQueue', []);
+        writeFinishQueue([]);
         syncUploadFromScope();
-        writeScopeField('finishGenerateQueue', []);
-        writeScopeField('regenerateThumbnailQueue', []);
+        writeFinishGenerateQueue([]);
+        writeRegenerateThumbnailQueue([]);
         
-        writeScopeField('duplicateQueue', []);
+        writeDuplicateQueue([]);
         writeCurrentFocus("sidebar");
         writeShowSubfolderContent(false);
-        writeScopeField('showOriginalImageWhenLarge', localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false')
+        writeShowOriginalImageWhenLarge(localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false')
         syncPanelFromScope();
-        writeScopeField('showName', false);
+        writeShowName(false);
         syncPanelFromScope();
-        writeScopeField('showMetas', false);
+        writeShowMetas(false);
         syncPanelFromScope();
-        writeScopeField('showAnnotation', true);
+        writeShowAnnotation(true);
         syncPanelFromScope();
-        writeScopeField('showFileExtension', true);
+        writeShowFileExtension(true);
         syncPanelFromScope();
-        writeScopeField('showFileExtensionLabel', true);
+        writeShowFileExtensionLabel(true);
         syncPanelFromScope();
-        writeScopeField('orderBy', localStorage.getItem("eagle.list.orderBy") || "IMPORT");
+        writeOrderBy(localStorage.getItem("eagle.list.orderBy") || "IMPORT");
         syncBodyFromScope();
-        writeScopeField('orderByName', w.i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
-        writeScopeField('isSearchScopeName', true);
-        writeScopeField('isSearchScopeFolderName', true);
-        writeScopeField('isSearchScopeFolderDesc', true);
-        writeScopeField('isSearchScopeExt', true);
-        writeScopeField('isSearchScopeTag', true);
-        writeScopeField('isSearchScopeUrl', true);
-        writeScopeField('isSearchScopeAnnotation', true);
-        writeScopeField('isSearchScopeNote', true);
-        writeScopeField('listMetaType', localStorage.getItem("eagle.list.meta.type") || "RESOLUTION");
+        writeOrderByName(w.i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
+        writeIsSearchScopeName(true);
+        writeIsSearchScopeFolderName(true);
+        writeIsSearchScopeFolderDesc(true);
+        writeIsSearchScopeExt(true);
+        writeIsSearchScopeTag(true);
+        writeIsSearchScopeUrl(true);
+        writeIsSearchScopeAnnotation(true);
+        writeIsSearchScopeNote(true);
+        writeListMetaType(localStorage.getItem("eagle.list.meta.type") || "RESOLUTION");
         syncPanelFromScope();
-        writeScopeField('sortIncrease', true);
+        writeSortIncrease(true);
         writeLayout("");
         writeLayoutOptions(localStorage["eagle.list.layout.options"] || "Fit");
         syncPanelFromScope();
-        writeScopeField('paletteQueuePaused', false);
+        writePaletteQueuePaused(false);
         syncSidebarFromScope();
-        writeScopeField('paletteQueueDelay', 20);
+        writePaletteQueueDelay(20);
         
         // Grid Layout 相关
         writeItemMappings({});
@@ -729,21 +729,21 @@ export function machinerySeedControllerState(): void {
         }
 
         if (localStorage.getItem("eagle.list.sortIncrease") == 'false') {
-            writeScopeField('sortIncrease', false);
+            writeSortIncrease(false);
         }
 
         if (localStorage.getItem("isHideNavigator") == 'true') {
             writeIsHideNavigator(true);
         }
 
-        if (localStorage.getItem("eagle.search.scope.name") === 'false') { writeScopeField('isSearchScopeName', false); }
-        if (localStorage.getItem("eagle.search.scope.folderName") === 'false') { writeScopeField('isSearchScopeFolderName', false); }
-        if (localStorage.getItem("eagle.search.scope.folderDesc") === 'false') { writeScopeField('isSearchScopeFolderDesc', false); }
-        if (localStorage.getItem("eagle.search.scope.ext") === 'false') { writeScopeField('isSearchScopeExt', false); }
-        if (localStorage.getItem("eagle.search.scope.tag") === 'false') { writeScopeField('isSearchScopeTag', false); }
-        if (localStorage.getItem("eagle.search.scope.url") === 'false') { writeScopeField('isSearchScopeUrl', false); }
-        if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { writeScopeField('isSearchScopeAnnotation', false); }
-        if (localStorage.getItem("eagle.search.scope.note") === 'false') { writeScopeField('isSearchScopeNote', false); }
+        if (localStorage.getItem("eagle.search.scope.name") === 'false') { writeIsSearchScopeName(false); }
+        if (localStorage.getItem("eagle.search.scope.folderName") === 'false') { writeIsSearchScopeFolderName(false); }
+        if (localStorage.getItem("eagle.search.scope.folderDesc") === 'false') { writeIsSearchScopeFolderDesc(false); }
+        if (localStorage.getItem("eagle.search.scope.ext") === 'false') { writeIsSearchScopeExt(false); }
+        if (localStorage.getItem("eagle.search.scope.tag") === 'false') { writeIsSearchScopeTag(false); }
+        if (localStorage.getItem("eagle.search.scope.url") === 'false') { writeIsSearchScopeUrl(false); }
+        if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { writeIsSearchScopeAnnotation(false); }
+        if (localStorage.getItem("eagle.search.scope.note") === 'false') { writeIsSearchScopeNote(false); }
         // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
@@ -752,41 +752,41 @@ export function machinerySeedControllerState(): void {
         writeShowSubfolderContent(w.preferences.showSubfolderContent);
 
         if (localStorage.getItem("eagle.list.show.name") == 'false') {
-            writeScopeField('showName', false);
+            writeShowName(false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-name");
         }
         else {
-            writeScopeField('showName', true);
+            writeShowName(true);
             syncPanelFromScope();
             removeClass("#box-container", "hide-box-name");
         }
 
         if (localStorage.getItem("eagle.list.show.meta") == 'false') {
-            writeScopeField('showMetas', false);
+            writeShowMetas(false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-metas");
         }
         else {
-            writeScopeField('showMetas', true);
+            writeShowMetas(true);
             syncPanelFromScope();
             removeClass("#box-container", "hide-box-metas");
         }
 
         if (localStorage.getItem("eagle.list.show.annotation") == 'false') {
-            writeScopeField('showAnnotation', false);
+            writeShowAnnotation(false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-annotation");
         }
 
         if (localStorage.getItem("eagle.list.show.extension") == 'false') {
-            writeScopeField('showFileExtension', false);
+            writeShowFileExtension(false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-extension");
         }
 
         if (localStorage.getItem("eagle.list.show.extension_LABEL") == 'false') {
-            writeScopeField('showFileExtensionLabel', false);
+            writeShowFileExtensionLabel(false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-extension-label");
         }
@@ -803,15 +803,15 @@ export function machinerySeedControllerState(): void {
         };
         if (localStorage["eagle.list.layout.settings"]) {
             try {
-                writeScopeField('listLayoutSettings', JSON.parse(localStorage["eagle.list.layout.settings"]));
+                writeListLayoutSettings(JSON.parse(localStorage["eagle.list.layout.settings"]));
                 syncBodyFromScope();
             } catch (err) {
-                writeScopeField('listLayoutSettings', defaultListLayoutSettings);
+                writeListLayoutSettings(defaultListLayoutSettings);
                 syncBodyFromScope();
             }
         }
         else {
-            writeScopeField('listLayoutSettings', defaultListLayoutSettings);
+            writeListLayoutSettings(defaultListLayoutSettings);
             syncBodyFromScope();
         }
 
@@ -828,7 +828,7 @@ export function machinerySeedControllerState(): void {
         syncDetailFromScope();
         writeLastZoomMode(localStorage["eagle.viewer.lastZoomMode"] || "fit");
         syncDetailFromScope();
-        writeScopeField('tagsSuggestion', []);
+        writeTagsSuggestion([]);
         writeFolders([]);
         writeSmartFolders([]);
         writeQuickAccess([]);

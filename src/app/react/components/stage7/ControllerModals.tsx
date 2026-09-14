@@ -20,8 +20,8 @@ import { machineryUpdateItemView } from '../../core/itemDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
-import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState, writeIsOpenWebpagePanel } from '../../store/miscRawState';
+
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
  * （bundle 74094-74144，含 websitePanelWebview 指令 74147-74189）接管。
@@ -441,7 +441,7 @@ export function WebsitePanel() {
       if (webview && String(webview.src || '').indexOf('community-') === -1) {
         webview.setAttribute('src', `${url}`);
       }
-      writeScopeField('isOpenWebpagePanel', true);
+      writeIsOpenWebpagePanel(true);
       bump((v) => v + 1);
     });
     return () => off();

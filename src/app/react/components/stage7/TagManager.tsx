@@ -16,9 +16,9 @@ import { runInBodyScope } from '../../core/appCore';
 import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
 import { openTag } from '../../services/batchOpsService';
 import { tagRectSelecting } from '../../core/tagManagerDomain';
-import { useMiscRawState } from '../../store/miscRawState';
+import { useMiscRawState, writeNewGroupName } from '../../store/miscRawState';
 import { useBodyState, writeCurrentFocus } from '../../store/bodyState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -519,14 +519,14 @@ export function TagManagerPanel() {
                           e.stopPropagation();
                           e.nativeEvent.stopPropagation();
                           runInBodyScope(() => {
-                            writeScopeField('newGroupName', (e.target as HTMLInputElement).value);
+                            writeNewGroupName((e.target as HTMLInputElement).value);
                             syncTagManagerFromScope();
                             if (typeof useMiscRawState.getState().renameTagGroupKeyup === 'function') renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), useMiscRawState.getState().newGroupName);
                           });
                         }}
                         onBlur={(e) => {
                           runInBodyScope(() => {
-                            writeScopeField('newGroupName', (e.target as HTMLInputElement).value);
+                            writeNewGroupName((e.target as HTMLInputElement).value);
                             syncTagManagerFromScope();
                             if (typeof useMiscRawState.getState().renameTagGroupBlur === 'function') renameTagGroupBlur(liveGroup(group.id), useMiscRawState.getState().newGroupName);
                           });

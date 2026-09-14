@@ -42,14 +42,14 @@ import { machineryCheckOperationSafety } from '../services/viewOpsService';
 import { getFilter } from '../core/filterDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machinerySortRawData } from '../core/itemDomain';
-import { useMiscRawState, writeIsRotating } from '../store/miscRawState';
+import { useMiscRawState, writeIsRotating, writeRegenerateThumbnailQueue, writeTagsSuggestion, writeUntagged } from '../store/miscRawState';
 import { useBodyState, writeIsCropMode } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState, writeTrash, writeAll, writeFolderMappings, writeLockedImages } from '../store/itemState';
 import { useFolderState, writeTags, writeFolderList } from '../store/folderState';
 import { useListState } from '../store/listState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { getIpcBus } from '../core/channelBridge';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -462,7 +462,7 @@ export function cancelRegenerateThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             IPCHelper.send('cancel.generate.thumbnail');
-            writeScopeField('regenerateThumbnailQueue', []);
+            writeRegenerateThumbnailQueue([]);
     } as (...__args: any[]) => any).apply(null, args);
 }
 
@@ -527,14 +527,14 @@ export function calculateImageBinding(...args: any[]) {
                     var exts = {};
                     writeAll([]);
                     syncSidebarFromScope();
-                    writeScopeField('untagged', []);
+                    writeUntagged([]);
                     writeUnfiledCount(0);
                     writeUntaggedCount(0);
                     writeTrash([]);
                     syncSidebarFromScope();
                     syncListFromScope();
                     writeFolderMappings({});
-                    writeScopeField('tagsSuggestion', []);
+                    writeTagsSuggestion([]);
                     writeFolderList([]);
                     syncSidebarFromScope();
                     writeLockedImages({});

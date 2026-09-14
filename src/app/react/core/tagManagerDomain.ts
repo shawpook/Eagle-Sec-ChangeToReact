@@ -47,7 +47,7 @@ import { machineryOpenAll } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
-import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders, writeGifPlayer, writeGifUpadteInterval, writeTagKeyword, writeContainTags } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders, writeGifPlayer, writeGifUpadteInterval, writeTagKeyword, writeContainTags, writeAvailableHistoryTags, writeLastSelectedTag, writeNewGroupName } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
@@ -573,7 +573,7 @@ export function machineryBuildTagManager(): any {
             }).then(function () {
                 w.electronLog.info(`[app] Empty history tags: ${JSON.stringify(TagManager.historyTags)}`);
                 TagManager.historyTags = [];
-                writeScopeField('availableHistoryTags', []);
+                writeAvailableHistoryTags([]);
                 TagManager.save();
             });
         };
@@ -1174,7 +1174,7 @@ export function machineryBuildTagManager(): any {
             });
 
             if (!TagManager.historyTags) TagManager.historyTags = [];
-            writeScopeField('availableHistoryTags', TagManager.historyTags.filter(function (tag: any) {
+            writeAvailableHistoryTags(TagManager.historyTags.filter(function (tag: any) {
                 if (!TagManager.tagMappings[tag] || TagManager.tagMappings[tag].imageCount === 0) {
                     return false;
                 }
@@ -1435,7 +1435,7 @@ export function machineryBuildTagManager(): any {
                     syncTagManagerFromScope();
                 });
 
-                writeScopeField('lastSelectedTag', tag.name);
+                writeLastSelectedTag(tag.name);
                 return;
             }
 
@@ -1447,14 +1447,14 @@ export function machineryBuildTagManager(): any {
                     useMiscRawState.getState().selectedTags[tag.name] = true;
                     syncTagManagerFromScope();
                 }
-                writeScopeField('lastSelectedTag', tag.name);
+                writeLastSelectedTag(tag.name);
             }
             else {
                 writeSelectedTags({});
                 syncTagManagerFromScope();
                 useMiscRawState.getState().selectedTags[tag.name] = true;
                 syncTagManagerFromScope();
-                writeScopeField('lastSelectedTag', tag.name);
+                writeLastSelectedTag(tag.name);
             }
         });
 
@@ -1706,7 +1706,7 @@ export function machineryBuildTagManager(): any {
         writeScopeField('renameTagGroup', function (group: any) {
             writeCurrentTagGroup(group);
             syncTagManagerFromScope();
-            writeScopeField('newGroupName', group.name);
+            writeNewGroupName(group.name);
             syncTagManagerFromScope();
             group.editable = true;
             setTimeout(function() {
@@ -3144,7 +3144,7 @@ export function machineryRenameTagGroup(group: any): void {
   const w = window as any;
   writeCurrentTagGroup(group);
   syncTagManagerFromScope();
-  writeScopeField('newGroupName', group.name);
+  writeNewGroupName(group.name);
   syncTagManagerFromScope();
   group.editable = true;
   setTimeout(function () {

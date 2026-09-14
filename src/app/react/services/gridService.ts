@@ -27,10 +27,10 @@ import { getTimeout, scopeSingleton } from '../core/machineryInfra';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeCurrentFolderChildren } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useBodyState } from '../store/bodyState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useItemState, writeSelectedFolderMappings, writeLastItemStates } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeBoxContianerWidth, writeBoxContianerHeight, writeZoomFitSize, writeLastZoomMode, writeLastImageHeight, writeCurrentId, writeCurrentTag } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeBoxContianerWidth, writeBoxContianerHeight, writeZoomFitSize, writeLastZoomMode, writeLastImageHeight, writeCurrentId, writeCurrentTag, writeDuplicateTarget, writeIsOpenWebpagePanel } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { autoscrollChannel } from '../global/bus';
 import { getGridScrollPosition, restoreGridScrollPosition, scrollGridToBottom, scrollGridToOffset, scrollGridToItem } from '../components/grid/boxGridEngine';
@@ -257,7 +257,6 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
    Layout commands invalidate metadata geometry; getItems returns mounted elements,
    and _layout._columnLength supplies the full layout's column count for zoom steps. */
 
-
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* updateSliderPosition（bundle 33689-33705：函数体全被注释——no-op 原样保留注释） */
 export function machineryUpdateSliderPosition(): void {
@@ -280,7 +279,6 @@ export function machineryUpdateSliderPosition(): void {
   //     $slider.removeClass("response");
   // }
 }
-
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /** Shared by both boot paths: save an item anchor and restore once after the result commits. */
@@ -527,7 +525,6 @@ export function machineryUpdateListSlider(size: any): void {
 
 let updateListHeightTimeout: any = null;
 
-
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 export function getOffsetScrollbarFn(): any { return scopeSingleton('offsetScrollbar', () => machineryOffsetScrollbar()); }
 
@@ -548,7 +545,7 @@ export function machineryResetPage(): void {
   writeListDone(false);
   // Clear the old view now; a delayed clear can erase a destination that has already loaded.
   w.ig?.clear();
-  writeScopeField('isOpenWebpagePanel', false);
+  writeIsOpenWebpagePanel(false);
   writeCurrentTag(undefined);
   syncToolbarFromScope();
   writeStartCursor(0);
@@ -579,7 +576,7 @@ export function machineryResetPage(): void {
   hide("#image-drop-area");
 
   if (useMiscRawState.getState().duplicateTarget) {
-    writeScopeField('duplicateTarget', undefined);
+    writeDuplicateTarget(undefined);
     machineryFindDupclipate(undefined);
   }
 }

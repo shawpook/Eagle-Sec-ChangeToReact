@@ -12,7 +12,7 @@
 | R1 | 正式构建与运行入口 | 主线完成（PDF/3D 入口待办） | R0 |
 | R2 | 启动层与环境边界 | **已完成**（2026-09-14） | R1 的入口清单 |
 | R3 | 完整类型检查 | 范围清零完成；12 文件 nocheck 待随域撤销 | R0；结合 R2 接口推进 |
-| R4 | 主应用业务与状态收敛 | 待实施 | R2 / R3 的共享边界 |
+| R4 | 主应用业务与状态收敛 | **已完成**（2026-09-14；199 字段具名写点化，回退/函数挂载退役面移交 R6） | R2 / R3 的共享边界 |
 | R5 | 独立窗口与查看器 | 待实施 | R1 / R2 / R3；共享服务沿用 R4 |
 | R6 | 旧代码、资产与文档收尾 | 待实施 | 对应消费者已迁出 |
 | R7 | 统一交付验收 | 待实施 | R1–R6 |
@@ -288,6 +288,25 @@ node tests/continuous-grid-scroll.mjs
 node tests/main-ui-workflow-closed-loop.mjs
 node tests/item-persistence-closed-loop.mjs
 ```
+
+### 实施结果（2026-09-14）
+
+- **收敛规模**：199 个字段 / 10 个域（selection body folder list item misc toast layout lock
+  preferences）改用具名写点；`writeScopeField` 站点 **868 → 59**。
+- **剩余 59 处 / 57 个字段 = `LEGACY_SCOPE_SLOTS`**：旧 scope 挂载槽（函数/单例/命名空间/
+  常量），在守卫中逐项登记理由，属 **R6 退役面**。
+- **回退分支的精确阻塞面（已量化）**：`writeScopeField` 的通用对象回退
+  （`scope[name] = value`）现存唯一使用者是 **16 个旧面板派发函数槽**
+  （changeSmartFolderName / toggleSidebar / createLibrary / refresh / onListSizeChange …，
+  均在 `core/machineryInfra.ts` 挂载）。其余 41 个挂载槽已注册在 store，不走回退。
+  故「删除普通对象回退」= R6 摘掉这 16 个槽，**不再是模糊的后续工作**。
+- **守卫**：`tests/scope-field-convergence.mjs` 为**闭合分类台账**——`CONVERGED`
+  （写点名由字段推导，规格源为收敛域表）∪ `LEGACY_SCOPE_SLOTS`（附理由，登记项必须仍有
+  写入点）∪ `PENDING_DATA_FIELDS`（现为 **0**）。未分类字符串键写入 / 已收敛字段回退 /
+  未登记的函数值写入 → FAIL。规格源与 codemod 共用，避免域表两份漂移。
+- **如实标注（不计入 R4 成绩）**：`miscRawState` 仍是 172 字段的**汇总桶**——本批收敛的是
+  **访问方式**（字符串键 → 具名写点），**未**把字段按域重排到独立 store。存储组织重排是
+  独立工作项（依赖读点 selector 化），不得把「零字符串键」误读为「状态架构已按域拆分」。
 
 ## R5：独立窗口和查看器完成同等深度的迁移
 

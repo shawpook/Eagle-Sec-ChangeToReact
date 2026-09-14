@@ -77,7 +77,20 @@ const CONVERGED = {
       'keywords', 'keywords_cn', 'keywords_tw', 'keyword_cn', 'keyword_tw',
       'isKeywordCN', 'isKeywordTW', 'isEnglish', 'isContainAlphabet', 'searchRegexGroup',
       'globalKeywords', 'historySearchKeywords', 'hsks', 'keywordSuggestions', 'keywordDebounce',
-      'showSuggestions', 'page', 'colorDistancesMap', 'searchIndex',
+      'showSuggestions', 'page', 'colorDistancesMap', 'searchIndex', 'Registration',
+      'addImageStartTime', 'addImageTimeLeftInSeconds', 'availableHistoryTags', 'canUseTouchID', 'currentProcessCount',
+      'currentTrashRemoved', 'downloadQueueLength', 'duplicateGroupings', 'duplicateQueue', 'duplicateTarget',
+      'duplicates', 'errorList', 'filtereds', 'finishGenerateQueue', 'finishQueue',
+      'initDetailMode', 'isItemBindCalculated', 'isLibrarySaving', 'isOpenWebpagePanel', 'isSearchScopeAnnotation',
+      'isSearchScopeExt', 'isSearchScopeFolderDesc', 'isSearchScopeFolderName', 'isSearchScopeName', 'isSearchScopeNote',
+      'isSearchScopeTag', 'isSearchScopeUrl', 'isUILoaded', 'lastProcessCount', 'lastSelectedTag',
+      'lastestAddItem', 'len', 'listLayoutSettings', 'listMetaType', 'loadMoreDisable',
+      'metadataQueueLength', 'newGroupName', 'openWithInfo', 'orderBy', 'orderByName',
+      'paletteQueueDelay', 'paletteQueueLength', 'paletteQueuePaused', 'progress', 'regenerateThumbnailQueue',
+      'saveFolderDebounceTimeout', 'selectingTags', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel',
+      'showMetas', 'showNTFSWarning', 'showName', 'showOriginalImageWhenLarge', 'showSlowNotify',
+      'sortIncrease', 'tagsSuggestion', 'trashRemoved', 'unlockPassword', 'untagged',
+      'uploadQueue', 'usingCache', 'winMenu',
     ],
   },
   toast: {
@@ -178,22 +191,7 @@ const LEGACY_SCOPE_SLOTS = [
 
 /** R4 待办：仍以字符串键写入的数据字段。每收敛一批，从此表移入 `CONVERGED`。 */
 const PENDING_DATA_FIELDS = [
-  'Registration', 'addImageStartTime', 'addImageTimeLeftInSeconds', 'availableHistoryTags',
-  'canUseTouchID', 'currentProcessCount', 'currentTrashRemoved', 'downloadQueueLength',
-  'duplicateGroupings', 'duplicateQueue', 'duplicateTarget', 'duplicates',
-  'errorList', 'filtereds', 'finishGenerateQueue', 'finishQueue',
-  'initDetailMode', 'isItemBindCalculated', 'isLibrarySaving', 'isOpenWebpagePanel',
-  'isSearchScopeAnnotation', 'isSearchScopeExt', 'isSearchScopeFolderDesc', 'isSearchScopeFolderName',
-  'isSearchScopeName', 'isSearchScopeNote', 'isSearchScopeTag', 'isSearchScopeUrl',
-  'isUILoaded', 'lastProcessCount', 'lastSelectedTag', 'lastestAddItem',
-  'len', 'listLayoutSettings', 'listMetaType', 'loadMoreDisable',
-  'metadataQueueLength', 'newGroupName', 'openWithInfo', 'orderBy',
-  'orderByName', 'paletteQueueDelay', 'paletteQueueLength', 'paletteQueuePaused',
-  'progress', 'regenerateThumbnailQueue', 'saveFolderDebounceTimeout', 'selectingTags',
-  'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'showMetas',
-  'showNTFSWarning', 'showName', 'showOriginalImageWhenLarge', 'showSlowNotify',
-  'sortIncrease', 'tagsSuggestion', 'trashRemoved', 'unlockPassword',
-  'untagged', 'uploadQueue', 'usingCache', 'winMenu',
+
 ];
 
 function stripComments(text) {

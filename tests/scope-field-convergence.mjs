@@ -21,47 +21,75 @@ import path from 'node:path';
 const projectRoot = path.resolve(import.meta.dirname, '..');
 const reactRoot = path.join(projectRoot, 'src/app/react');
 
-/** 已收敛域：字段 → 提供具名写点的模块。 */
+/** 已收敛域：字段 → 提供具名写点的模块。具名写点约定 `write` + 字段名首字母大写。 */
 const CONVERGED = {
   selection: {
     module: 'src/app/react/store/selectionState.ts',
-    fields: ['selected', 'current', 'lastSelectedIndex'],
-    actions: ['writeSelected', 'writeCurrent', 'writeLastSelectedIndex'],
+    fields: [
+      'selected', 'current', 'lastSelectedIndex',
+    ],
   },
   body: {
     module: 'src/app/react/store/bodyState.ts',
     fields: [
       'currentFocus', 'viewMode', 'isLoading', 'layout', 'isDetailMode',
       'isCropMode', 'isMaximize', 'isHideSidebar', 'smoothZoomDone', 'isInlineMode',
-      'layoutOptions', 'isHideNavigator', 'removeProgress', 'isCleaningTrash',
-      'theme', 'isSlideshowMode', 'isCommentMode', 'isGrayscaleMode', 'platform',
-    ],
-    actions: [
-      'writeCurrentFocus', 'writeViewMode', 'writeIsLoading', 'writeLayout', 'writeIsDetailMode',
-      'writeIsCropMode', 'writeIsMaximize', 'writeIsHideSidebar', 'writeSmoothZoomDone', 'writeIsInlineMode',
-      'writeLayoutOptions', 'writeIsHideNavigator', 'writeRemoveProgress', 'writeIsCleaningTrash',
-      'writeTheme', 'writeIsSlideshowMode', 'writeIsCommentMode', 'writeIsGrayscaleMode', 'writePlatform',
+      'layoutOptions', 'isHideNavigator', 'removeProgress', 'isCleaningTrash', 'theme',
+      'isSlideshowMode', 'isCommentMode', 'isGrayscaleMode', 'platform',
     ],
   },
   folder: {
     module: 'src/app/react/store/folderState.ts',
-    fields: ['currentFolder', 'currentSmartFolder', 'startCursor'],
-    actions: ['writeCurrentFolder', 'writeCurrentSmartFolder', 'writeStartCursor'],
+    fields: [
+      'currentFolder', 'currentSmartFolder', 'startCursor', 'folders', 'currentFolderChildren',
+      'tags', 'smartFolders', 'folderList', 'navigationHistory', 'navigationHistoryIndex',
+    ],
   },
   list: {
     module: 'src/app/react/store/listState.ts',
-    fields: ['keyword', 'listDone', 'unfiledCount', 'untaggedCount'],
-    actions: ['writeKeyword', 'writeListDone', 'writeUnfiledCount', 'writeUntaggedCount'],
+    fields: [
+      'keyword', 'listDone', 'unfiledCount', 'untaggedCount', 'showSubfolderContent',
+      'isHideSubFolder', 'currentOrderBy', 'currentSortIncrease',
+    ],
   },
   item: {
     module: 'src/app/react/store/itemState.ts',
-    fields: ['raw', 'shuffle', 'trash', 'selectedMappings', 'selectedFolderMappings'],
-    actions: ['writeRaw', 'writeShuffle', 'writeTrash', 'writeSelectedMappings', 'writeSelectedFolderMappings'],
+    fields: [
+      'raw', 'shuffle', 'trash', 'selectedMappings', 'selectedFolderMappings',
+      'lastItemStates', 'images', 'allData', 'all', 'folderMappings',
+      'lockedImages', 'duplicateMappings', 'itemMappings', 'smartFolderMappings', 'modifiedMappings',
+    ],
   },
   misc: {
     module: 'src/app/react/store/miscRawState.ts',
-    fields: ['currentTagGroup', 'selectedTags', 'tagViewMode', 'tagViewModeName', 'hexColor', 'isGifReady', 'subFolders'],
-    actions: ['writeCurrentTagGroup', 'writeSelectedTags', 'writeTagViewMode', 'writeTagViewModeName', 'writeHexColor', 'writeIsGifReady', 'writeSubFolders'],
+    fields: [
+      'currentTagGroup', 'selectedTags', 'tagViewMode', 'tagViewModeName', 'hexColor',
+      'isGifReady', 'subFolders',
+    ],
+  },
+  toast: {
+    module: 'src/app/react/store/toastState.ts',
+    fields: [
+      'localhostError', 'libraryPathPermissionError',
+    ],
+  },
+  layout: {
+    module: 'src/app/react/store/layoutState.ts',
+    fields: [
+      'containerSize', 'imageSize',
+    ],
+  },
+  lock: {
+    module: 'src/app/react/store/lockState.ts',
+    fields: [
+      'isAppLocked',
+    ],
+  },
+  preferences: {
+    module: 'src/app/react/store/preferencesState.ts',
+    fields: [
+      'trialRemain',
+    ],
   },
 };
 
@@ -137,46 +165,39 @@ const LEGACY_SCOPE_SLOTS = [
 
 /** R4 待办：仍以字符串键写入的数据字段。每收敛一批，从此表移入 `CONVERGED`。 */
 const PENDING_DATA_FIELDS = [
-  'Registration', 'addImageStartTime', 'addImageTimeLeftInSeconds', 'all',
-  'allData', 'availableHistoryTags', 'boxContianerHeight', 'boxContianerWidth',
-  'canUseTouchID', 'colorDistancesMap', 'commentRect', 'containFolders',
-  'containTags', 'containerSize', 'contentFilterCache', 'currentFolderChildren',
-  'currentFolderPath', 'currentId', 'currentOrderBy', 'currentProcessCount',
-  'currentSortIncrease', 'currentTag', 'currentTrashRemoved', 'downloadQueueLength',
-  'draggedQuickAccess', 'duplicateGroupings', 'duplicateMappings', 'duplicateQueue',
-  'duplicateTarget', 'duplicates', 'errorList', 'filtereds',
-  'finishGenerateQueue', 'finishQueue', 'folderKeyword', 'folderList',
-  'folderMappings', 'folders', 'gifPlayer', 'gifUpadteInterval',
-  'globalKeywords', 'historySearchKeywords', 'hsks', 'imageSize',
-  'images', 'imagesDir', 'initDetailMode', 'isAppLocked', 'isContainAlphabet',
-  'isEnglish', 'isExpandFolder', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isHideMainNav',
-  'isHideSubFolder', 'isItemBindCalculated', 'isKeywordCN',
-  'isKeywordTW', 'isLibrarySaving', 'isOpenWebpagePanel',
-  'isPreviewing', 'isRotating', 'isSearchScopeAnnotation', 'isSearchScopeExt',
-  'isSearchScopeFolderDesc', 'isSearchScopeFolderName', 'isSearchScopeName', 'isSearchScopeNote',
-  'isSearchScopeTag', 'isSearchScopeUrl', 'isUILoaded',
-  'itemMappings', 'keywordDebounce', 'keywordSuggestions', 'keyword_cn',
+  'Registration', 'addImageStartTime', 'addImageTimeLeftInSeconds', 'availableHistoryTags',
+  'boxContianerHeight', 'boxContianerWidth', 'canUseTouchID', 'colorDistancesMap',
+  'commentRect', 'containFolders', 'containTags', 'contentFilterCache',
+  'currentFolderPath', 'currentId', 'currentProcessCount', 'currentTag',
+  'currentTrashRemoved', 'downloadQueueLength', 'draggedQuickAccess', 'duplicateGroupings',
+  'duplicateQueue', 'duplicateTarget', 'duplicates', 'errorList',
+  'filtereds', 'finishGenerateQueue', 'finishQueue', 'folderKeyword',
+  'gifPlayer', 'gifUpadteInterval', 'globalKeywords', 'historySearchKeywords',
+  'hsks', 'imagesDir', 'initDetailMode', 'isContainAlphabet',
+  'isEnglish', 'isExpandFolder', 'isExpandQuickAccess', 'isExpandSmartFolder',
+  'isHideMainNav', 'isItemBindCalculated', 'isKeywordCN', 'isKeywordTW',
+  'isLibrarySaving', 'isOpenWebpagePanel', 'isPreviewing', 'isRotating',
+  'isSearchScopeAnnotation', 'isSearchScopeExt', 'isSearchScopeFolderDesc', 'isSearchScopeFolderName',
+  'isSearchScopeName', 'isSearchScopeNote', 'isSearchScopeTag', 'isSearchScopeUrl',
+  'isUILoaded', 'keywordDebounce', 'keywordSuggestions', 'keyword_cn',
   'keyword_tw', 'keywords', 'keywords_cn', 'keywords_tw',
-  'lastImageHeight', 'lastIndex', 'lastItemStates', 'lastProcessCount',
-  'lastSelectedTag', 'lastZoomMode', 'lastestAddItem',
-  'len', 'libraryHistory', 'libraryImagesPath', 'libraryLoadedProgress',
-  'libraryModificationTime', 'libraryName', 'libraryPath', 'libraryPathPermissionError',
-  'listLayoutSettings', 'listMetaType', 'loadMoreDisable', 'localhostError',
-  'lockedImages', 'metadataQueueLength', 'modifiedMappings', 'navigationHistory',
-  'navigationHistoryIndex', 'newGroupName', 'openWithInfo', 'orderBy',
+  'lastImageHeight', 'lastIndex', 'lastProcessCount', 'lastSelectedTag',
+  'lastZoomMode', 'lastestAddItem', 'len', 'libraryHistory',
+  'libraryImagesPath', 'libraryLoadedProgress', 'libraryModificationTime', 'libraryName',
+  'libraryPath', 'listLayoutSettings', 'listMetaType', 'loadMoreDisable',
+  'metadataQueueLength', 'newGroupName', 'openWithInfo', 'orderBy',
   'orderByName', 'page', 'paletteQueueDelay', 'paletteQueueLength',
-  'paletteQueuePaused', 'preelaborations', 'progress',
-  'quickAccess', 'ratio', 'regenerateThumbnailQueue',
-  'rootDir', 'saveFolderDebounceTimeout', 'searchIndex', 'searchRegexGroup',
-  'selectedFolder', 'selectedFolders', 'selectedFoldersMappings', 'selectedSmartFolders',
-  'selectedSmartFoldersMappings', 'selectingTags', 'showAnnotation', 'showDetailImage',
-  'showFileExtension', 'showFileExtensionLabel', 'showLargeImage', 'showMetas',
-  'showNTFSWarning', 'showName', 'showOriginalImageWhenLarge', 'showSlowNotify',
-  'showSubfolderContent', 'showSuggestions', 'sidebarIndex', 'sidebarList',
-  'sliderZoomRatio', 'smartFolderList', 'smartFolderMappings', 'smartFolders', 'sortIncrease', 'tagKeyword', 'tags',
-  'tagsSuggestion', 'trashRemoved', 'trialRemain',
-  'unlockPassword', 'untagged', 'uploadQueue', 'useMpvPlayer',
-  'usingCache', 'usingGifPlayer', 'winMenu', 'zoomFitSize',
+  'paletteQueuePaused', 'preelaborations', 'progress', 'quickAccess',
+  'ratio', 'regenerateThumbnailQueue', 'rootDir', 'saveFolderDebounceTimeout',
+  'searchIndex', 'searchRegexGroup', 'selectedFolder', 'selectedFolders',
+  'selectedFoldersMappings', 'selectedSmartFolders', 'selectedSmartFoldersMappings', 'selectingTags',
+  'showAnnotation', 'showDetailImage', 'showFileExtension', 'showFileExtensionLabel',
+  'showLargeImage', 'showMetas', 'showNTFSWarning', 'showName',
+  'showOriginalImageWhenLarge', 'showSlowNotify', 'showSuggestions', 'sidebarIndex',
+  'sidebarList', 'sliderZoomRatio', 'smartFolderList', 'sortIncrease',
+  'tagKeyword', 'tagsSuggestion', 'trashRemoved', 'unlockPassword',
+  'untagged', 'uploadQueue', 'useMpvPlayer', 'usingCache',
+  'usingGifPlayer', 'winMenu', 'zoomFitSize',
 ];
 
 function stripComments(text) {
@@ -274,6 +295,7 @@ const functionSites = [];
 const registered = collectRegisteredFields();
 const legacyNames = new Set(LEGACY_SCOPE_SLOTS.map(([name]) => name));
 const pendingNames = new Set(PENDING_DATA_FIELDS);
+const actionName = (field) => `write${field[0].toUpperCase()}${field.slice(1)}`;
 const convergedFields = Object.values(CONVERGED).flatMap((spec) => spec.fields);
 
 if (pendingNames.size !== PENDING_DATA_FIELDS.length) {
@@ -330,7 +352,8 @@ for (const [domain, spec] of Object.entries(CONVERGED)) {
   const abs = path.join(projectRoot, spec.module);
   if (!fs.existsSync(abs)) { failures.push(`域 ${domain} 的写点模块缺失：${spec.module}`); continue; }
   const code = fs.readFileSync(abs, 'utf8');
-  for (const action of spec.actions) {
+  for (const field of spec.fields) {
+    const action = actionName(field);
     if (!new RegExp(`export function ${action}\\s*\\(`).test(code)) {
       failures.push(`域 ${domain} 缺少导出的写点 ${action}（${spec.module}）`);
     }

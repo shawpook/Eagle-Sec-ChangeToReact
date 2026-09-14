@@ -30,7 +30,7 @@ import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
 import { getOffsetScrollbarFn } from './gridService';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
-import { useFolderState } from '../store/folderState';
+import { useFolderState, writeCurrentFolderChildren } from '../store/folderState';
 import { useItemState } from '../store/itemState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useBodyState } from '../store/bodyState';
@@ -86,7 +86,7 @@ export function sidebarClickNode(event: any, folder: any): void {
         }
       }
     }
-    writeScopeField('currentFolderChildren', machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
+    writeCurrentFolderChildren(machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
     useMiscRawState.getState().reload();
   }
   else {

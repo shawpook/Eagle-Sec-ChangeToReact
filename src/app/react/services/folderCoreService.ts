@@ -50,8 +50,8 @@ import { machineryLeaveDetailMode, machineryNotify } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
-import { useItemState, writeTrash } from '../store/itemState';
-import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder } from '../store/folderState';
+import { useItemState, writeTrash, writeImages } from '../store/itemState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeFolders, writeCurrentFolderChildren } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useBodyState } from '../store/bodyState';
@@ -423,7 +423,7 @@ export function addImagesToFolder(...args: any[]) {
                     image.folders = originFolders[index];
                     image.tags = originTags[index];
                 });
-                writeScopeField('images', origin);
+                writeImages(origin);
                 writeCurrent(origin[0]);
                 syncDetailFromScope();
                 syncInspectorFromScope();
@@ -540,7 +540,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                 } catch (err) {};
             }
             catch (err) {
-                writeScopeField('folders', clone);
+                writeFolders(clone);
                 electronLog && electronLog.error(err.stack || err);
             }
         } as (...__args: any[]) => any).apply(null, args);
@@ -635,7 +635,7 @@ export function moveFoldersToFolder(...args: any[]) {
                 } catch (err) {};
             }
             catch (err) {
-                writeScopeField('folders', clone);
+                writeFolders(clone);
                 electronLog && electronLog.error(err.stack || err);
             }
         } as (...__args: any[]) => any).apply(null, args);
@@ -801,7 +801,7 @@ export function openFolder(...args: any[]) {
                 syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
-                writeScopeField('currentFolderChildren', machineryGetChildFoldersMap(folder));
+                writeCurrentFolderChildren(machineryGetChildFoldersMap(folder));
             }
 
 			if (localStorage[`eagle.list.layout.${useFolderState.getState().currentFolder.id}`]) {
@@ -886,7 +886,7 @@ export function openSmartFolder(...args: any[]) {
             syncFolderLock();
             syncListFromScope();
             eagle.inspector.reset();
-            writeScopeField('currentFolderChildren', undefined);
+            writeCurrentFolderChildren(undefined);
             writeScopeField('selectedSmartFoldersMappings', {});
             writeScopeField('selectedSmartFolders', []);
             writeCurrentFocus("sidebar");
@@ -1072,7 +1072,7 @@ export function machineryOpenCommunity(ignoreHistory?: any): void {
   writeViewMode('community');
   writeCurrentFocus("sidebar");
   machineryResetPage();
-  writeScopeField('images', []);
+  writeImages([]);
   writeIsDetailMode(false);
   writeSelected([]);
   syncInspectorFromScope();

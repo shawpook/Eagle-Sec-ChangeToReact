@@ -49,7 +49,7 @@ import { machineryAutoScroll, machineryResetPage } from './gridService';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
-import { useFolderState, writeCurrentFolder } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentFolderChildren } from '../store/folderState';
 import { useBodyState, writeCurrentFocus, writeRemoveProgress, writeIsCleaningTrash } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
@@ -487,7 +487,7 @@ export function openTag(...args: any[]) {
             syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
-            writeScopeField('currentFolderChildren', undefined);
+            writeCurrentFolderChildren(undefined);
             __lv_TagManager.filterWithTags([tag], ignoreHistory);
         } as (...__args: any[]) => any).apply(null, args);
 }

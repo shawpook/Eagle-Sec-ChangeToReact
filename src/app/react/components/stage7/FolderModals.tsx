@@ -20,7 +20,7 @@ import { machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryContentFilter, machineryFilterData, machineryUpdateFilterCounts } from '../../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelection } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../../core/miscDomain';
-import { useItemState } from '../../store/itemState';
+import { useItemState, writeAllData } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useSelectionState } from '../../store/selectionState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
@@ -182,7 +182,7 @@ export function hiddenByCurrentFilter(items: any[]) {
         });
 
         // 从当前筛选结果移除项目
-        writeScopeField('allData', useItemState.getState().allData.filter((item: any) => {
+        writeAllData(useItemState.getState().allData.filter((item: any) => {
           return !hiddenItemMap[item.id];
         }));
 

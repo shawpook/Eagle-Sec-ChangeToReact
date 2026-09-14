@@ -46,8 +46,8 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useBodyState, writeIsCropMode } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { usePreferencesState } from '../store/preferencesState';
-import { useItemState, writeTrash } from '../store/itemState';
-import { useFolderState } from '../store/folderState';
+import { useItemState, writeTrash, writeAll, writeFolderMappings, writeLockedImages } from '../store/itemState';
+import { useFolderState, writeTags, writeFolderList } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { getIpcBus } from '../core/channelBridge';
@@ -525,7 +525,7 @@ export function calculateImageBinding(...args: any[]) {
                     var __lv_path = require('path');
                     var __lv_tags = {};
                     var exts = {};
-                    writeScopeField('all', []);
+                    writeAll([]);
                     syncSidebarFromScope();
                     writeScopeField('untagged', []);
                     writeUnfiledCount(0);
@@ -533,11 +533,11 @@ export function calculateImageBinding(...args: any[]) {
                     writeTrash([]);
                     syncSidebarFromScope();
                     syncListFromScope();
-                    writeScopeField('folderMappings', {});
+                    writeFolderMappings({});
                     writeScopeField('tagsSuggestion', []);
-                    writeScopeField('folderList', []);
+                    writeFolderList([]);
                     syncSidebarFromScope();
-                    writeScopeField('lockedImages', {});
+                    writeLockedImages({});
 
                     let ancestorsCache = {};
                     let defaultFolderCoverIdMap = {};
@@ -769,11 +769,11 @@ export function calculateImageBinding(...args: any[]) {
                     });
 
                     __lv_TagManager.calculateTags();
-                    writeScopeField('tags', __lv_TagManager.rawdata);
+                    writeTags(__lv_TagManager.rawdata);
                     syncSidebarFromScope();
 
                     if (!useFolderState.getState().tags) {
-                        writeScopeField('tags', []);
+                        writeTags([]);
                         syncSidebarFromScope();
                     }
 

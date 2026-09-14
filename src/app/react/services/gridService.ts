@@ -24,11 +24,11 @@ import { resetFilter } from '../core/filterDomain';
 import { machineryFindDupclipate } from '../core/itemDomain';
 
 import { getTimeout, scopeSingleton } from '../core/machineryInfra';
-import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeCurrentFolderChildren } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
-import { useItemState, writeSelectedFolderMappings } from '../store/itemState';
+import { useItemState, writeSelectedFolderMappings, writeLastItemStates } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
@@ -557,7 +557,7 @@ export function machineryResetPage(): void {
   syncFolderLock();
   syncListFromScope();
   w.eagle.inspector.reset();
-  writeScopeField('currentFolderChildren', undefined);
+  writeCurrentFolderChildren(undefined);
   writeCurrentSmartFolder(undefined);
   syncPanelFromScope();
   syncListFromScope();
@@ -599,7 +599,7 @@ export function machineryToggleAll($event: any): void {
     syncPanelFromScope();
   }
   $timeout(function () {
-    writeScopeField('lastItemStates', {});
+    writeLastItemStates({});
     window.dispatchEvent(new Event("orientationchange"));
     writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
     writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);

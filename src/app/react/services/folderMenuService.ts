@@ -19,7 +19,7 @@
 import { ContextMenu } from '../core/contextMenuDomain';
 
 import { syncFolderLock } from '../store/lockState';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeShowSubfolderContent } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 ;
@@ -41,7 +41,7 @@ import { useListState } from '../store/listState';
 import { useMiscRawState, writeSubFolders } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { usePreferencesState } from '../store/preferencesState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { writeSelected } from '../store/selectionState';
 import { writeIsLoading } from '../store/bodyState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -585,7 +585,7 @@ export function copyFolderLink(...args: any[]) {
 export function showListSubfolderContent(...args: any[]) {
     return (function () {
       const w = window as any;
-      writeScopeField('showSubfolderContent', !useListState.getState().showSubfolderContent);
+      writeShowSubfolderContent(!useListState.getState().showSubfolderContent);
       preferences.showSubfolderContent = useListState.getState().showSubfolderContent;
       (window as any).electronSettings.set('preferences', preferences).then(function () {});
       machineryCalculateImageBinding({ ignoreSort: true }, function () {

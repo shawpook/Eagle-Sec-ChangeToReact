@@ -32,7 +32,7 @@
 import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './itemDomain';
-import { syncErrorCount } from '../store/toastState';
+import { syncErrorCount, writeLocalhostError, writeLibraryPathPermissionError } from '../store/toastState';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope, writeKeyword, writeUnfiledCount, writeUntaggedCount } from '../store/listState';
 import { syncUploadFromScope } from '../store/uploadState';
@@ -66,10 +66,10 @@ import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from '.
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll, machineryResetPage } from '../services/gridService';
 import { getTimeout } from './machineryInfra';
-import { usePreferencesState } from '../store/preferencesState';
-import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings } from '../store/itemState';
+import { usePreferencesState, writeTrialRemain } from '../store/preferencesState';
+import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings, writeLastItemStates, writeImages, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings, writeItemMappings, writeSmartFolderMappings } from '../store/itemState';
 import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode } from '../store/miscRawState';
-import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeFolders, writeCurrentFolderChildren, writeTags, writeSmartFolders, writeNavigationHistory, writeNavigationHistoryIndex } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
@@ -204,7 +204,7 @@ export function takeoverLibraryDomain(): void {
 
   // ── initial（22664 逐字）──
   ipc.on('initial', function (_e: any, params: any) {
-    writeScopeField('trialRemain', params.trialRemain);
+    writeTrialRemain(params.trialRemain);
     syncInspectorFromScope();
     w.Registration = params.Registration;
     writeScopeField('Registration', params.Registration);
@@ -306,7 +306,7 @@ export function takeoverLibraryDomain(): void {
     });
 
     writeScopeField('libraryModificationTime', newLibrary.modificationTime);
-    writeScopeField('folders', newFolders);
+    writeFolders(newFolders);
 
     eagle.utils.tree.walk(newLibrary.smartFolders, 'children', function (smartFolder: any) {
 
@@ -320,7 +320,7 @@ export function takeoverLibraryDomain(): void {
       useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
     });
 
-    writeScopeField('smartFolders', newLibrary.smartFolders || []);
+    writeSmartFolders(newLibrary.smartFolders || []);
 
     machineryUpdateSidebarList();
     machineryCalculateImageBinding({ ignoreSort: true }, function () {
@@ -425,7 +425,7 @@ export function takeoverLibraryDomain(): void {
     syncSidebarFromScope();
     writeScopeField('isItemBindCalculated', false);
     closeTagsPopupChannel.emit();
-    writeScopeField('allData', []);
+    writeAllData([]);
     syncListFromScope();
     writeIsLoading(false);
     writeStartCursor(0);
@@ -531,7 +531,7 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('usingCache', usingCache);
     w.dragging = false;
     writeScopeField('winMenu', []);
-    writeScopeField('all', []);
+    writeAll([]);
     syncSidebarFromScope();
     writeShuffle([]);
     writeTrash([]);
@@ -539,16 +539,16 @@ export function takeoverLibraryDomain(): void {
     syncListFromScope();
     writeUntaggedCount(0);
     writeUnfiledCount(0);
-    writeScopeField('tags', []);
+    writeTags([]);
     syncSidebarFromScope();
     writeSelectedTags({});
     syncTagManagerFromScope();
     writeScopeField('selectingTags', {});
     syncTagManagerFromScope();
     // allTags = {} —— bundle 闭包死变量（全 bundle 零消费点），略去
-    writeScopeField('lockedImages', {});
-    writeScopeField('itemMappings', {});
-    writeScopeField('lastItemStates', {});
+    writeLockedImages({});
+    writeItemMappings({});
+    writeLastItemStates({});
     writeIsCropMode(false);
     syncDetailFromScope();
     writeStartCursor(0);
@@ -559,15 +559,15 @@ export function takeoverLibraryDomain(): void {
     }
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
 
-    writeScopeField('duplicateMappings', {});
-    writeScopeField('images', []);
+    writeDuplicateMappings({});
+    writeImages([]);
     writeSelected([]);
     syncInspectorFromScope();
     writeCurrent(undefined);
     syncDetailFromScope();
     syncInspectorFromScope();
     writeSelectedMappings({});
-    writeScopeField('folderMappings', {});
+    writeFolderMappings({});
     writeCurrentFolder(undefined);
     syncPanelFromScope();
     syncFolderLock();
@@ -575,7 +575,7 @@ export function takeoverLibraryDomain(): void {
     writeCurrentSmartFolder(undefined);
     syncPanelFromScope();
     syncListFromScope();
-    writeScopeField('smartFolderMappings', {});
+    writeSmartFolderMappings({});
     writeScopeField('uploadQueue', []);
     syncUploadFromScope();
     writeScopeField('finishQueue', []);
@@ -646,7 +646,7 @@ export function takeoverLibraryDomain(): void {
     if (useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.init) useMiscRawState.getState().SavedFilter.init(params.rootDir);
     if (w.eagle && w.eagle.action && w.eagle.action.initActions) w.eagle.action.initActions(params.rootDir);
 
-    writeScopeField('folders', params.folders);
+    writeFolders(params.folders);
     writeScopeField('libraryModificationTime', params.modificationTime);
 
     // 自动补上 children
@@ -661,7 +661,7 @@ export function takeoverLibraryDomain(): void {
         useItemState.getState().folderMappings[folder.id] = folder;
       });
 
-      writeScopeField('smartFolders', params.smartFolders || []);
+      writeSmartFolders(params.smartFolders || []);
       w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, _depth: any) {
         if (!smartFolder.children) { smartFolder.children = []; }
         if (!smartFolder.conditions) { smartFolder.conditions = []; }
@@ -933,8 +933,8 @@ export function takeoverLibraryDomain(): void {
       setTimeout(function () { machineryUpdateContainerHieght(); }, 300);
     }
 
-    writeScopeField('navigationHistory', []);
-    writeScopeField('navigationHistoryIndex', 0);
+    writeNavigationHistory([]);
+    writeNavigationHistoryIndex(0);
 
     const savingProgressbarEl = q("#saving-progress-bar");
     const savingProgressbarMessageEl = q("#saving-progress-bar .message");
@@ -1045,7 +1045,7 @@ export function takeoverLibraryDomain(): void {
       electronLog.info("---------------------------------------");
     }).catch(() => {
       if (useToastState.getState().localhostError !== true) {
-        writeScopeField('localhostError', true);
+        writeLocalhostError(true);
       }
       electronLog.error(`[app] Local server: disabled`);
       electronLog.error("---------------------------------------");
@@ -1055,11 +1055,11 @@ export function takeoverLibraryDomain(): void {
       if (!ACCESS.checkALCs(useMiscRawState.getState().libraryPath)) {
         ipc.send('electron-log', "[app] Detect library has no write permission, path: " + useMiscRawState.getState().libraryPath);
         if (useToastState.getState().libraryPathPermissionError !== true) {
-          writeScopeField('libraryPathPermissionError', true);
+          writeLibraryPathPermissionError(true);
         }
       }
       else {
-        writeScopeField('libraryPathPermissionError', false);
+        writeLibraryPathPermissionError(false);
       }
     }
 
@@ -1974,7 +1974,7 @@ export function machineryMultipleOpenFolder(folder: any, needReload: any): void 
       return;
     }
   }
-  writeScopeField('currentFolderChildren', machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
+  writeCurrentFolderChildren(machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
 }
 
 export function machineryOpenNextFolder(): void {
@@ -2559,7 +2559,7 @@ export function machineryRemoveFolderInner(folder: any, { isDeleteImages, ignore
       message: message,
       duration: 7000,
     }, function () {
-      writeScopeField('folders', originalFolders);
+      writeFolders(originalFolders);
 
       w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder2: any, parent: any) {
         if (!folder2.children) { folder2.children = []; }
@@ -2684,7 +2684,7 @@ export function machineryRemoveSmartFolderInner(smartFolder: any, { ignoreSelect
         parent.children = origin;
       }
       else {
-        writeScopeField('smartFolders', origin);
+        writeSmartFolders(origin);
       }
       useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
       w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (sf: any, parent: any, depth: any) {

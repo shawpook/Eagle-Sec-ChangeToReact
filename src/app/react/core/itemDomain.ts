@@ -61,10 +61,10 @@ import { getTimeout, machineryCalls } from './machineryInfra';
 import { getWindowScope } from './scopeFace';
 import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
-import { useFolderState, writeStartCursor } from '../store/folderState';
+import { useFolderState, writeStartCursor, writeTags, writeFolderList } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState, writeHexColor } from '../store/miscRawState';
-import { useItemState, writeRaw, writeTrash } from '../store/itemState';
+import { useItemState, writeRaw, writeTrash, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings } from '../store/itemState';
 import { useBodyState, writeCurrentFocus, writeIsCommentMode } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
@@ -1395,7 +1395,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
 export function machineryAddToDuplicateMapping(image: any): void {
   const w = window as any;
   var hashID = w.getHashID(image);
-  if (!useItemState.getState().duplicateMappings) writeScopeField('duplicateMappings', {});
+  if (!useItemState.getState().duplicateMappings) writeDuplicateMappings({});
   useItemState.getState().duplicateMappings[hashID] = image;
 }
 
@@ -1490,7 +1490,7 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
       /* var path = require('path');（原文未使用，略去——无副作用） */
       var tags: any = {};
       var exts: any = {};
-      writeScopeField('all', []);
+      writeAll([]);
       syncSidebarFromScope();
       writeScopeField('untagged', []);
       writeUnfiledCount(0);
@@ -1498,11 +1498,11 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
       writeTrash([]);
       syncSidebarFromScope();
       syncListFromScope();
-      writeScopeField('folderMappings', {});
+      writeFolderMappings({});
       writeScopeField('tagsSuggestion', []);
-      writeScopeField('folderList', []);
+      writeFolderList([]);
       syncSidebarFromScope();
-      writeScopeField('lockedImages', {});
+      writeLockedImages({});
 
       const ancestorsCache: any = {};
       const defaultFolderCoverIdMap: any = {};
@@ -1733,11 +1733,11 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
       });
 
       TagManager.calculateTags();
-      writeScopeField('tags', TagManager.rawdata);
+      writeTags(TagManager.rawdata);
       syncSidebarFromScope();
 
       if (!useFolderState.getState().tags) {
-        writeScopeField('tags', []);
+        writeTags([]);
         syncSidebarFromScope();
       }
 
@@ -2364,7 +2364,7 @@ export async function machineryRebindRefresh(muteMode?: any, contentFilterCache?
   }
   console.timeEnd("sort:置顶");
 
-  writeScopeField('allData', data);
+  writeAllData(data);
   syncListFromScope();
 
   // Note: 2019/08/05 避免拖拽順序使用 $scope.itemMappings 獲取的內容跟真實內容不一致，造成拖拽無法使用

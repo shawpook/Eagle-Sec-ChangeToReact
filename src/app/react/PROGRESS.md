@@ -8523,3 +8523,23 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
     `d3-theme`（theme）、`d3-detail-mode`（isDetailMode/isInlineMode）、
     `d3-viewmode`、`d3-loading`（isLoading）、`react-stage11b0-smoke`（网格/初始化）全绿。
+
+- **R4 切片⑥⑦（条目/文件夹/列表/提示/布局/锁屏/偏好七域长尾 41 字段，一并实施与验证）**：
+  同一机制续推，共 **41 个字段 / 74 处**：
+  - 条目域（10）：lastItemStates images allData all folderMappings lockedImages
+    duplicateMappings itemMappings smartFolderMappings modifiedMappings。
+  - 文件夹域（7）：folders currentFolderChildren tags smartFolders folderList
+    navigationHistory navigationHistoryIndex。
+  - 列表域（4）：showSubfolderContent isHideSubFolder currentOrderBy currentSortIncrease。
+  - 提示/布局/锁屏/偏好（6）：localhostError libraryPathPermissionError containerSize
+    imageSize isAppLocked trialRemain。
+  - **台账与守卫改为规格驱动**：`.tmp/r4/domains.json` 是收敛域的唯一事实源，
+    `.tmp/r4/sync-gate.mjs` 由它重写守卫的 `CONVERGED` 表并同步剔除 `PENDING` 台账；
+    具名写点约定统一为 `write` + 字段名首字母大写，守卫**由字段推导写点名**——
+    不再维护 `fields`/`actions` 两份清单（消除二者漂移的可能）。
+  - 累计 R4 已收敛 **68 个字段 / 337 处 / 10 个域**；待办数据字段 172 → **131**（337 处）。
+    写入点最多：`lastZoomMode(7) selectedSmartFolders(7) boxContianerWidth(6) isRotating(6)
+    lastIndex(6) selectedSmartFoldersMappings(6) zoomFitSize(6)`。
+  - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
+    `d3-alltags-view`（标签组）、`library-switch-ui`（切库 → currentFolder/folders）、
+    `d3-selection`、`empty-trash`（trash/lockedImages/lastItemStates）全绿。

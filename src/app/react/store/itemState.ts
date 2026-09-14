@@ -80,3 +80,16 @@ export function bindItemSync(): void {
   bound = true;
   (window as any).__eagleItemState = useItemState;
 }
+
+// R4 写点：
+/** R4 itemState 域长尾写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeLastItemStates(value: any): void { writers.lastItemStates(value); }
+export function writeImages(value: any): void { writers.images(value); }
+export function writeAllData(value: any): void { writers.allData(value); }
+export function writeAll(value: any): void { writers.all(value); }
+export function writeFolderMappings(value: any): void { writers.folderMappings(value); }
+export function writeLockedImages(value: any): void { writers.lockedImages(value); }
+export function writeDuplicateMappings(value: any): void { writers.duplicateMappings(value); }
+export function writeItemMappings(value: any): void { writers.itemMappings(value); }
+export function writeSmartFolderMappings(value: any): void { writers.smartFolderMappings(value); }
+export function writeModifiedMappings(value: any): void { writers.modifiedMappings(value); }

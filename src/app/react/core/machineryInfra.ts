@@ -7,7 +7,7 @@ import { syncBodyFromScope, writeCurrentFocus, writeLayout, writeIsHideSidebar, 
 import { syncDetailFromScope } from '../store/detailState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { syncListFromScope, writeUnfiledCount, writeUntaggedCount } from '../store/listState';
+import { syncListFromScope, writeUnfiledCount, writeUntaggedCount, writeShowSubfolderContent, writeIsHideSubFolder } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -28,9 +28,10 @@ import { machineryBuildTagManager } from './tagManagerDomain';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
-import { useLayoutState } from '../store/layoutState';
+import { useLayoutState, writeContainerSize, writeImageSize } from '../store/layoutState';
 import { writeSelected } from '../store/selectionState';
-import { writeShuffle, writeTrash, writeSelectedMappings } from '../store/itemState';
+import { writeShuffle, writeTrash, writeSelectedMappings, writeImages, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeItemMappings, writeSmartFolderMappings, writeModifiedMappings } from '../store/itemState';
+import { writeFolders, writeSmartFolders } from '../store/folderState';
 
 /**
  * b1-9bz-D-1 B-17：dataMachinery 收尾——挂载基础设施域（scope 面供给层）。
@@ -346,7 +347,7 @@ export function machinerySeedControllerState(): void {
         writeScopeField('MAX_DIMENSION', 120000000);
         writeScopeField('isHideMainNav', true);	// 3.0 侧栏
         writeIsHideSidebar(false);
-        writeScopeField('isHideSubFolder', true);
+        writeIsHideSubFolder(true);
         writeIsHideNavigator(false);
         writeScopeField('unlockPassword', "");
         // 音效三件套（bundle 20238-20254 逐字；$.playSound 由 js/vendors/jquery-audio.js 提供，
@@ -375,7 +376,7 @@ export function machinerySeedControllerState(): void {
         // 240 与 React 旧兜底 220 不一致，以 bundle 为准。$$rebind::refreshContainSize 广播
         // 为 Angular rebind 系统工件，shim 世界由 bodyState 的 watch 自动跟随；
         // #sidebar 的 resizable 指令（index.html:34）b1 后失效，拖拽写回链待办）
-        writeScopeField('containerSize', { sidebar: 240 });
+        writeContainerSize({ sidebar: 240 });
         syncSidebarFromScope();
         syncTagManagerFromScope();
         const sidebarSizeRaw = localStorage.getItem("eagle.containerSize.sidebar");
@@ -449,21 +450,21 @@ export function machinerySeedControllerState(): void {
         writeScopeField('sidebarList', []);
         syncSidebarFromScope();
         useMiscRawState.getState().sidebarIndex;
-        writeScopeField('all', []);
+        writeAll([]);
         syncSidebarFromScope();
         writeTrash([]);
         syncSidebarFromScope();
         syncListFromScope();
         writeUntaggedCount(0);
         writeUnfiledCount(0);
-        writeScopeField('images', []);
+        writeImages([]);
         writeSelected([]);
         syncInspectorFromScope();
         writeSelectedMappings({});
-        writeScopeField('lockedImages', {});
+        writeLockedImages({});
         writeScopeField('filtereds', []);
         syncListFromScope();
-        writeScopeField('allData', []);
+        writeAllData([]);
         syncListFromScope();
         writeShuffle([]);
         writeScopeField('selectedFolders', []);
@@ -471,8 +472,8 @@ export function machinerySeedControllerState(): void {
         writeScopeField('selectedFoldersMappings', {});
         writeScopeField('selectedSmartFolders', []);
         writeScopeField('selectedSmartFoldersMappings', {});
-        writeScopeField('folderMappings', {});
-        writeScopeField('smartFolderMappings', {});
+        writeFolderMappings({});
+        writeSmartFolderMappings({});
         writeScopeField('uploadQueue', []);
         syncUploadFromScope();
         writeScopeField('finishQueue', []);
@@ -482,7 +483,7 @@ export function machinerySeedControllerState(): void {
         
         writeScopeField('duplicateQueue', []);
         writeCurrentFocus("sidebar");
-        writeScopeField('showSubfolderContent', false);
+        writeShowSubfolderContent(false);
         writeScopeField('showOriginalImageWhenLarge', localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false')
         syncPanelFromScope();
         writeScopeField('showName', false);
@@ -517,8 +518,8 @@ export function machinerySeedControllerState(): void {
         writeScopeField('paletteQueueDelay', 20);
         
         // Grid Layout 相关
-        writeScopeField('itemMappings', {});
-        writeScopeField('modifiedMappings', {});
+        writeItemMappings({});
+        writeModifiedMappings({});
         writeScopeField('options', {
             page: 60,           // 每页数量
             preload: 1,         // 预先载入页次，如果填写 3 表示载入 page x 3 个内容
@@ -724,7 +725,7 @@ export function machinerySeedControllerState(): void {
         }
 
         if (localStorage.getItem("isHideSubFolder") == 'false') {
-            writeScopeField('isHideSubFolder', false);
+            writeIsHideSubFolder(false);
         }
 
         if (localStorage.getItem("eagle.list.sortIncrease") == 'false') {
@@ -748,7 +749,7 @@ export function machinerySeedControllerState(): void {
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
         // data.filter(...) 消费面已改直调 machineryColorFilter/machineryGrayColorFilter）
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
-        writeScopeField('showSubfolderContent', w.preferences.showSubfolderContent);
+        writeShowSubfolderContent(w.preferences.showSubfolderContent);
 
         if (localStorage.getItem("eagle.list.show.name") == 'false') {
             writeScopeField('showName', false);
@@ -814,7 +815,7 @@ export function machinerySeedControllerState(): void {
             syncBodyFromScope();
         }
 
-        writeScopeField('imageSize', {
+        writeImageSize({
             height: 150,
             zoomRatio: 100,
             subfolderWidth: 150
@@ -828,8 +829,8 @@ export function machinerySeedControllerState(): void {
         writeScopeField('lastZoomMode', localStorage["eagle.viewer.lastZoomMode"] || "fit");
         syncDetailFromScope();
         writeScopeField('tagsSuggestion', []);
-        writeScopeField('folders', []);
-        writeScopeField('smartFolders', []);
+        writeFolders([]);
+        writeSmartFolders([]);
         writeScopeField('quickAccess', []);
         syncSidebarFromScope();
         writeScopeField('isExpandFolder', true);

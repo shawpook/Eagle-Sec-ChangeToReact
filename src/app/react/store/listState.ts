@@ -156,3 +156,10 @@ export function bindListSync(): void {
   // b1-9by-A：startScopeSync 退役——保留一次性对齐，后续由写入点直调驱动。
   syncListFromScope();
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeShowSubfolderContent(value: any): void { writers.showSubfolderContent(value); }
+export function writeIsHideSubFolder(value: any): void { writers.isHideSubFolder(value); }
+export function writeCurrentOrderBy(value: any): void { writers.currentOrderBy(value); }
+export function writeCurrentSortIncrease(value: any): void { writers.currentSortIncrease(value); }

@@ -5,7 +5,7 @@
 
 ;
 import { syncListFromScope } from '../store/listState';
-import { syncFolderLock } from '../store/lockState';
+import { syncFolderLock, writeIsAppLocked } from '../store/lockState';
 
 import { q, focusOn, valOf, setValEl, addClass, removeClass, offEl } from '../utils/domQuery';
 
@@ -91,7 +91,7 @@ export function unlockAppPasswordKeyup(...args: any[]) {
                         typingPassword === currentPassword || 
                         Registration && Registration.license && typingPassword && typingPassword === Registration.license.code
                     ) {
-                        writeScopeField('isAppLocked', false);
+                        writeIsAppLocked(false);
                         setValEl(q("#app-lock-password-input"), "");
                         offEl(q("#app-lock-password-input"), "blur"); // 移除 blur 事件監聽
                         useMiscRawState.getState().initMenu();

@@ -23,7 +23,7 @@ import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { getWindowScope } from './scopeFace';
 import { onDetailEnter, onDetailLeave } from './detailDeliveryGate';
-import { syncErrorCount } from '../store/toastState';
+import { syncErrorCount, writeLocalhostError, writeLibraryPathPermissionError } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -72,14 +72,14 @@ import { machineryUndo } from './navHistory';
 import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
-import { useListState } from '../store/listState';
+import { useListState, writeCurrentOrderBy, writeCurrentSortIncrease } from '../store/listState';
 import { useMiscRawState, writeIsGifReady } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
-import { useLockState } from '../store/lockState';
+import { useLockState, writeIsAppLocked } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeLastItemStates } from '../store/itemState';
 import { writeSelected, writeCurrent } from '../store/selectionState';
 
 // R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
@@ -363,7 +363,7 @@ export function takeoverMiscDomain(): void {
     }, 200);
     writeIsMaximize(true);
     syncToolbarFromScope();
-    writeScopeField('lastItemStates', {});
+    writeLastItemStates({});
   });
 
   ipc.on('window.unmaximize', function () {
@@ -373,7 +373,7 @@ export function takeoverMiscDomain(): void {
     }, 200);
     writeIsMaximize(false);
     syncToolbarFromScope();
-    writeScopeField('lastItemStates', {});
+    writeLastItemStates({});
   });
 
   // ── analytics.* / log（22518-22544 逐字）──
@@ -513,7 +513,7 @@ export function takeoverMiscDomain(): void {
     })();
   });
   ipc.on('extension-server-init-failed', function (_e: any, _total: any) {
-    writeScopeField('localhostError', true);
+    writeLocalhostError(true);
   });
 
   // ── load-open-with（23527 逐字）──
@@ -1031,14 +1031,14 @@ export function changeOrderBy(...args: any[]) {
 export function cleanLibraryPathPermissionError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
-            writeScopeField('libraryPathPermissionError', false);
+            writeLibraryPathPermissionError(false);
         } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function cleanLocalhostError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
-            writeScopeField('localhostError', false);
+            writeLocalhostError(false);
         } as (...__args: any[]) => any).apply(null, args);
   }
 
@@ -1265,8 +1265,8 @@ export function updateCurrentOrderAndIncrease () {
                 orderBy = useMiscRawState.getState().orderBy;
                 sortIncrease = useMiscRawState.getState().sortIncrease;
             }
-            writeScopeField('currentOrderBy', orderBy);
-            writeScopeField('currentSortIncrease', sortIncrease);
+            writeCurrentOrderBy(orderBy);
+            writeCurrentSortIncrease(sortIncrease);
         }
 
 export function updateSuggestions() {
@@ -1727,7 +1727,7 @@ export function machineryLeaveSlideshowMode(): void {
 /* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
 export function machineryLockApp(): void {
   const w = window as any;
-  writeScopeField('isAppLocked', true);
+  writeIsAppLocked(true);
   if (typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
   setTimeout(function () {
     machineryFocusAppUnlockPassword();
@@ -2006,7 +2006,7 @@ export function machineryToggleSidebar(event: any): void {
   const $timeout = getTimeout();
   writeIsHideSidebar(!useBodyState.getState().isHideSidebar);
   $timeout(function() {
-    writeScopeField('lastItemStates', {});
+    writeLastItemStates({});
     w.$(window).trigger("orientationchange");
     const bc = q("#box-container") as HTMLElement | null;
     writeScopeField('boxContianerWidth', (bc ? bc.offsetWidth : 0) || useMiscRawState.getState().boxContianerWidth);

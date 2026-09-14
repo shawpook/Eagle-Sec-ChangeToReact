@@ -76,3 +76,13 @@ export function bindFolderSync(): void {
   bound = true;
   (window as any).__eagleFolderState = useFolderState;
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeFolders(value: any): void { writers.folders(value); }
+export function writeCurrentFolderChildren(value: any): void { writers.currentFolderChildren(value); }
+export function writeTags(value: any): void { writers.tags(value); }
+export function writeSmartFolders(value: any): void { writers.smartFolders(value); }
+export function writeFolderList(value: any): void { writers.folderList(value); }
+export function writeNavigationHistory(value: any): void { writers.navigationHistory(value); }
+export function writeNavigationHistoryIndex(value: any): void { writers.navigationHistoryIndex(value); }

@@ -53,7 +53,7 @@ import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { usePreferencesState } from '../store/preferencesState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeImages } from '../store/itemState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { writeSelected } from '../store/selectionState';
@@ -2891,7 +2891,7 @@ export function machineryOpenAllTags(ignoreHistory?: any): void {
   writeViewMode('alltags');
   writeCurrentFocus("sidebar");
   machineryResetPage();
-  writeScopeField('images', []);
+  writeImages([]);
   writeIsDetailMode(false);
   writeSelected([]);
   syncInspectorFromScope();

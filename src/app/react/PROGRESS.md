@@ -8849,3 +8849,24 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   `continuous-grid-scroll`、`react-stage11b0-smoke` 全绿。
 - **剩余 1 个文件**：`core/eagleClasses.ts`（297 条）；撤销后 `@ts-nocheck` 面只剩 8 个
   `core/shim/*`（各自由 `shim-module-boundaries` 单独守卫），R3 收尾即告完成。
+
+### R3 收尾：撤销 `@ts-nocheck`（第八批：eagleClasses）——**R3 撤销面清零**
+
+- **撤销对象**：`core/eagleClasses.ts`（297 条清零，删除 `// @ts-nocheck`）。**累计撤销 12 个文件
+  / 1670 条**（102+232+126+141+273+292+207+297）。
+- **`@ts-nocheck` 面只剩 8 个 `core/shim/*`**（R2 整段搬移的启动层，各由
+  `tests/shim-module-boundaries.mjs` 以「剥离 nocheck 后的未解析标识符」单独守卫）。
+  台账「待撤销」为 **0**。
+- **本批主要发现：TS 不再从构造函数赋值推断类属性**。`Inspector`/`ItemFilter`/`AISearch` 的
+  构造函数里全是 `this.newName = ''` 这类赋值，TS 5.9.3 仍报
+  `Property 'newName' does not exist on type 'Inspector'`（已用最小复现确认：连
+  `class A { constructor() { this.x = 1; } }` 都报，与 `#` 私有字段/`useDefineForClassFields`
+  无关）。故改为**显式声明类字段**——这同时是更诚实的写法（字段面一眼可见）。
+  同理给 `eagleApi` 的 `Eagle` 类补齐本文件安装的成员
+  （inspector/filter/duplicateChecker/reverseImageSearch/aiSearch/customExport/combineImages/action）。
+- 其余为：`pluginModule`/`fs`/`clipboard`/`Buffer`/`path` 的 typed ambient；20 余个方法形参与
+  回调形参补 `: any`；容器（board/sizeMap/md5Map/addedItemMap/结果对象/requestOptions/
+  `#statusWatcher`=`null` 后赋 number）补类型；`Error` 实例上挂的 `status/code/data`
+  用 `(error as any)`（Error 类型无这些字段）；`context` 空值用 `(context as any)`。
+- **验证**：`typecheck` 0 诊断、`shim-module-boundaries` OK、收敛台账 OK、`npm run build` exit 0；
+  `menu-popup`、`d3-selection` 全绿。随后按用户指示执行**全套测试**。

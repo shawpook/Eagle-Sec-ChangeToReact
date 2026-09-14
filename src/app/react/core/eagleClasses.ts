@@ -7,7 +7,6 @@
  * electronLog/swal/i18n/ipcRenderer → window 全局兜底 shim；FileUrlHelper → c1 移植版。
  * 本模块实例暂不覆写 window.eagle（bundle 实例仍为权威态，随 c 域切片逐步切换）。
  */
-// @ts-nocheck
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle } from './eagleApi';
 import { syncListFromScope } from '../store/listState';
@@ -26,12 +25,21 @@ const _req: any = (name: string) => {
 const electronLog: any = (window as any).electronLog || console;
 const i18n: any = (window as any).i18n;
 const ipcRenderer: any = getIpcBus();
+/* bundle/主窗全局：typed ambient 声明，只补类型不改运行期。 */
+declare const pluginModule: any;
+declare const fs: any;
+declare const clipboard: any;
+declare const Buffer: any;
+declare const path: any;
 const swal: any = (...args: any[]) => (window as any).swal(...args);
 
 class Inspector {
-    
-    #isHideInspector;
-    #width;
+    /* 本 TS 版本不把构造函数里的 this.x = … 推断为属性声明，故显式声明字段。 */
+    newName: any; newUrl: any; newTags: any; newNamePlaceholder: any; newUrlPlaceholder: any;
+    folders: any; activeTab: any; inspectorFolder: any; category: any; sortableOptions: any;
+    inspectorItems: any; inspectorItemsOrder: any; copiedTags: any;
+    #isHideInspector: any;
+    #width: any;
 
 	constructor() {
         this.#isHideInspector = localStorage["eagle.inspector.isHideInspector"] === 'true';
@@ -57,11 +65,11 @@ class Inspector {
             distance: 10,
             disabled: false,
 			helper : 'clone',
-            update: (e, ui) => {
+            update: (e: any, ui: any) => {
                 setTimeout(() => {
                     if (this.inspectorItems && this.inspectorItems.length > 0) {
-                        let inspectorItemsOrder = {};
-                        this.inspectorItems.forEach((item, index) => {
+                        let inspectorItemsOrder: any = {};
+                        this.inspectorItems.forEach((item: any, index: any) => {
                             inspectorItemsOrder[item.id] = index;
                         });
                         localStorage.setItem("eagle.inspector.itemsOrder", JSON.stringify(inspectorItemsOrder));
@@ -75,7 +83,7 @@ class Inspector {
 
     initPlugins() {
         const inspectorPlugins = pluginModule.previewExtension.inspectorPlugins;
-        const pluginItems = inspectorPlugins.map((plugin) => {
+        const pluginItems = inspectorPlugins.map((plugin: any) => {
             return {
                 type: "plugin",
                 id: plugin?.manifest?.id,
@@ -92,7 +100,7 @@ class Inspector {
             { id: "information", name: i18n.__("inspector.infoLabel"), type: "information" },
         ];
 
-        this.inspectorItems.sort((a, b) => {
+        this.inspectorItems.sort((a: any, b: any) => {
             const aOrder = this.inspectorItemsOrder[a.id] ?? 3;
             const bOrder = this.inspectorItemsOrder[b.id] ?? 3;
             return aOrder - bOrder;
@@ -112,7 +120,7 @@ class Inspector {
         else { electronLog && electronLog.info("[app] Inspector: ON"); }
     }
 
-    copyTags(tags) {
+    copyTags(tags: any) {
         tags = tags ?? this.newTags;
         if (tags?.length > 0) {
             this.copiedTags = tags;
@@ -120,15 +128,15 @@ class Inspector {
         }
     }
 
-    calculateTags(images) {
+    calculateTags(images: any) {
 
         if (images.length == 1) return images[0].tags;
 
-        var board = {}; // Ó‹·Ö±í
-        var tags = [];
-        images.forEach(function(image) {
+        var board: any = {};
+        var tags: any[] = [];
+        images.forEach(function(image: any) {
             if (image && image.tags) {
-                image.tags.forEach(function(tag) {
+                image.tags.forEach(function(tag: any) {
                     if (!board[tag]) {
                         board[tag] = 1;
                     } else {
@@ -137,7 +145,7 @@ class Inspector {
                 });
             }
         });
-        Object.keys(board).forEach(function(key) {
+        Object.keys(board).forEach(function(key: any) {
             if (board[key] == images.length) {
                 tags.push(key);
             }
@@ -145,12 +153,12 @@ class Inspector {
         return tags;
     }
 
-    calculateFolders(images) {
-        var board = {}; // Ó‹·Ö±í
-        var folders = [];
-        images.forEach(function(image) {
+    calculateFolders(images: any) {
+        var board: any = {};
+        var folders: any[] = [];
+        images.forEach(function(image: any) {
             if (!image || !image.folders) return;
-            image.folders.forEach(function(folder) {
+            image.folders.forEach(function(folder: any) {
                 if (!board[folder]) {
                     board[folder] = 1;
                 } else {
@@ -158,7 +166,7 @@ class Inspector {
                 }
             });
         });
-        Object.keys(board).forEach(function(key) {
+        Object.keys(board).forEach(function(key: any) {
             if (board[key] == images.length) {
                 folders.push(key);
             }
@@ -166,7 +174,7 @@ class Inspector {
         return folders;
     }
 
-    calculateName(images) {
+    calculateName(images: any) {
         var name = images[0].name;
         for (var i = 1; i < images.length; i++) {
             var image = images[i];
@@ -177,7 +185,7 @@ class Inspector {
         return name;
     }
     
-    calculateUrl(images) {
+    calculateUrl(images: any) {
         var url = images[0].url;
         for (var i = 1; i < images.length; i++) {
             var image = images[i];
@@ -188,7 +196,7 @@ class Inspector {
         return url;
     }
 
-    calculateAnnotation(images) {
+    calculateAnnotation(images: any) {
         var annotation = images[0].annotation;
         for (var i = 1; i < images.length; i++) {
             var image = images[i];
@@ -199,7 +207,7 @@ class Inspector {
         return annotation;
     }
 
-    calculateStar(images) {
+    calculateStar(images: any) {
         var star = images[0].star;
         for (var i = 1; i < images.length; i++) {
             var image = images[i];
@@ -210,7 +218,7 @@ class Inspector {
         return star;
     }
 
-    calculateFileSize(images) {
+    calculateFileSize(images: any) {
         var total = 0;
         try {
             for (var i = 0; i < images.length; i++) {
@@ -286,7 +294,12 @@ class Inspector {
 
 eagle.inspector = new Inspector();
 class ItemFilter {
-    #isOpen;
+    isLockFilter: any; defaultCounts: any; filterCounts: any; defaultRules: any; filterRules: any;
+    toolbar: any; toolbarMap: any; toolbarSortableOptions: any; filterToolbarOrders: any;
+    tagFilterLogic: any; folderFilterLogic: any; filterExtensions: any; filterFolderKeyword: any;
+    filterCameras: any; filterCamerasMapping: any; buildInTypes: any; filterTypes: any; filterBadge: any;
+    pinned: any;
+    #isOpen: any;
 	constructor() {
         this.#isOpen = localStorage['isOpenFilter']  === 'true';
         this.isLockFilter = false;
@@ -494,12 +507,12 @@ class ItemFilter {
             distance: 10,
             disabled: false,
 			helper : 'clone',
-            update: (e, ui) => {
+            update: (e: any, ui: any) => {
                 setTimeout(() => {
                     console.log(this.toolbar);
                     if (this.toolbar && this.toolbar.length > 0) {
-                        let toolbarOrders = [];
-                        this.toolbar.forEach((item) => {
+                        let toolbarOrders: any[] = [];
+                        this.toolbar.forEach((item: any) => {
                             toolbarOrders.push(item.type);
                         });
                         localStorage.setItem("eagle.filter.toolbar.orders", JSON.stringify(toolbarOrders));
@@ -560,7 +573,7 @@ class ItemFilter {
             bpm: false,
             camera: false,
         };
-        let pinned = localStorage.getItem('eagle.filter.toolbar.pinned');
+        let pinned: any = localStorage.getItem('eagle.filter.toolbar.pinned');
         if (pinned) {
             try {
                 pinned = JSON.parse(pinned);
@@ -601,7 +614,7 @@ class ItemFilter {
             'bpm',
             'camera'
         ];
-        var filterToolbarOrders = localStorage.getItem("eagle.filter.toolbar.orders");
+        var filterToolbarOrders: any = localStorage.getItem("eagle.filter.toolbar.orders");
         if (filterToolbarOrders) {
             try {
                 filterToolbarOrders = JSON.parse(filterToolbarOrders);
@@ -615,16 +628,16 @@ class ItemFilter {
         }
 
         if (filterToolbarOrders.length > 0) {
-            var filterToolbarOrdersIndexMap = {};
+            var filterToolbarOrdersIndexMap: any = {};
             
-            filterToolbarOrders.forEach((item, index) => {
+            filterToolbarOrders.forEach((item: any, index: any) => {
                 filterToolbarOrdersIndexMap[item] = index;
             });
 
-            this.toolbar = this.toolbar.sort((a, b) => filterToolbarOrdersIndexMap[a.type] - filterToolbarOrdersIndexMap[b.type]);
+            this.toolbar = this.toolbar.sort((a: any, b: any) => filterToolbarOrdersIndexMap[a.type] - filterToolbarOrdersIndexMap[b.type]);
 
             // set toolbar map
-            this.toolbar.forEach((item) => {
+            this.toolbar.forEach((item: any) => {
                 this.toolbarMap[item.type] = item;
             });
         }
@@ -645,8 +658,8 @@ class ItemFilter {
 eagle.filter = new ItemFilter();
 class DuplicateChecker {
 
-    async initFingerprintMap(items, fingerprintMap, onProgress, cancelToken) {
-        return new Promise((resolve) => {
+    async initFingerprintMap(items: any, fingerprintMap: any, onProgress: any, cancelToken: any) {
+        return new Promise<any>((resolve) => {
             let current = 0;
             let total = items.length;
 
@@ -654,7 +667,7 @@ class DuplicateChecker {
             if (Object.keys(fingerprintMap).length === 0) {
                 const startTime = Date.now();
                 const async = _req('async');
-                let queue = async.queue((item, callback) => {
+                let queue = async.queue((item: any, callback: any) => {
                     (async () => {
                         try {
                             if (cancelToken.isCancelled()) {
@@ -684,26 +697,26 @@ class DuplicateChecker {
 
                 queue.drain = () => {
                     console.log(`avg time each item: ${(Date.now() - startTime) / total} items/s`);
-                    resolve();
+                    resolve(undefined);
                 };
 
                 queue.push(items);
             }
             else {
-                resolve();
+                resolve(undefined);
             }
         });
     }
 
-    async findSimilarFiles(items, cancelToken, options = { fingerprintWeighted: 0.8, fingerprintMap: undefined, onProgress: undefined }) {
+    async findSimilarFiles(items: any, cancelToken: any, options: any = { fingerprintWeighted: 0.8, fingerprintMap: undefined, onProgress: undefined }) {
         return new Promise(async (resolve) => {
             let onProgress = options.onProgress;
 
             // 篩選掉不支援的格式，目前僅支援 jpg png jpeg webp avif bmp heic heif jfif jxl
             // 篩選掉檔案大小 > 128MB 的檔案
             const MB_128 = 1024 * 1024 * 128;
-            const cloneItems = items.filter((item) => {
-                const SUPPORT_FORMATS = {
+            const cloneItems = items.filter((item: any) => {
+                const SUPPORT_FORMATS: any = {
                     "jpg": true,
                     "png": true,
                     "jpeg": true,
@@ -716,7 +729,7 @@ class DuplicateChecker {
                     "jxl": true,
                 };
                 return SUPPORT_FORMATS[item.ext];
-            }).filter((item) => {
+            }).filter((item: any) => {
                 return item.size < MB_128;
             });
 
@@ -742,9 +755,9 @@ class DuplicateChecker {
             };
 
             const numWorkers = Math.min(4, Math.ceil(cloneItems.length / 3000));
-            const workers = [];
-            const workerResults = [];
-            const addedItemMap = {};
+            const workers: any[] = [];
+            const workerResults: any[] = [];
+            const addedItemMap: any = {};
 
             for (let i = 0; i < numWorkers; i++) {
                 workers[i] = new Worker('js/workers/calHammingDistance.js');
@@ -752,7 +765,7 @@ class DuplicateChecker {
                 const partItems = cloneItems.slice(i * cloneItems.length / numWorkers, (i + 1) * cloneItems.length / numWorkers);
                 workers[i].postMessage({all: cloneItems, part: partItems, fingerprintMap, fingerprintWeighted: options.fingerprintWeighted});
 
-                workers[i].onmessage = function(event) {
+                workers[i].onmessage = function(event: any) {
 
                     workers[i].terminate();
 
@@ -762,13 +775,13 @@ class DuplicateChecker {
 
                     if (workerResults.filter(Boolean).length === numWorkers) {
 
-                        let result = {
+                        let result: any = {
                             groups: [],
                             fingerprintMap: fingerprintMap,
                         };
 
                         workerResults.forEach((workerResult) => {
-                            workerResult.groups.forEach((group) => {
+                            workerResult.groups.forEach((group: any) => {
                                 if (addedItemMap[group.id]) return;
                                 group.items = [...new Set(group.items)];
                                 addedItemMap[group.id] = true;
@@ -779,7 +792,7 @@ class DuplicateChecker {
                             });
                         });
 
-                        result.groups = result.groups.filter((group) => {
+                        result.groups = result.groups.filter((group: any) => {
                             return group.items.length > 1;
                         });
                         
@@ -788,7 +801,7 @@ class DuplicateChecker {
                     }
                 };
 
-                workers[i].onerror = function(error) {
+                workers[i].onerror = function(error: any) {
                     console.error('Worker error: ', error);
                 };
             }
@@ -796,12 +809,12 @@ class DuplicateChecker {
     }
 
     //   找到相同的文件
-    async findDuplicateFiles(items, cancelToken, options) {
+    async findDuplicateFiles(items: any, cancelToken: any, options: any) {
         const crypto = _req('crypto');
         const readChunk = _req('read-chunk');
         const chunkSize = 1024 * 4;
         let result = [];
-        let sizeMap = {};
+        let sizeMap: any = {};
         let total = items.length;
         let current = 0;
         let onProgress = options.onProgress;
@@ -819,13 +832,13 @@ class DuplicateChecker {
 
             for (let [size, items] of Object.entries(sizeMap)) {
                 if (cancelToken.isCancelled()) break;
-                if (items.length < 2) {
-                    current += items.length;
+                if ((items as any).length < 2) {
+                    current += (items as any).length;
                     onProgress && onProgress(current, total);
                     continue;
                 }
-                const md5Map = {};
-                for await (const item of items) {
+                const md5Map: any = {};
+                for await (const item of (items as any)) {
                     if (cancelToken.isCancelled()) break;
                     // for (let item of items) {
                     try {
@@ -838,8 +851,8 @@ class DuplicateChecker {
                         }
                         else {
                             const headBuffer = await readChunk(filePath, 0, chunkSize);
-                            const bodyBuffer = await readChunk(filePath, Math.floor((size - chunkSize) / 2), chunkSize);
-                            const tailBuffer = await readChunk(filePath, size - chunkSize, chunkSize);
+                            const bodyBuffer = await readChunk(filePath, Math.floor(((size as any) - chunkSize) / 2), chunkSize);
+                            const tailBuffer = await readChunk(filePath, (size as any) - chunkSize, chunkSize);
                             const mergeBuffer = Buffer.concat([headBuffer, bodyBuffer, tailBuffer]);
                             md5 = crypto.createHash("md5").update(mergeBuffer).digest("hex");
                         }
@@ -858,7 +871,7 @@ class DuplicateChecker {
                     }
                 }
 
-                for (let items of Object.values(md5Map)) {
+                for (let items of Object.values(md5Map) as any[]) {
                     if (items.length < 2) continue;
                     result.push({
                         id: crypto.randomUUID(),
@@ -890,28 +903,28 @@ class Phash {
     static SamplingRadio = 4;
     static DCTScale = 2;
 
-    static async getImageUrl(file) {
-        return new Promise((resolve) => {
+    static async getImageUrl(file: any) {
+        return new Promise<any>((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = async function (e) {
+            reader.onload = async function (e: any) {
                 resolve(e.target.result);
             };
         });
     }
 
-    static async getImageData(src) {
-        return new Promise((resolve) => {
+    static async getImageData(src: any) {
+        return new Promise<any>((resolve) => {
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             canvas.width = Phash.ExpectImgSize;
             canvas.height = Phash.ExpectImgSize;
 
             const img = new Image();
-            img.onload = function () {
-                const _this = this;
-                context.drawImage(_this, 0, 0, _this.width, _this.height, 0, 0, Phash.ExpectImgSize, Phash.ExpectImgSize);
-                resolve(context.getImageData(0, 0, Phash.ExpectImgSize, Phash.ExpectImgSize));
+            img.onload = function (this: any) {
+                const _this: any = this;
+                (context as any).drawImage(_this, 0, 0, _this.width, _this.height, 0, 0, Phash.ExpectImgSize, Phash.ExpectImgSize);
+                resolve((context as any).getImageData(0, 0, Phash.ExpectImgSize, Phash.ExpectImgSize));
             };
             img.onerror = function () {
                 resolve(null);
@@ -920,7 +933,7 @@ class Phash {
         });
     }
 
-    static getGrayscale(origin) {
+    static getGrayscale(origin: any) {
         const result = [];
         for (let n = 0; n < origin.data.length; n++) {
             if ((n + 1) % 4 === 0) {
@@ -934,15 +947,15 @@ class Phash {
         return result;
     }
 
-    static getDCT(colors) {
+    static getDCT(colors: any) {
         const PI_N = Math.PI / colors.length;
-        return colors.map((_, n) => {
-            const num = Phash.DCTScale * colors.reduce((total, current, m) => total + current * Math.cos(PI_N * (m + 0.5) * n), 0);
+        return colors.map((_: any, n: any) => {
+            const num = Phash.DCTScale * colors.reduce((total: any, current: any, m: any) => total + current * Math.cos(PI_N * (m + 0.5) * n), 0);
             return Math.min(255, Math.max(0, num));
         });
     }
 
-    static getLTCornerColors(colors) {
+    static getLTCornerColors(colors: any) {
         const MatrixSize = Math.sqrt(colors.length);
         const SamplingSize = MatrixSize / Phash.SamplingRadio;
         const result = [];
@@ -953,7 +966,7 @@ class Phash {
         return result;
     }
 
-    static getCosineSimilarity(origin, target) {
+    static getCosineSimilarity(origin: any, target: any) {
         let product = 0,
             vecA = 0,
             vecB = 0;
@@ -970,7 +983,7 @@ class Phash {
         return product / (Math.sqrt(vecA) * Math.sqrt(vecB));
     };
 
-    static hammingDistance(string1, string2) {
+    static hammingDistance(string1: any, string2: any) {
         var xorResult = BigInt("0b" + string1) ^ BigInt("0b" + string2);
         var binary = xorResult.toString(2);
         var count = 0;
@@ -982,7 +995,7 @@ class Phash {
         return count;
     }
 
-    static getFingerprint = async (filePath) => {
+    static getFingerprint = async (filePath: any) => {
         const imgData = await Phash.getImageData(filePath);
         // 離散餘弦轉換
         const colors = Phash.getLTCornerColors(Phash.getDCT(Phash.getGrayscale(imgData)));
@@ -1001,7 +1014,7 @@ eagle.urlEnlargerRemote = {
             'https://eagleapp.oss-cn-hongkong.aliyuncs.com/js/url-enlarger.js'
         ];
 
-        function loadScript(index) {
+        function loadScript(index: any) {
             if (index >= scripts.length) return;
 
             const script = document.createElement('script');
@@ -1035,7 +1048,7 @@ class ReverseImageSearch {
         SAUCENAO: 'saucenao'
     };
 
-    search(item, searchEngine = 'google') {
+    search(item: any, searchEngine = 'google') {
 
         if (!item) return;
 
@@ -1055,6 +1068,7 @@ eagle.reverseImageSearch = new ReverseImageSearch();
  * @class
  */
 class AISearch {
+    isError: any;
     // 配置常數
     static #CONFIG = {
         PLUGIN_ID: 'ai-search',
@@ -1093,7 +1107,7 @@ class AISearch {
     // 私有屬性
     #pluginId = AISearch.#CONFIG.PLUGIN_ID;
     #apiServerUrl = AISearch.#CONFIG.API_SERVER_URL;
-    #statusWatcher = null;
+    #statusWatcher: any = null;
     #listeners = new Map(); // 事件監聽器
 
     // 公開屬性
@@ -1125,7 +1139,7 @@ class AISearch {
             this.#startStatusWatcher();
         }
 
-        ipcRenderer.on('plugin-installed', (event, pluginId) => {
+        ipcRenderer.on('plugin-installed', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
                 this.isReady = false;
@@ -1138,7 +1152,7 @@ class AISearch {
             }
         });
 
-        ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
+        ipcRenderer.on('plugin-uninstalled', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
                 this.isReady = false;
@@ -1176,7 +1190,7 @@ class AISearch {
      * @param {Function} callback - 回調函數
      * @public
      */
-    on(event, callback) {
+    on(event: any, callback: any) {
         if (!this.#listeners.has(event)) {
             this.#listeners.set(event, new Set());
         }
@@ -1189,7 +1203,7 @@ class AISearch {
      * @param {Function} callback - 回調函數
      * @public
      */
-    off(event, callback) {
+    off(event: any, callback: any) {
         if (this.#listeners.has(event)) {
             this.#listeners.get(event).delete(callback);
         }
@@ -1204,11 +1218,11 @@ class AISearch {
      * @throws {Error} 搜尋失敗時拋出錯誤
      * @public
      */
-    async searchByText(query, options = {}) {
+    async searchByText(query: any, options: any = {}) {
         this.#validateServiceReady();
         this.#validateTextQuery(query);
 
-        const { signal, ...restOptions } = options;
+        const { signal, ...restOptions } = options as any;
         const searchParams = {
             ...this.#getDefaultSearchOptions(),
             ...restOptions,
@@ -1233,11 +1247,11 @@ class AISearch {
      * @throws {Error} 搜尋失敗時拋出錯誤
      * @public
      */
-    async searchByImage(imageFile, options = {}) {
+    async searchByImage(imageFile: any, options: any = {}) {
         this.#validateServiceReady();
         this.#validateImageFile(imageFile);
 
-        const { signal, ...restOptions } = options;
+        const { signal, ...restOptions } = options as any;
         const formData = this.#createImageSearchFormData(imageFile, restOptions);
 
         return this.#executeSearch(
@@ -1256,7 +1270,7 @@ class AISearch {
      * @returns {Promise<Object>} 搜尋結果
      * @public
      */
-    async searchByBase64(base64String, options = {}) {
+    async searchByBase64(base64String: any, options: any = {}) {
         this.#validateServiceReady();
         if (!base64String) {
             throw new Error('Base64 string is required');
@@ -1273,13 +1287,13 @@ class AISearch {
      * @returns {Promise<Object>} 搜尋結果
      * @public
      */
-    async searchByItemId(itemId, options = {}) {
+    async searchByItemId(itemId: any, options: any = {}) {
         this.#validateServiceReady();
         if (!itemId) {
             throw new Error('Item ID is required');
         }
 
-        const { signal, ...restOptions } = options;
+        const { signal, ...restOptions } = options as any;
         const searchParams = {
             ...this.#getDefaultSearchOptions(),
             ...restOptions,
@@ -1303,7 +1317,7 @@ class AISearch {
     async checkServiceHealth() {
         this.#validateInstalled();
         try {
-            const response = await this.#fetchWithTimeout(
+            const response = await (this.#fetchWithTimeout as any)(
                 `${this.#apiServerUrl}${AISearch.#CONFIG.ENDPOINTS.HEALTH}`,
                 {},
                 AISearch.#CONFIG.TIMEOUTS.HEALTH
@@ -1328,7 +1342,7 @@ class AISearch {
     async getSyncStatus() {
         this.#validateInstalled();
         try {
-            const response = await this.#fetchWithTimeout(
+            const response = await (this.#fetchWithTimeout as any)(
                 `${this.#apiServerUrl}${AISearch.#CONFIG.ENDPOINTS.STATUS}`
             );
 
@@ -1357,7 +1371,7 @@ class AISearch {
         }
 
         try {
-            const response = await this.#fetchWithTimeout(
+            const response = await (this.#fetchWithTimeout as any)(
                 `${this.#apiServerUrl}${AISearch.#CONFIG.ENDPOINTS.SYNC.FULL}`,
                 {
                     method: 'POST',
@@ -1414,7 +1428,7 @@ class AISearch {
      * @param {Object} newStatus - 新的狀態對象
      * @private
      */
-    #updateStatus(newStatus) {
+    #updateStatus(newStatus: any) {
         const wasReady = this.isReady;
         const wasStarting = this.isStarting;
         const wasError = this.isError;
@@ -1465,7 +1479,7 @@ class AISearch {
      * @returns {boolean} 是否就緒
      * @private
      */
-    #checkIfReady(status) {
+    #checkIfReady(status: any) {
         return status?.pythonServer?.healthy && status?.apiServer?.healthy;
     }
 
@@ -1475,7 +1489,7 @@ class AISearch {
      * @returns {boolean} 是否正在啟動中
      * @private
      */
-    #checkIfStarting(status) {
+    #checkIfStarting(status: any) {
         return !status?.pythonServer?.healthy && status?.apiServer?.healthy;
     }
 
@@ -1485,7 +1499,7 @@ class AISearch {
      * @returns {boolean} 是否有錯誤
      * @private
      */
-    #checkIfError(status) {
+    #checkIfError(status: any) {
         // 檢查是否有任何錯誤
         const hasErrors = status?.errors || status?.apiServer?.hasErrors;
         
@@ -1602,9 +1616,9 @@ class AISearch {
      * @param {*} data - 事件數據
      * @private
      */
-    #emit(event, data) {
+    #emit(event: any, data: any) {
         if (this.#listeners.has(event)) {
-            this.#listeners.get(event).forEach(callback => {
+            this.#listeners.get(event).forEach((callback: any) => {
                 try {
                     callback(data);
                 } catch (error) {
@@ -1623,11 +1637,11 @@ class AISearch {
      * @returns {Promise<Object>} 搜尋結果
      * @private
      */
-    async #executeSearch(endpoint, data, method = 'POST', headers = {}, signal) {
+    async #executeSearch(endpoint: any, data: any, method: any = 'POST', headers: any = {}, signal: any) {
         try {
             this.isSearching = true;
 
-            const requestOptions = {
+            const requestOptions: any = {
                 method,
                 headers
             };
@@ -1639,7 +1653,7 @@ class AISearch {
                 requestOptions.body = JSON.stringify(data);
             }
 
-            const response = await this.#fetchWithTimeout(
+            const response = await (this.#fetchWithTimeout as any)(
                 `${this.#apiServerUrl}${endpoint}`,
                 requestOptions,
                 AISearch.#CONFIG.TIMEOUTS.SEARCH,
@@ -1658,16 +1672,16 @@ class AISearch {
      * @returns {Promise<Object>} 搜尋結果
      * @private
      */
-    async #handleSearchResponse(response) {
+    async #handleSearchResponse(response: any) {
         if (!response.ok) {
             const errorData = await response.json();
             const error = new Error(
                 errorData.message || 
                 `Search failed: ${response.status} ${response.statusText}`
             );
-            error.status = response.status;
-            error.data = errorData;
-            error.code = AISearch.#CONFIG.ERRORS.SEARCH_FAILED;
+            (error as any).status = response.status;
+            (error as any).data = errorData;
+            (error as any).code = AISearch.#CONFIG.ERRORS.SEARCH_FAILED;
             throw error;
         }
 
@@ -1683,10 +1697,10 @@ class AISearch {
      * @private
      */
     async #fetchWithTimeout(
-        url,
-        options = {},
-        timeoutMs = AISearch.#CONFIG.TIMEOUTS.DEFAULT,
-        externalSignal
+        url: any,
+        options: any = {},
+        timeoutMs: any = AISearch.#CONFIG.TIMEOUTS.DEFAULT,
+        externalSignal: any
     ) {
         const controller = new AbortController();
 
@@ -1728,18 +1742,18 @@ class AISearch {
      * @returns {Error} 增強後的錯誤
      * @private
      */
-    #enhanceError(error, timeoutMs) {
+    #enhanceError(error: any, timeoutMs: any) {
         if (error.name === 'TimeoutError' || error.name === 'AbortError') {
             const timeoutError = new Error(
                 `Request timeout (${timeoutMs / 1000} seconds)`
             );
-            timeoutError.code = AISearch.#CONFIG.ERRORS.TIMEOUT;
+            (timeoutError as any).code = AISearch.#CONFIG.ERRORS.TIMEOUT;
             return timeoutError;
         }
         
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             const networkError = new Error('Cannot connect to API server');
-            networkError.code = AISearch.#CONFIG.ERRORS.NETWORK_ERROR;
+            (networkError as any).code = AISearch.#CONFIG.ERRORS.NETWORK_ERROR;
             return networkError;
         }
         
@@ -1765,7 +1779,7 @@ class AISearch {
     #validateInstalled() {
         if (!this.isInstalled) {
             const error = new Error('AI Search plugin is not installed');
-            error.code = AISearch.#CONFIG.ERRORS.PLUGIN_NOT_INSTALLED;
+            (error as any).code = AISearch.#CONFIG.ERRORS.PLUGIN_NOT_INSTALLED;
             throw error;
         }
     }
@@ -1779,7 +1793,7 @@ class AISearch {
         this.#validateInstalled();
         if (!this.isReady) {
             const error = new Error('AI Search service is not ready');
-            error.code = AISearch.#CONFIG.ERRORS.SERVICE_NOT_READY;
+            (error as any).code = AISearch.#CONFIG.ERRORS.SERVICE_NOT_READY;
             throw error;
         }
     }
@@ -1790,7 +1804,7 @@ class AISearch {
      * @throws {Error} 查詢無效時拋出錯誤
      * @private
      */
-    #validateTextQuery(query) {
+    #validateTextQuery(query: any) {
         if (!query || query.trim() === '') {
             throw new Error('Search query cannot be empty');
         }
@@ -1802,7 +1816,7 @@ class AISearch {
      * @throws {Error} 檔案無效時拋出錯誤
      * @private
      */
-    #validateImageFile(imageFile) {
+    #validateImageFile(imageFile: any) {
         if (!imageFile) {
             throw new Error('Please select an image file');
         }
@@ -1819,7 +1833,7 @@ class AISearch {
      * @returns {FormData} 表單數據
      * @private
      */
-    #createImageSearchFormData(imageFile, options) {
+    #createImageSearchFormData(imageFile: any, options: any) {
         const searchOptions = {
             ...this.#getDefaultSearchOptions(),
             ...options
@@ -1838,7 +1852,7 @@ class AISearch {
      * @returns {File} 文件對象
      * @private
      */
-    #convertBase64ToFile(base64String) {
+    #convertBase64ToFile(base64String: any) {
         // 移除 data URL 前綴
         const base64Data = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
         
@@ -1867,7 +1881,7 @@ class AISearch {
             const fileName = `image_${Date.now()}.${mimeType.split('/')[1]}`;
             return new File([blob], fileName, { type: mimeType });
         } catch (error) {
-            if (error.message.includes('atob')) {
+            if ((error as any).message.includes('atob')) {
                 throw new Error('Invalid base64 string');
             }
             throw error;
@@ -1888,25 +1902,25 @@ class CustomExport {
     init() {
         this.isInstalled = pluginModule.checkPluginInstalled(this.#pluginId);
 
-        ipcRenderer.on('plugin-installed', (event, pluginId) => {
+        ipcRenderer.on('plugin-installed', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
             }
         });
 
-        ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
+        ipcRenderer.on('plugin-uninstalled', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
             }
         });
     }
 
-    open(items) {
+    open(items: any) {
         if (!pluginModule.checkPluginInstalled(this.#pluginId)) {
             pluginModule.showInstallPluginDialog(this.#pluginId);
             return;
         }
-        const ids = items.map(item => item.id);
+        const ids = items.map((item: any) => item.id);
         pluginModule.openPluginById(this.#pluginId, { ids });
     }
 }
@@ -1920,25 +1934,25 @@ class CombineImages {
     init() {
         this.isInstalled = pluginModule.checkPluginInstalled(this.#pluginId);
 
-        ipcRenderer.on('plugin-installed', (event, pluginId) => {
+        ipcRenderer.on('plugin-installed', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
             }
         });
 
-        ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
+        ipcRenderer.on('plugin-uninstalled', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
             }
         });
     }
 
-    open(items) {
+    open(items: any) {
         if (!pluginModule.checkPluginInstalled(this.#pluginId)) {
             pluginModule.showInstallPluginDialog(this.#pluginId);
             return;
         }
-        const ids = items.map(item => item.id);
+        const ids = items.map((item: any) => item.id);
         pluginModule.openPluginById(this.#pluginId, { ids });
     }
 }
@@ -1958,13 +1972,13 @@ class AIAction {
     init() {
         this.isInstalled = pluginModule.checkPluginInstalled(this.#pluginId);
 
-        ipcRenderer.on('plugin-installed', (event, pluginId) => {
+        ipcRenderer.on('plugin-installed', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
             }
         });
 
-        ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
+        ipcRenderer.on('plugin-uninstalled', (event: any, pluginId: any) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
             }
@@ -1972,7 +1986,7 @@ class AIAction {
     }
 
     // Library 開啟時初始化 actions config
-    initActions(rootDir) {
+    initActions(rootDir: any) {
         this.destroy();
         this.#configPath = path.join(rootDir, 'actions.config.json');
         this.#loadActions();
@@ -1996,7 +2010,7 @@ class AIAction {
         this.#unwatchConfig();
         try {
             if (fs.existsSync(this.#configPath)) {
-                fs.watchFile(this.#configPath, { persistent: true, interval: 4000 }, (curr, prev) => {
+                fs.watchFile(this.#configPath, { persistent: true, interval: 4000 }, (curr: any, prev: any) => {
                     if (curr.mtimeMs === prev.mtimeMs) return;
                     if (!fs.existsSync(this.#configPath)) return;
                     this.#loadActions();
@@ -2018,7 +2032,7 @@ class AIAction {
         return this.#actions;
     }
 
-    formatShortcut(shortcut) {
+    formatShortcut(shortcut: any) {
         if (!shortcut) return '';
         if (process.platform === 'win32') {
             return shortcut.replace("Command", "CmdOrCtrl");
@@ -2026,7 +2040,7 @@ class AIAction {
         return shortcut;
     }
 
-    runByShortcut(actionId) {
+    runByShortcut(actionId: any) {
         if (!pluginModule.checkPluginInstalled(this.#pluginId)) {
             pluginModule.showInstallPluginDialog(this.#pluginId);
             return;
@@ -2037,12 +2051,12 @@ class AIAction {
         });
     }
 
-    open(items) {
+    open(items: any) {
         if (!pluginModule.checkPluginInstalled(this.#pluginId)) {
             pluginModule.showInstallPluginDialog(this.#pluginId);
             return;
         }
-        const ids = items.map(item => item.id);
+        const ids = items.map((item: any) => item.id);
         pluginModule.openPluginById(this.#pluginId, { ids });
     }
 

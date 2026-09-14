@@ -7,6 +7,15 @@
 class Eagle {
 	utils: any;
 	urlEnlargerRemote: any;
+	/* eagleClasses 安装的成员（c2 骨架未列全，导致消费侧 Property 不存在） */
+	inspector: any;
+	filter: any;
+	duplicateChecker: any;
+	reverseImageSearch: any;
+	aiSearch: any;
+	customExport: any;
+	combineImages: any;
+	action: any;
 	constructor() {
         this.utils = {};
 	}

@@ -6,22 +6,70 @@ const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://local
 // 渲染层 window.process/window.require 均被 shims stub，env 不可达）
 window.__EAGLE_MENU_SMOKE = String(process.env.EAGLE_MENU_SMOKE || '') === '1';
 
+// contextBridge 会代理函数，跨调用不应依赖 callback 的 === 身份；优先使用返回的 disposer。
+// 映射仅用于兼容同身份的 off/removeListener；每次注册都有独立且幂等的清理句柄。
+const subscriptions = new Map();
+
+function subscribe(channel, callback, once = false, withPayload = true) {
+  if (typeof callback !== 'function') throw new TypeError('IPC callback must be a function');
+  const callbacks = subscriptions.get(channel) || new Map();
+  const disposers = callbacks.get(callback) || new Set();
+  let active = true;
+  const dispose = () => {
+    if (!active) return;
+    active = false;
+    disposers.delete(dispose);
+    if (!disposers.size) callbacks.delete(callback);
+    if (!callbacks.size) subscriptions.delete(channel);
+    ipcRenderer.removeListener(channel, wrapper);
+  };
+  const wrapper = (_event, value) => {
+    if (!active) return;
+    // 先清理再调用，保证重入或 callback 抛错时 once 仍只消费一次。
+    if (once) dispose();
+    if (withPayload) callback(value);
+    else callback();
+  };
+  ipcRenderer.on(channel, wrapper);
+  disposers.add(dispose);
+  callbacks.set(callback, disposers);
+  subscriptions.set(channel, callbacks);
+  return dispose;
+}
+
+function unsubscribe(channel, callback) {
+  const disposers = subscriptions.get(channel)?.get(callback);
+  // 对齐 EventEmitter：重复注册同一 callback 时，一次 off 只移除最近的一次。
+  if (disposers) Array.from(disposers).pop()();
+}
+
+function removeAllSubscriptions(channel) {
+  const channels = channel === undefined ? Array.from(subscriptions.keys()) : [channel];
+  for (const name of channels) {
+    const callbacks = subscriptions.get(name);
+    if (!callbacks) continue;
+    for (const disposers of callbacks.values()) {
+      for (const dispose of Array.from(disposers)) dispose();
+    }
+  }
+  if (channel === undefined) ipcRenderer.removeAllListeners();
+  else ipcRenderer.removeAllListeners(channel);
+}
+
 const api = {
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
-  onIpc: (channel, callback) => {
-    ipcRenderer.on(channel, (_event, value) => callback(value));
-  },
+  onIpc: (channel, callback) => subscribe(channel, callback),
   // P1-b：通用 IPC 桥。渲染层 `core/channelBridge.ts` 的 facade 用它把「纯原生直通」频道直达
   // 主进程（其余频道仍走 shims 的路由表）。此前渲染层没有通用 send 能力（preload 只暴露具名 API），
   // 这也是 shims 长期兼任 IPC 路由器的原因之一。
   ipc: {
     send: (channel, params) => ipcRenderer.send(channel, params),
     sendTo: (webContentsId, channel, params) => ipcRenderer.sendTo(webContentsId, channel, params),
-    on: (channel, callback) => { ipcRenderer.on(channel, (_event, value) => callback(value)); },
-    once: (channel, callback) => { ipcRenderer.once(channel, (_event, value) => callback(value)); },
-    off: (channel, callback) => { ipcRenderer.removeListener(channel, callback); },
-    removeListener: (channel, callback) => { ipcRenderer.removeListener(channel, callback); },
-    removeAllListeners: (channel) => { ipcRenderer.removeAllListeners(channel); },
+    on: (channel, callback) => subscribe(channel, callback),
+    once: (channel, callback) => subscribe(channel, callback, true),
+    off: unsubscribe,
+    removeListener: unsubscribe,
+    removeAllListeners: removeAllSubscriptions,
     invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
     sendSync: (channel, ...args) => ipcRenderer.sendSync(channel, ...args),
     r2r: (channel, ...args) => (typeof ipcRenderer.r2r === 'function' ? ipcRenderer.r2r(channel, ...args) : undefined),
@@ -35,8 +83,8 @@ const api = {
     create: (params) => ipcRenderer.invoke('library:create', params),
     open: (libraryPath) => ipcRenderer.invoke('library:open', libraryPath),
     switch: (libraryPath) => ipcRenderer.invoke('library:switch', libraryPath),
-    onChanged: (callback) => ipcRenderer.on('library:changed', (_event, library) => callback(library)),
-    onOperationResult: (callback) => ipcRenderer.on('library:operation-result', (_event, result) => callback(result)),
+    onChanged: (callback) => subscribe('library:changed', callback),
+    onOperationResult: (callback) => subscribe('library:operation-result', callback),
   },
   dialog: {
     open: (options) => ipcRenderer.invoke('dialog:show-open', options),
@@ -55,7 +103,7 @@ const api = {
   openViewer: (payload) => ipcRenderer.invoke('viewer:open', payload),
   preview: {
     open: (payload) => ipcRenderer.invoke('preview:open-original', payload),
-    onInit: (callback) => ipcRenderer.on('preview:init', (_event, payload) => callback(payload)),
+    onInit: (callback) => subscribe('preview:init', callback),
   },
   item: {
     updateMany: (items) => ipcRenderer.invoke('item:update-many', items),
@@ -141,9 +189,7 @@ const api = {
     quit: () => ipcRenderer.invoke('window:action', 'quit'),
     isMaximized: () => ipcRenderer.sendSync('window:query', 'isMaximized'),
     isFullScreen: () => ipcRenderer.sendSync('window:query', 'isFullScreen'),
-    onStateChanged: (callback) => {
-      ipcRenderer.on('window:state-changed', (_event, state) => callback(state));
-    },
+    onStateChanged: (callback) => subscribe('window:state-changed', callback),
   },
 };
 

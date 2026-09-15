@@ -35,16 +35,25 @@ const req = (name: string): any => (window as any).require?.(name);
 function PreviewEntryRoot() {
   useEffect(() => {
     const ipc = req('electron')?.ipcRenderer;
-    if (ipc && ipc.on) {
-      const onInit = (_event: any, params: any) => {
-        applyController((s) => s.runInitSequence(params));
-      };
-      ipc.on('init', onInit);
-    }
+    let active = true;
+    const onInit = (_event: any, params: any) => {
+      if (!active) return;
+      applyController((s) => s.runInitSequence(params));
+    };
+    const subscription = typeof ipc?.on === 'function' ? ipc.on('init', onInit) : undefined;
 
     // shims 就绪标记：本 effect 提交后 controller 模块与 shell 的监听器均已注册，此刻
     // 发射 init 不会丢失（子组件 effect 先于父 effect 执行，controller 监听在 import 期注册）。
     (window as any).__eaglePreviewEntryReady = true;
+    return () => {
+      if (!active) return;
+      active = false;
+      (window as any).__eaglePreviewEntryReady = false;
+      // 新桥优先 disposer；旧版 on 返回 void/Emitter 时按原 callback 精确清理。
+      if (typeof subscription === 'function') subscription();
+      else if (typeof ipc?.off === 'function') ipc.off('init', onInit);
+      else if (typeof ipc?.removeListener === 'function') ipc.removeListener('init', onInit);
+    };
   }, []);
 
   return <PreviewShell />;

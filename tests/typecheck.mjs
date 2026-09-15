@@ -1,111 +1,160 @@
-/**
- * R3 类型门禁：**零容忍**（取代 R0 的「基线 diff」）。
- *
- * R0–R2 期存量为 492 条诊断，故当时以「基线 + 防倒退」形式接入；R3 已将检查范围内
- * 诊断清零（492 → 0），因此门禁升级为「出现任何一条即失败」。
- *
- * 同时断言**检查范围**（scope guard）：`include` 必须覆盖 `src/app/react`（R5 起文档查看器
- * 亦在其内：frontend/document-viewer → src/app/react/viewers/document），`exclude` 不得排除
- * `frontend` 或 `src/app/react/viewers/document`——防止后续通过缩小范围来「清零」。
+/** M0 类型门禁：检查范围内零诊断不等于全工作区无类型债。
+ * 保留现有 8 项整文件免检，完整扫描注释指令并显式报告类别和未覆盖范围。
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
+import { parseHtml } from './dist-entry-check.mjs';
+import {
+  SCRIPT_INVENTORY_ROOTS, FIRST_PARTY_SCRIPTS, ENGINE_SCRIPTS, STATIC_PAGES, GATE_LIMITS,
+} from './frontend-gate-manifest.mjs';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
-const tsconfigPath = path.join(projectRoot, 'tsconfig.json');
-
-// ── 范围守卫 ────────────────────────────────────────────────────────────────
-const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
-const include = (tsconfig.include || []).map(String);
-const exclude = (tsconfig.exclude || []).map(String);
-const REQUIRED_INCLUDE = ['src/app/react/**/*.ts', 'src/app/react/**/*.tsx'];
-const missing = REQUIRED_INCLUDE.filter((entry) => !include.includes(entry));
-if (missing.length > 0) {
-  console.error('TYPECHECK_SCOPE_ERROR: tsconfig.include 缺少必需范围（不得缩小检查面）：');
-  for (const entry of missing) console.error(`  - ${entry}`);
-  process.exit(1);
-}
-// R5：文档查看器由 frontend/document-viewer 迁入 src/app/react/viewers/document —— 原独立
-// include 条目（frontend/document-viewer/src/**）已并入 src/app/react/** 两个 glob，故 REQ 清单
-// 随之收敛；「不得把它排除在检查面外」的意图保留并**加强**：同时禁止排除 frontend 与新的
-// viewers/document 路径。
-const FORBIDDEN_EXCLUDE = ['frontend', 'frontend/', 'src/app/react/viewers/document', 'src/app/react/viewers/document/'];
-const badExclude = exclude.find((entry) => FORBIDDEN_EXCLUDE.includes(entry));
-if (badExclude) {
-  console.error(`TYPECHECK_SCOPE_ERROR: tsconfig.exclude 不得排除 ${badExclude}（文档查看器必须在检查范围内）`);
-  process.exit(1);
-}
-
-// ── @ts-nocheck 面守卫 ──────────────────────────────────────────────────────
-// 零容忍门禁有一个漏洞：`// @ts-nocheck` 能让任意文件整体退出检查，且 tsc 不会报。
-// 故把仍带 @ts-nocheck 的文件**显式登记**（R3 的撤销进度台账），并双向校验：
-// 未登记的文件新加 nocheck → 失败；已登记的文件撤销后未从台账移除（僵尸项）→ 失败。
-// 台账只允许单向缩短。
-const NOCHECK_LEDGER = [
-  // ── core/shim/*：R2 整段搬移的启动层（各模块已由 shim-module-boundaries 精确守卫）──
-  'src/app/react/core/shim/browserRuntime.ts',
-  'src/app/react/core/shim/demoSeed.ts',
-  'src/app/react/core/shim/desktopCapability.ts',
-  'src/app/react/core/shim/environment.ts',
-  'src/app/react/core/shim/install.ts',
-  'src/app/react/core/shim/ipcBus.ts',
-  'src/app/react/core/shim/moduleRegistry.ts',
-  'src/app/react/core/shim/settingsI18n.ts',
+export const NOCHECK_LEDGER = [
+  { file: 'src/app/react/core/shim/browserRuntime.ts', category: '浏览器运行兼容' },
+  { file: 'src/app/react/core/shim/demoSeed.ts', category: '演示数据' },
+  { file: 'src/app/react/core/shim/desktopCapability.ts', category: '桌面能力' },
+  { file: 'src/app/react/core/shim/environment.ts', category: '环境与启动装配' },
+  { file: 'src/app/react/core/shim/install.ts', category: '环境与启动装配' },
+  { file: 'src/app/react/core/shim/ipcBus.ts', category: 'IPC 总线' },
+  { file: 'src/app/react/core/shim/moduleRegistry.ts', category: '动态模块加载' },
+  { file: 'src/app/react/core/shim/settingsI18n.ts', category: '设置与国际化' },
 ];
 
-function collectNoCheckFiles() {
-  const found = [];
-  (function walk(dir) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) { walk(full); continue; }
-      if (!/\.(ts|tsx)$/.test(entry.name)) continue;
-      const text = fs.readFileSync(full, 'utf8');
-      // 只认文件头注释区（前 40 行）的 @ts-nocheck——TS 亦只认首个注释块。
-      const head = text.split('\n').slice(0, 40).join('\n');
-      if (/^\s*\/\/\s*@ts-nocheck\s*$/m.test(head)) {
-        found.push(path.relative(projectRoot, full).replace(/\\/g, '/'));
-      }
+export function scanTypeDirectives(text, file = 'source.ts') {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const comments = new Map();
+  const rangesAt = (pos) => {
+    for (const range of [...(ts.getLeadingCommentRanges(text, pos) || []), ...(ts.getTrailingCommentRanges(text, pos) || [])]) comments.set(range.pos, range);
+  };
+  // 使用语法树 token 边界取注释，避免把字符串、正则、模板正文当成指令。
+  function visit(node) {
+    rangesAt(node.pos);
+    rangesAt(node.end);
+    for (const child of node.getChildren(source)) visit(child);
+  }
+  visit(source);
+  const directives = [];
+  for (const { pos, end } of comments.values()) {
+    const comment = text.slice(pos, end);
+    for (const match of comment.matchAll(/(?:^|\n)[\t ]*(?:\/\/\/?|\/\*+|\*+)?[\t ]*@ts-(nocheck|check|ignore|expect-error)\b/g)) {
+      const offset = pos + match.index + match[0].indexOf('@ts-');
+      // TypeScript 只将有效的文件头行注释作为整文件开关；说明性块注释不算免检。
+      const effective = source.checkJsDirective?.pos === pos
+        && match[1] === (source.checkJsDirective.enabled ? 'check' : 'nocheck');
+      directives.push({ kind: match[1], line: source.getLineAndCharacterOfPosition(offset).line + 1, offset, effective });
     }
-  })(path.join(projectRoot, 'src/app/react'));
-  return found.sort();
+  }
+  return directives.sort((a, b) => a.offset - b.offset);
 }
 
-const noCheckFiles = collectNoCheckFiles();
-const ledgerSet = new Set(NOCHECK_LEDGER);
-const unlisted = noCheckFiles.filter((f) => !ledgerSet.has(f));
-const stale = NOCHECK_LEDGER.filter((f) => !noCheckFiles.includes(f));
-if (unlisted.length > 0 || stale.length > 0) {
-  console.error('TYPECHECK_NOCHECK_ERROR: @ts-nocheck 台账与实际不符（台账只允许单向缩短）');
-  for (const f of unlisted) console.error(`  未登记却带 @ts-nocheck：${f}`);
-  for (const f of stale) console.error(`  已撤销却仍在台账（请移除）：${f}`);
-  process.exit(1);
+export function auditNoCheck(records, ledger = NOCHECK_LEDGER) {
+  const found = new Set(records.filter((record) => record.kind === 'nocheck' && record.effective).map((record) => record.file));
+  const listed = new Set(ledger.map((entry) => entry.file));
+  return {
+    files: [...found].sort(),
+    unlisted: [...found].filter((file) => !listed.has(file)).sort(),
+    stale: [...listed].filter((file) => !found.has(file)).sort(),
+  };
 }
 
-// ── 类型检查 ────────────────────────────────────────────────────────────────
-const result = spawnSync(
-  process.execPath,
-  [path.join('node_modules', 'typescript', 'bin', 'tsc'), '--noEmit', '--pretty', 'false', '-p', 'tsconfig.json'],
-  { cwd: projectRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
-);
-const output = `${result.stdout || ''}${result.stderr || ''}`;
-const diagnostics = output.split(/\r?\n/).filter((line) => /: error TS\d+:/.test(line));
-
-if (diagnostics.length > 0) {
-  console.error(`TYPECHECK_FAILED: ${diagnostics.length} 条诊断（要求 0 条）`);
-  for (const line of diagnostics.slice(0, 40)) console.error(`  ${line}`);
-  if (diagnostics.length > 40) console.error(`  ... 共 ${diagnostics.length} 条`);
-  process.exit(1);
+export function auditScriptInventory(files, firstParty = FIRST_PARTY_SCRIPTS, engines = ENGINE_SCRIPTS) {
+  const registered = [...firstParty, ...engines.map(([file]) => file)];
+  const actual = new Set(files);
+  return {
+    unlisted: files.filter((file) => !registered.includes(file)),
+    stale: registered.filter((file) => !actual.has(file)),
+    duplicate: registered.filter((file, index) => registered.indexOf(file) !== index),
+  };
 }
 
-if (result.status !== 0) {
-  console.error(`TYPECHECK_FAILED: tsc 退出码 ${result.status}`);
-  console.error(output.slice(0, 4000));
-  process.exit(1);
+function walk(root, rel, pattern) {
+  const files = [];
+  for (const entry of fs.readdirSync(path.join(root, rel), { withFileTypes: true })) {
+    const file = `${rel}/${entry.name}`;
+    if (entry.isDirectory()) files.push(...walk(root, file, pattern));
+    else if (entry.isFile() && pattern.test(file)) files.push(file);
+  }
+  return files.sort();
 }
 
-console.log(
-  `TYPECHECK_OK: 0 诊断（范围 = src/app/react，含 viewers/document 文档查看器）；`
-  + `@ts-nocheck 台账 ${NOCHECK_LEDGER.length} 个文件（待撤销 ${NOCHECK_LEDGER.filter((f) => !f.includes('/shim/')).length}）`,
-);
+export function inspectTypeScope(root = projectRoot) {
+  const errors = [];
+  const configPath = path.join(root, 'tsconfig.json');
+  const config = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'));
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root);
+  for (const error of parsed.errors) errors.push(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
+  const include = config.config.include || [];
+  for (const entry of ['src/app/react/**/*.ts', 'src/app/react/**/*.tsx']) if (!include.includes(entry)) errors.push(`tsconfig.include 缺少 ${entry}`);
+  if (parsed.options.noCheck || parsed.options.strict !== true) errors.push('不得启用 noCheck 或关闭 strict 来制造零诊断');
+  const reactFiles = walk(root, 'src/app/react', /\.tsx?$/);
+  const included = new Set(parsed.fileNames.map((file) => path.resolve(file).toLowerCase()));
+  for (const file of reactFiles) if (!included.has(path.resolve(root, file).toLowerCase())) errors.push(`类型范围被排除：${file}`);
+  for (const entry of config.config.exclude || []) if (['frontend', 'frontend/'].includes(entry)) errors.push(`不得排除 ${entry}`);
+
+  const scripts = SCRIPT_INVENTORY_ROOTS.flatMap((rel) => walk(root, rel, /\.(?:[cm]?js|tsx?)$/));
+  const inventory = auditScriptInventory(scripts);
+  for (const file of inventory.unlisted) errors.push(`图外运行脚本未登记：${file}`);
+  for (const file of inventory.stale) errors.push(`运行脚本登记已失效：${file}`);
+  for (const file of inventory.duplicate) errors.push(`运行脚本重复分类：${file}`);
+  const publicHtml = walk(root, 'frontend/public', /\.html?$/);
+  const registeredHtml = new Set(STATIC_PAGES.map((file) => `frontend/public/${file}`));
+  for (const file of publicHtml) if (!registeredHtml.has(file)) errors.push(`外围页面未登记（含内联运行脚本）：${file}`);
+
+  const records = [];
+  for (const file of [...reactFiles, ...FIRST_PARTY_SCRIPTS]) {
+    if (!fs.existsSync(path.join(root, file))) continue;
+    const text = fs.readFileSync(path.join(root, file), 'utf8');
+    for (const directive of scanTypeDirectives(text, file)) records.push({ file, ...directive });
+  }
+  for (const file of publicHtml) {
+    const { scripts: inlineScripts } = parseHtml(fs.readFileSync(path.join(root, file), 'utf8'));
+    inlineScripts.forEach((script, index) => {
+      for (const directive of scanTypeDirectives(script, 'inline.js')) records.push({ ...directive, file, inlineScript: index + 1 });
+    });
+  }
+  const nocheck = auditNoCheck(records);
+  for (const file of nocheck.unlisted) errors.push(`未登记却带 @ts-nocheck：${file}`);
+  for (const file of nocheck.stale) errors.push(`已撤销却仍在 nocheck 台账（请移除）：${file}`);
+  return { errors, records, nocheck, reactFiles, scripts, publicHtml, rootFiles: parsed.fileNames.length };
+}
+
+export function typecheckMain() {
+  let scope;
+  try { scope = inspectTypeScope(); }
+  catch (error) { console.error(`TYPECHECK_SCOPE_ERROR: ${error.message}`); return 1; }
+  console.log(`TYPECHECK_SCOPE: tsconfig 根文件 ${scope.rootFiles}；React 文件 ${scope.reactFiles.length}；图外脚本登记 ${scope.scripts.length}；外围 HTML ${scope.publicHtml.length}`);
+  console.log(`TYPECHECK_EXEMPTIONS: 整文件 @ts-nocheck ${scope.nocheck.files.length}，待撤销 ${scope.nocheck.files.length}（全部计入类型债，不因属于 shim 而减去）`);
+  for (const file of scope.nocheck.files) {
+    const category = NOCHECK_LEDGER.find((entry) => entry.file === file)?.category || '未登记';
+    console.log(`  [整文件免检/${category}] ${file}`);
+  }
+  for (const kind of ['nocheck', 'check', 'ignore', 'expect-error']) {
+    const rows = scope.records.filter((record) => record.kind === kind);
+    console.log(`  注释指令 @ts-${kind}：${rows.length} 处 / ${new Set(rows.map((row) => row.file)).size} 文件（全文扫描，含位置上可能不生效的指令）`);
+  }
+  console.log(`TYPECHECK_OUTSIDE_SEMANTICS: 自有图外 JS ${FIRST_PARTY_SCRIPTS.length}，第三方/引擎 ${ENGINE_SCRIPTS.length}，外围 HTML ${scope.publicHtml.length}；均不能算作 tsc 语义通过`);
+  for (const limit of GATE_LIMITS) console.log(`范围说明：${limit}`);
+  if (scope.errors.length) {
+    console.error('TYPECHECK_SCOPE_OR_NOCHECK_ERROR:');
+    for (const error of scope.errors) console.error(`  ${error}`);
+    return 1;
+  }
+  const result = spawnSync(process.execPath, [
+    path.join(projectRoot, 'node_modules/typescript/bin/tsc'), '--noEmit', '--pretty', 'false', '-p', 'tsconfig.json',
+  ], { cwd: projectRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const output = `${result.stdout || ''}${result.stderr || ''}`;
+  const diagnostics = output.split(/\r?\n/).filter((line) => /\berror TS\d+:/.test(line));
+  if (result.error || result.status !== 0 || diagnostics.length) {
+    console.error(`TYPECHECK_FAILED: ${diagnostics.length} 条诊断；tsc 退出码 ${result.status}${result.error ? `；${result.error.message}` : ''}`);
+    console.error(output);
+    return 1;
+  }
+  console.log(`TYPECHECK_OK: 受检范围 0 诊断；整文件免检 ${scope.nocheck.files.length}，待撤销 ${scope.nocheck.files.length}；不代表全工作区类型通过`);
+  return 0;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = typecheckMain();

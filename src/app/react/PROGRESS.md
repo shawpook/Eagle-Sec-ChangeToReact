@@ -8920,3 +8920,26 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   3. 教训入档：**「某目录内零调用方」不等于死代码**——跨树（classic script / 动态注入 / 插件）
      的消费者不会被 `src/app/react` 内的检索覆盖；此类删除必须以可复现的测试证据为前提。
 - **本阶段净产出**：0 处代码改动（动过又撤回）；1 条 R5 前置条件 + 1 个可复用的定位技术。
+
+### R5 侦察续：偏好设置窗口（计划项 1）——两项替换的前置条件
+
+- **现状**：`preferences.html:9-10` 仍加载两个 classic script：
+  `js/vendors/tippy.js`（提示气泡）与 `js/services/shortcut-manager.js`（快捷键编辑）。
+  消费点：`preferences/panels.tsx:1491-1511`（`window.tippy(el, {animation:'scale', arrow:false,
+  content, placement, allowHTML:true})` + `destroy()`）、`panels8e.tsx:563/607`（`tippy-*` 属性）、
+  `preferences/controller.ts:984-988`（`window.ShortcutManager.init(preferences, keybindGroups)`）、
+  `panels.tsx:1064`（`getManager() → window.ShortcutManager`）。
+- **tippy 替换的现成件**：仓内已有自研实现 `core/tippyLite.ts`（`installTippy()`，if-absent 写
+  `window.tippy` + 注入 CSS，API 兼容 `tippy(el, options)` 与 `destroy()`），主窗即用它替代 vendor。
+  偏好窗改为在 `preferences/entry.tsx` 调 `installTippy()` 即可，随后移除该 script 标签。
+- **为什么本批不动它（前置条件）**：`tests/` 下**没有任何偏好窗口测试**（`ls tests/ | grep -i prefer`
+  为空）。该替换属 UI 行为改动（气泡动画/定位/`allowHTML`/销毁时机），在没有可复现验证手段的
+  情况下改动违背本仓「每批可验证」的边界纪律——尤其对照本阶段预览窗口的教训：
+  看起来零调用方/等价的替换，也可能被真实运行路径证伪。
+- **R5-偏好 的推进顺序（建议）**：
+  1. 先建**偏好窗口闭环测试**（用 `tests/react-cdp-harness.mjs` 启动 preferences 入口，断言：
+     面板切换、搜索过滤、快捷键编辑写回、气泡出现/销毁），作为该窗后续所有替换的验证锚。
+  2. 再做 tippy 替换（`installTippy()` + 移除 script 标签），用①验证。
+  3. 再做 ShortcutManager 的 TS 化移植（对照主窗 `core/keymap.ts` 替代 mousetrap 的先例），
+     用①的快捷键编辑用例验证。
+  4. 三项齐备后再撤该窗的 `scopedOut` 豁免（与预览窗同一条纪律：替换完成才撤豁免）。

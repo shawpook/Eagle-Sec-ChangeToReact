@@ -52,7 +52,7 @@
 
 ```
 1fc34443 test(m1): 修复 F06 分流测试的 flaky 时序依赖（改为确定性等待真实落盘）  [W17]
-926ccd84 feat(m5): 外围工具页/媒体页迁入 React 模块图 + 运行期地址单一来源（F17/F22）  [W16]
+69b489d6 feat(m5): 外围工具页/媒体页迁入 React 模块图 + 运行期地址单一来源（F17/F22）  [W16]
 257ebd1c fix(m1): F04 预览窗 boot 迁入模块图（显式依赖、先安装后挂载）  [W15]
 90cc3501 feat(m2): 有限 RuntimeServices + 三态运行模式 + 能力缺失即明确失败  [W13]
 fd378cf5 feat(m1): F06 第三批 —— 解桩 + 格式分流唯一判定点 + 非 JPEG 后端通路  [W14]
@@ -110,7 +110,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W13** | task_18aeb93aa2fc | ctx_88eeaf5f4776 | **M2-1 有限 RuntimeServices 与显式能力失败** | ✅ **已集成(`90cc3501`)** |
 | **W14** | task_6988e84a7be3 | ctx_9ca58917eee7 | **M1-7 F06 前端真实能力接线（格式分流）** | ✅ **已集成(`fd378cf5`)**（首次派单因 ask 通道受阻重派） |
 | **W15** | task_1e1194c99c58 | ctx_abc83ddf074b | **M1-F04 预览窗 boot 迁入模块图** | ✅ **已集成(`257ebd1c`)** |
-| **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 工具页/媒体页进模块图 + 运行期地址** | ✅ **已集成(`926ccd84`)** |
+| **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 工具页/媒体页进模块图 + 运行期地址** | ✅ **已集成(`69b489d6`)** |
 | **W17** | task_2f6fabf7dd28 | ctx_54b60df66dc7 | **F06 分流测试 flaky 修复** | ✅ **已集成(`1fc34443`)** |
 
 已停止/废弃的 dispatch（均因 Claude Code Bypass 确认框吞掉 prompt，见 §7）：
@@ -245,7 +245,7 @@ e6f6383e docs(m0): 纳入总体任务书
    新增 `preview-window/boot.ts` + `entry.tsx` 的顺序不变量（import 在 controller 之前 +
    `assertPreviewBootInstalled()` 在 createRoot 之前）；`global.js` 只删 marker 块。
    **未做实机验证**（共享 Vite 预打包 URL 在本机负载下全部 5s 超时挂起）。
-4. **M5-1**（W16 / `926ccd84`）：`frontend/runtime-config.mjs` 统一运行期地址（dev 中间件与
+4. **M5-1**（W16 / `69b489d6`）：`frontend/runtime-config.mjs` 统一运行期地址（dev 中间件与
    `serve-frontend.mjs` 共用、产物内不含端口常量）；workbench/roadmap/media-viewer 四页迁入模块图且
    **URL 一个未变**；媒体改走后端受控取址；新增 `tests/frontend-public-policy.mjs` 9/9。
    **顺带修掉生产缺陷**：`serve-frontend` 的 `/file` 代理先 decode 再重建 URL 导致 `%2F`→`/`、

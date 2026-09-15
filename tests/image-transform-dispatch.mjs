@@ -126,9 +126,38 @@ async function drain(timers, rounds = 8) {
   }
 }
 
-/** 真实文件 I/O 需要多轮事件循环才落定（`rotateImage.js` 是 writeFile×2 + unlink 串行）。 */
-async function drainIo(timers) {
-  await drain(timers, 60);
+/** 真实副作用落定的等待上限——**有界**：到点即失败，绝不无限等。 */
+const REAL_EFFECT_TIMEOUT_MS = 10000;
+/** 轮询间隔：真实等待，让 libuv 线程池里已完成的 fs 操作被投递回来。 */
+const REAL_EFFECT_POLL_MS = 5;
+
+/**
+ * 有上限地等待**真实副作用**落定（通过与否只取决于「真的做完了没有」）。
+ *
+ * 为什么不能按「推进 N 轮」来等真实 IO：`commitImageTransform` 的落盘走的是**真实 `fs`**，
+ * 其完成时机由 libuv 线程池决定，与假计时器队列**无关**——`flush()` + `setImmediate` 的一轮
+ * 只是「一次事件循环 poll 访问」，整段 60 轮的墙钟成本实测仅 ~0.3ms。于是同一个 60 轮预算，
+ * 机器空闲时 10 轮就够用，在并行 Worker 争用 / 杀毒扫描 / 线程池排队下却会在写盘落定前耗尽，
+ * 断言读到尚未改写的文件（`磁盘文件的 Orientation 须被真实改写：undefined !== 8`）。
+ * 实测：本机空闲 10/10 通过，12 进程并发时 12/12 复现该失败；给每个 fs 操作注入 +3ms 后，
+ * 写盘落定要 67 轮、+10ms 要 228 轮——**轮数根本不是「完成」的度量**。
+ *
+ * 因此这里把「等完成」换成两件事：**推进假计时器**（去抖计时器是假的，不推进就永不触发落盘）
+ * + **轮询真实条件**（磁盘/事件流中的真实结果），并以墙钟上限兜底。上限到了仍未落定即失败，
+ * 不会无限等——所以这不是「多睡一会儿碰运气」，而是「等一个真实条件，且它必须有界」。
+ */
+async function waitForRealEffect(timers, predicate, options = {}) {
+  const { label, timeoutMs = REAL_EFFECT_TIMEOUT_MS, diagnose } = options;
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    timers.flush();
+    if (predicate()) return;
+    if (Date.now() >= deadline) {
+      const scene = typeof diagnose === 'function' ? `\n落定时限已到时的现场：${diagnose()}` : '';
+      assert.fail(`等待「${label}」超时（上限 ${timeoutMs}ms 已到，真实执行未落定）${scene}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, REAL_EFFECT_POLL_MS));
+  }
 }
 
 function recorder() {
@@ -342,17 +371,46 @@ test('(2) 解桩后不再拒绝：真实 rotateImage.js（经 shim require 链�
     assert.equal(acceptance.route, 'renderer', '.jpg 走渲染层');
     assert.equal(item.width, 480, '受理即交换宽高');
 
-    await drainIo(timers);
+    // ── 确定性等待真实落盘 ──
+    // 条件同时含「磁盘被真实改写且 .tmp 已清理」与「成功收尾已把宽高送进唯一元数据通道」：
+    // 前者是「真的写完了」的外部证据，后者保证其后的读内存断言（orientation 已删除等）
+    // 不再与写盘赛跑——`imagesChange` 严格晚于 `delete item.orientation`。
+    // 等待必须有界；超时即失败并打印现场，不靠「多推进几轮」撞运气。
+    const tmpPath = `${jpegPath}.tmp`;
+    /** 读磁盘上的 Orientation：写盘途中可能读到半截文件，故容错。 */
+    const diskOrientation = () => {
+      try {
+        return piexif.load(readFileSync(jpegPath).toString('binary'))['0th'][piexif.ImageIFD.Orientation];
+      } catch (err) {
+        return undefined;
+      }
+    };
+    await waitForRealEffect(
+      timers,
+      () => diskOrientation() === 8
+        && !existsSync(tmpPath)
+        && rec.all('imagesChange').length === 1,
+      {
+        label: '真实落盘（磁盘 Orientation 改写 + .tmp 清理 + 宽高落库）',
+        diagnose: () => `磁盘 Orientation=${String(diskOrientation())}；`
+          + `${tmpPath} ${existsSync(tmpPath) ? '仍存在（写盘停在半途）' : '已清理'}；`
+          + `已记录事件=${JSON.stringify(rec.events.map((entry) => entry[0]))}`,
+      },
+    );
 
     // 真实落盘：磁盘上的 EXIF Orientation 被改写（1 → 8，即逆时针 90°）
     const after = readFileSync(jpegPath).toString('binary');
     assert.equal(piexif.load(after)['0th'][piexif.ImageIFD.Orientation], 8,
       '磁盘文件的 Orientation 须被真实改写');
+    assert.notEqual(after, MINIMAL_JPEG.toString('binary'),
+      '磁盘字节须被真实改写，而不是「恰好读到旧内容也算过」');
     assert.equal(existsSync(`${jpegPath}.tmp`), false, '临时文件须已被清理');
     assert.equal(item.orientation, undefined, '真实落盘成功后才删除内存里的 orientation');
     assert.deepEqual(rec.all('showError'), [], '真实成功不得报错');
     assert.equal(rec.all('imagesChange').length, 1, '宽高经唯一元数据通道写入一次');
     assert.equal(rec.all('regenerate-thumbnail').length, 1, '渲染层一路需本窗派发缩略图任务');
+    assert.equal(rec.all('isRotating').at(-1)?.[1], false,
+      '成功收尾须复位 isRotating，不留悬挂态');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -372,7 +430,11 @@ test('(2) 真实执行 reject 时：明确失败，且 util 的真实原因原�
     request: () => rotateUtil, appRootPath: '/src', hooks: baseHooks(timers, rec),
   });
   assert.equal(acceptance.accepted, true, '前端预检通过（路径非空且可写），真实失败交给真实执行');
-  await drain(timers);
+  // 同样是真实 util：不按固定轮数推进，改为有上限地等待**失败收尾**这一真实结果落定。
+  await waitForRealEffect(timers, () => rec.all('showError').length > 0, {
+    label: '真实执行的失败收尾（showError 落定）',
+    diagnose: () => `已记录事件=${JSON.stringify(rec.events.map((entry) => entry[0]))}`,
+  });
 
   const shown = rec.all('showError');
   assert.equal(shown.length, 1, '真实失败必须显式报错，不得静默当作成功');
@@ -384,6 +446,7 @@ test('(2) 真实执行 reject 时：明确失败，且 util 的真实原因原�
   assert.equal(item.orientation, 1, '失败不得删除 orientation');
   assert.equal(rec.all('regenerate-thumbnail').length, 0);
   assert.equal(rec.all('imagesChange').length, 0);
+  assert.equal(rec.all('isRotating').at(-1)?.[1], false, '失败收尾同样不得留 isRotating 悬挂态');
 });
 
 // ─────────────────── (3) 后端一路：结构化错误码原样到达渲染层 ───────────────────

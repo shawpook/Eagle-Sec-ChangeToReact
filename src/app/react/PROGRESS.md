@@ -9633,3 +9633,40 @@ README「当前状态/启动/校验命令/目录」重写为 R6 实况（原描�
 
 `e22c6548` 工作项 1 → `981673e0` 工作项 2/3（186 退役）→ `91c66350` 工作项 3（零引用残留 36 + 内联
 module 脚本）→ `13c81511` 工作项 4 → `66a955b3` 工作项 5（README + 台账）。
+
+### R6 收官：全量回归套件 ALL GREEN（71/71）
+
+R6 五个工作项全部落地后，按计划跑**一次**全量套件（`node tests/run-react-suite.mjs`）：
+
+```
+REACT SUITE ALL GREEN      ← 71 RUN：70 OK + 1 OK (retry)，零 FAIL，exit 0
+```
+
+关键项逐行确认：`react-rewrite-sentinel`(1) / `continuous-grid-layout`(4) /
+`shim-module-boundaries`(5) / `typecheck`(6) / `scope-field-convergence`(7) /
+`react-stage8e2`(33，偏好窗) / `react-stage9b1`(36，采集窗) / `react-stage1c2`(42，eagle 基座) /
+`react-stage1m1-unified`(47，含 `hasLazyLoadManager`) / **`main-ui-workflow-closed-loop`(48)** /
+`continuous-grid-scroll`(62) 全部 OK。哨兵基线文件 `tests/react-rewrite-sentinel-baseline.json`
+本批**未改动**。
+
+**低频失败证据（留给 R7 的「核验历史低频失败并记录复现证据」）**：
+`tests/react-s2-sidebar-dnd-closed-loop.mjs`(52) 本次 FAIL(exit=1) 后由套件内建重试机制
+`OK (retry)`；同一运行内 `main-ui-workflow-closed-loop`(48) 一次通过。结合 R5 记录的
+main-ui-workflow `inspector no-event` 对照实验（迁移前状态同样复现、签名逐字相同），
+判定属**长套件下的环境级偶发**，非本批回归。R7 需把这两项纳入「历史低频失败」清单并给出复现矩阵。
+
+### R6 完成判据对照
+
+| 判据 | 状态 |
+|---|---|
+| 正式产物与源入口不存在旧业务实现回退 | ✅ `index.html` 唯一脚本 = React 入口；`npm run build` + `test:production` 通过；`dist-entry-check` FAIL 0 |
+| 保留的 JS/引擎都有明确消费者与理由 | ✅ 台账 §8 按五路判据逐目录登记（workers / plugin / utils / vendors / api-server-v2 等） |
+| 新开发者按 README 能启动并理解当前架构 | ✅ README「当前状态/启动/校验命令/目录/文档索引」全部重写为 R6 实况 |
+
+**R6 净产出**（7 个提交）：主界面三个残余应用侧脚本具名 TS 化（含 1 个新装配点、2 处
+逐字移植的类体校验）；222 个旧文件退役（186 Angular 遗留 + 36 零引用残留）；2 个 no-op dev
+中间件删除并把「单色面板」修复归位现役组件；1 个已休眠测试守卫改为指向现役实现；
+`@egjs/react-infinitegrid` 移除；README 与入口台账重写。
+
+**下一阶段 = R7**（统一交付验收入口：全范围类型检查 + 入口/架构检查 + 正式构建 + 关键业务回归 +
+正式产物冒烟串成单一命令，并把历史低频失败与复现证据入档）。

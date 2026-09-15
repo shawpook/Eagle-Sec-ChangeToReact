@@ -71,6 +71,10 @@ import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings
 import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastIndex, writeShowDetailImage, writeUsingGifPlayer, writeContentFilterCache, writeCurrentId, writeCurrentTag, writeImagesDir, writeLibraryName, writeLibraryImagesPath, writeLibraryPath, writeLibraryModificationTime, writeLibraryLoadedProgress, writeRootDir, writeQuickAccess, writeSidebarIndex, writeSidebarList, writeSmartFolderList, writeFolderKeyword, writeRegistration, writeCurrentProcessCount, writeDownloadQueueLength, writeErrorList, writeFinishQueue, writeIsItemBindCalculated, writeIsLibrarySaving, writeIsUILoaded, writeLastProcessCount, writeMetadataQueueLength, writeOrderBy, writePaletteQueueDelay, writePaletteQueueLength, writePaletteQueuePaused, writeSaveFolderDebounceTimeout, writeSelectingTags, writeShowNTFSWarning, writeShowSlowNotify, writeSortIncrease, writeUnlockPassword, writeUploadQueue, writeUsingCache, writeWinMenu } from '../store/miscRawState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeFolders, writeCurrentFolderChildren, writeTags, writeSmartFolders, writeNavigationHistory, writeNavigationHistoryIndex } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
+// R6：原 js/services/lazy-load-manager.js（独立脚本）逐字移植——本域直接 import 类，
+// 不再以 `w.LazyLoadManager` 是否存在作为守卫（脚本摘除后该守卫会静默跳过实例化，
+// hasLazyLoadManager 契约随之失效）。
+import { LazyLoadManager } from './lazyLoadManager';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
@@ -476,8 +480,8 @@ export function takeoverLibraryDomain(): void {
     if (w.ig && w.ig.clear) w.ig.clear();
 
     // 初始化 LazyLoadManager
-    if (!domainLazyLoadManager && w.LazyLoadManager) {
-      domainLazyLoadManager = new w.LazyLoadManager({
+    if (!domainLazyLoadManager) {
+      domainLazyLoadManager = new LazyLoadManager({
         root: document.getElementById('box-container'),
         rootMargin: '300px', // 提前 100px 開始載入
         threshold: [0, 0.01, 0.1, 0.5], // 多個閾值點

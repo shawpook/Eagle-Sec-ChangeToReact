@@ -17,6 +17,7 @@
  */
 
 import { FileUrlHelper } from './fileUrlHelper';
+import { installLazyLoadManager } from './lazyLoadManager';
 import { eagle as coreEagle } from './eagleApi';
 import { useMiscRawState, writeShowSlowNotify } from '../store/miscRawState';
 import { get } from '../utils/lang';
@@ -49,12 +50,12 @@ declare const Buffer: any;
 
 let installed = false;
 
-/* c12：eagle 成员反转挂载（if-absent）——window.eagle 基座来自 js/lib/eagle-api.js（独立
-   script 标签，b1 存活：utils.tree/urlEnlargerRemote），bundle 只挂载类实例成员（249 inspector/
-   606 filter/957 duplicateChecker/1012 reverseImageSearch/1844 aiSearch/1882 customExport/
-   1915 combineImages/2048 action + runtime plugin/isDev）。b1 后这些成员消失 → 由 React
-   c2 全家桶（eagleClasses.ts，2071 行逐字移植）if-absent 补齐。bundle 在世时成员已存在，
-   零改动；React 消费方 19 处 s.eagle.* 走 $scope.eagle（= bundle 实例），无分叉。 */
+/* c12：eagle 成员反转挂载（if-absent）——window.eagle 基座（Eagle 实例 + utils.tree +
+   urlEnlargerRemote）R6 起由 react/core/eagleApi.ts 的 installEagleBase() 供给（原
+   js/lib/eagle-api.js 独立脚本已摘除，装配点 core/eagleBase.ts 先于本模块求值）。本函数
+   只挂类实例成员（249 inspector/606 filter/957 duplicateChecker/1012 reverseImageSearch/
+   1844 aiSearch/1882 customExport/1915 combineImages/2048 action + runtime plugin/isDev），
+   由 React c2 全家桶（eagleClasses.ts，2071 行逐字移植）if-absent 补齐。 */
 function installEagleMembers(): void {
   const w = window as any;
   if (!w.eagle) {
@@ -1522,6 +1523,10 @@ export function installBundleGlobals(): void {
   //    方法面全覆盖：getMetadataPath/getRawPath/getThumbnailPath/getThumbnailUrl/
   //    getLastestThumbnailUrl/getRawUrl）──
   if (!w.FileUrlHelper) w.FileUrlHelper = FileUrlHelper;
+
+  // ── LazyLoadManager（R6：原 js/services/lazy-load-manager.js 独立脚本摘除后，
+  //    window 兼容面由 TS 模块供给；实例仍由 libraryDomain 在加载库时构造）──
+  installLazyLoadManager();
 
   // c12：eagle 成员反转挂载
   installEagleMembers();

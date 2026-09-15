@@ -1,12 +1,51 @@
 /**
+ * R6：`src/app/js/services/lazy-load-manager.js`（738 行）的 TS 逐字移植。
+ *
+ * 原实现是独立 `<script>` 标签（index.html:243），IIFE 求值即 `window.LazyLoadManager = class`。
+ * 消费面：主窗 `core/libraryDomain.ts`（库加载时 `new LazyLoadManager({root:'#box-container',
+ * rootMargin:'300px', threshold:[0,0.01,0.1,0.5]})`，`writeScopeField('lazyLoadManager', …)`）与
+ * `components/grid/boxItem.tsx`（`miscRawState.lazyLoadManager.observe/unobserve`）。本批把
+ * libraryDomain 改为直接 import 本类、脚本标签摘除；`window.LazyLoadManager` 兼容面由
+ * `installLazyLoadManager()` 供给。
+ *
+ * 机械替换清单（不改业务逻辑）：
+ *  - 去 IIFE 包装 / `class LazyLoadManager` 加 `export`；
+ *  - 尾行 `window.LazyLoadManager = …` → `installLazyLoadManager()`；
+ *  - `new Promise(...)` → `new Promise<any>(...)`；无注解方法参数补 `: any`；
+ *  - 裸全局读取 `window.X` → `(window as any).X`（仅类型收窄，取值对象不变）；
+ *  - 裸全局 `FileUrlHelper` → 直接 import 同一单例（bundleGlobals 亦以 `w.FileUrlHelper =
+ *    FileUrlHelper` 供给，二者同一对象）；
+ *  - `missedCheckInterval`（创建点被注释、disconnect 仍读）→ `declare` 字段。
+ *
+ *  遗留：`loadExtIcon` 调全局 `FILE_ICON`（全仓无供给方；React 侧经
+ *  `req(appRoot+'/my_modules/file-icon')` 取——见 Inspector.tsx:120）。按「逐字移植」原样
+ *  保留裸全局引用，登记为已知缺口（PROGRESS R6）。图片加载生命周期/几何：本类不改任何
+ *  坐标与容器尺寸，仅切 `show`/`loading`/`enlarge-thumbnail` 类与 `img.src`。
+ */
+import { FileUrlHelper } from './fileUrlHelper';
+
+/* Electron renderer 全局：FILE_ICON 由宿主提供（本仓无供给方，逐字保留裸引用）。 */
+declare const FILE_ICON: any;
+
+/**
  * LazyLoadManager - 使用 IntersectionObserver API 實現高效的圖片懶加載
  * 替代原有的 scroll event + scrollTop 方式，提升滾動性能
  */
-(function() {
-    'use strict';
-    
-    class LazyLoadManager {
-        constructor(options = {}) {
+export class LazyLoadManager {
+    declare options: any;
+    declare observer: any;
+    declare loadingQueue: Map<any, any>;
+    declare loadingTimeouts: Map<any, any>;
+    declare pendingQueue: any[];
+    declare maxConcurrentLoads: number;
+    declare loadedCache: Map<any, any>;
+    declare cacheExpiry: number;
+    declare performanceData: { avgLoadTime: number; loadCount: number; totalLoadTime: number };
+    declare hardDiskSpeed: string;
+    declare cacheCleanupInterval: any;
+    /* 创建点在被注释的代码块内（见构造函数尾部），disconnect 仍读——读数保持 undefined。 */
+    declare missedCheckInterval: any;
+        constructor(options: any = {}) {
             // 配置選項
             this.options = {
                 root: null, // 預設為 viewport
@@ -77,7 +116,7 @@
         /**
          * 調試日誌
          */
-        log(...args) {
+        log(...args: any[]) {
             if (this.options.debug) {
                 console.log('[LazyLoadManager]', ...args);
             }
@@ -92,7 +131,7 @@
                 return;
             }
             
-            this.observer = new IntersectionObserver((entries) => {
+            this.observer = new IntersectionObserver((entries: any) => {
                 this.handleIntersection(entries);
             }, this.options);
         }
@@ -100,12 +139,12 @@
         /**
          * 處理元素可見性變化
          */
-        handleIntersection(entries) {
+        handleIntersection(entries: any) {
             // 批次處理優化
-            const toLoad = [];
-            const toCancel = [];
+            const toLoad: any[] = [];
+            const toCancel: any[] = [];
             
-            entries.forEach(entry => {
+            entries.forEach((entry: any) => {
                 const box = entry.target;
                 
                 // 檢查元素是否仍在 DOM 中
@@ -141,7 +180,7 @@
             if (toLoad.length > 0) {
                 // this.log(`📋 排程載入 ${toLoad.length} 個圖片`);
                 toLoad
-                    .sort((a, b) => b.ratio - a.ratio) // 優先載入可見度高的
+                    .sort((a: any, b: any) => b.ratio - a.ratio) // 優先載入可見度高的
                     .forEach(({ box, ratio }) => this.scheduleLoad(box, ratio));
             }
         }
@@ -149,7 +188,7 @@
         /**
          * 排程載入（考慮優先級和延遲）
          */
-        scheduleLoad(box, intersectionRatio) {
+        scheduleLoad(box: any, intersectionRatio: any) {
             const boxId = box.getAttribute('data-box-id');
             
             // 如果已經在載入隊列中，跳過
@@ -177,7 +216,7 @@
         /**
          * 計算載入延遲
          */
-        calculateDelay(box, intersectionRatio) {
+        calculateDelay(box: any, intersectionRatio: any) {
             // 完全可見的元素立即載入
             if (intersectionRatio >= 0.1) {
                 return 0;
@@ -194,7 +233,7 @@
         /**
          * 載入圖片
          */
-        loadImage(box) {
+        loadImage(box: any) {
             const boxId = box.getAttribute('data-box-id');
             
             // 檢查是否已經載入或正在載入
@@ -256,7 +295,7 @@
                 if (!this.pendingQueue.some(item => item.box === box)) {
                     this.pendingQueue.push({ box, priority: this.calculatePriority(box) });
                     // 根據優先級排序
-                    this.pendingQueue.sort((a, b) => b.priority - a.priority);
+                    this.pendingQueue.sort((a: any, b: any) => b.priority - a.priority);
                     this.log(`⏳ 等待隊列: ${boxId} (隊列長度: ${this.pendingQueue.length})`);
                 }
                 return;
@@ -305,7 +344,7 @@
                     // 處理等待隊列
                     this.processNextInQueue();
                 })
-                .catch((error) => {
+                .catch((error: any) => {
                     if (error.name === 'AbortError') {
                         // this.log(`❌ 載入取消: ${boxId} (原因: ${error.message || '滾出視窗'})`);
                     } else {
@@ -329,7 +368,7 @@
         /**
          * 執行實際的圖片載入
          */
-        async performLoad(box, signal) {
+        async performLoad(box: any, signal: any) {
             const img = box.querySelector('img');
             if (!img) return;
             
@@ -348,8 +387,8 @@
         /**
          * 載入一般圖片
          */
-        loadNormalImage(box, img, signal) {
-            return new Promise((resolve, reject) => {
+        loadNormalImage(box: any, img: any, signal: any) {
+            return new Promise<any>((resolve: any, reject: any) => {
                 // 檢查是否已取消
                 if (signal.aborted) {
                     reject(new DOMException('Aborted', 'AbortError'));
@@ -358,14 +397,14 @@
                 
                 const src = img.getAttribute('lsrc');
                 if (!src) {
-                    resolve();
+                    resolve(undefined);
                     return;
                 }
                 
                 // 處理大尺寸圖片的特殊邏輯
                 // b1-9d → b1-9bz-E5-4：去 Angular 後改讀顯式驅動面 window.__eagleDriver（main.tsx 裝）；
                 // 過渡期回落 window.$bodyScope（angular 分支已刪——angular 恆缺席）。
-                const $bodyScope = window.__eagleDriver || window.$bodyScope || null;
+                const $bodyScope = (window as any).__eagleDriver || (window as any).$bodyScope || null;
                 if ($bodyScope && $bodyScope.imageSize && $bodyScope.imageSize.height > 440) {
                     const rawSrc = img.getAttribute('raw');
                     if (rawSrc) {
@@ -384,7 +423,7 @@
                         if (!signal.aborted) {
                             box.classList.add('show');
                             box.removeAttribute('loading');
-                            resolve();
+                            resolve(undefined);
                         }
                     });
                     return;
@@ -402,7 +441,7 @@
                                 dummy.classList.remove('dummy');
                                 dummy.title = '';
                             }
-                            resolve();
+                            resolve(undefined);
                         });
                     }
                 };
@@ -438,8 +477,8 @@
         /**
          * 載入特殊檔案圖標
          */
-        loadExtIcon(box, img, signal) {
-            return new Promise((resolve, reject) => {
+        loadExtIcon(box: any, img: any, signal: any) {
+            return new Promise<any>((resolve: any, reject: any) => {
                 if (signal.aborted) {
                     reject(new DOMException('Aborted', 'AbortError'));
                     return;
@@ -447,7 +486,7 @@
                 
                 const boxId = box.getAttribute('data-box-id');
                 // b1-9d → b1-9bz-E5-4：同上——__eagleDriver 優先，過渡期回落 window.$bodyScope。
-                const $bodyScope = window.__eagleDriver || window.$bodyScope || null;
+                const $bodyScope = (window as any).__eagleDriver || (window as any).$bodyScope || null;
                 
                 if (!$bodyScope || !$bodyScope.itemMappings) {
                     reject(new Error('Scope not available'));
@@ -471,7 +510,7 @@
                 signal.addEventListener('abort', onAbort);
                 
                 // 使用 FILE_ICON.getFileThumbnail
-                FILE_ICON.getFileThumbnail(item, rawPath, (base64) => {
+                FILE_ICON.getFileThumbnail(item, rawPath, (base64: any) => {
                     signal.removeEventListener('abort', onAbort);
                     
                     if (isAborted || signal.aborted) {
@@ -483,7 +522,7 @@
                         img.src = base64;
                         box.classList.add('show');
                         box.removeAttribute('loading');
-                        resolve();
+                        resolve(undefined);
                     } else {
                         box.classList.add('show', 'error');
                         box.removeAttribute('loading');
@@ -496,12 +535,12 @@
         /**
          * 計算載入優先級（簡化版本）
          */
-        calculatePriority(box) {
+        calculatePriority(box: any) {
             // 優先使用 posY，避免 DOM 操作
             const posY = parseInt(box.getAttribute('posY'), 10);
             if (!isNaN(posY)) {
                 // 簡單的線性優先級：越靠近當前滾動位置優先級越高
-                const scrollTop = window.ig?._watcher?.getScrollPos() || 0;
+                const scrollTop = (window as any).ig?._watcher?.getScrollPos() || 0;
                 return 10000 - Math.abs(posY - scrollTop);
             }
             // 沒有 posY 就給固定優先級
@@ -529,7 +568,7 @@
         /**
          * 取消載入
          */
-        cancelLoad(box) {
+        cancelLoad(box: any) {
             const boxId = box.getAttribute('data-box-id');
             let cancelled = false;
             
@@ -566,7 +605,7 @@
         /**
          * 更新性能數據
          */
-        updatePerformanceData(loadTime) {
+        updatePerformanceData(loadTime: any) {
             this.performanceData.loadCount++;
             this.performanceData.totalLoadTime += loadTime;
             this.performanceData.avgLoadTime = 
@@ -588,20 +627,20 @@
             }
             
             // 整合 SlowNotify（如果存在）
-            if (window.SlowNotify && typeof window.SlowNotify.calculate === 'function') {
-                window.SlowNotify.calculate(this.performanceData.avgLoadTime);
+            if ((window as any).SlowNotify && typeof (window as any).SlowNotify.calculate === 'function') {
+                (window as any).SlowNotify.calculate(this.performanceData.avgLoadTime);
             }
             
             // 更新全域硬碟速度變數（如果存在）
-            if (window.hardDiskSpeed !== undefined) {
-                window.hardDiskSpeed = this.hardDiskSpeed;
+            if ((window as any).hardDiskSpeed !== undefined) {
+                (window as any).hardDiskSpeed = this.hardDiskSpeed;
             }
         }
         
         /**
          * 開始觀察元素
          */
-        observe(element) {
+        observe(element: any) {
             if (this.observer && element) {
                 // 檢查是否已經載入
                 if (!element.classList.contains('show')) {
@@ -614,7 +653,7 @@
         /**
          * 停止觀察元素
          */
-        unobserve(element) {
+        unobserve(element: any) {
             if (this.observer && element) {
                 this.observer.unobserve(element);
             }
@@ -623,10 +662,10 @@
         /**
          * 批次觀察元素
          */
-        observeAll(elements) {
+        observeAll(elements: any) {
             if (!this.observer) return;
             
-            elements.forEach(element => {
+            elements.forEach((element: any) => {
                 this.observe(element);
             });
         }
@@ -636,9 +675,9 @@
          */
         cleanupCache() {
             const now = Date.now();
-            const expiredKeys = [];
+            const expiredKeys: any[] = [];
             
-            this.loadedCache.forEach((data, key) => {
+            this.loadedCache.forEach((data: any, key: any) => {
                 if (now - data.timestamp > this.cacheExpiry) {
                     expiredKeys.push(key);
                 }
@@ -658,13 +697,13 @@
          */
         softReset() {
             // 取消所有進行中的載入
-            this.loadingQueue.forEach((controller, boxId) => {
+            this.loadingQueue.forEach((controller: any, boxId: any) => {
                 controller.abort();
             });
             this.loadingQueue.clear();
             
             // 清除所有延遲載入
-            this.loadingTimeouts.forEach((timeout, boxId) => {
+            this.loadingTimeouts.forEach((timeout: any, boxId: any) => {
                 clearTimeout(timeout);
             });
             this.loadingTimeouts.clear();
@@ -685,13 +724,13 @@
          */
         disconnect() {
             // 取消所有進行中的載入
-            this.loadingQueue.forEach((controller, boxId) => {
+            this.loadingQueue.forEach((controller: any, boxId: any) => {
                 controller.abort();
             });
             this.loadingQueue.clear();
             
             // 清除所有延遲載入
-            this.loadingTimeouts.forEach((timeout, boxId) => {
+            this.loadingTimeouts.forEach((timeout: any, boxId: any) => {
                 clearTimeout(timeout);
             });
             this.loadingTimeouts.clear();
@@ -733,7 +772,13 @@
         
     }
     
-    // 導出到全域
-    window.LazyLoadManager = LazyLoadManager;
-    
-})();
+
+/**
+ * R6 装配点：等价原 `window.LazyLoadManager = LazyLoadManager`（尾行导出）。
+ * 主窗消费方 `core/libraryDomain.ts` 现直接 import 本类；本导出保留 `window.LazyLoadManager`
+ * 这一既有兼容面（驱动脚本 / 子窗口），不得静默摘除。
+ */
+export function installLazyLoadManager(): void {
+  const w = window as any;
+  if (!w.LazyLoadManager) w.LazyLoadManager = LazyLoadManager;
+}

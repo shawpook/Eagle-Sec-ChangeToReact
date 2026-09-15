@@ -1,7 +1,10 @@
 /**
  * c2：eagle 单例骨架逐字移植（源 = src/app/js/lib/eagle-api.js——bundle 加载序中先于
- * bundle 执行、var 上 window 的对象）。React 侧实例暂不覆写 window.eagle（bundle 内部
- * 经全局查找仍用其实例）；各 c 域切片逐步切换消费方，cZ 时由 bindEagle() 覆写挂载。
+ * bundle 执行、var 上 window 的对象）。
+ *
+ * R6：源脚本标签已从 `src/app/index.html` 摘除，本模块即 eagle 基座的唯一供给方——
+ * `installEagleBase()` 在 main.tsx 首个 import（core/eagleBase.ts）完成 `window.eagle`
+ * 挂载，时序等价原「脚本先于 React 模块求值」。
  */
 
 class Eagle {
@@ -74,5 +77,25 @@ eagle.urlEnlargerRemote = {
 
         loadScript(0);
     }
+}
+
+/**
+ * R6：eagle 基座供给——等价原 `src/app/js/lib/eagle-api.js` 独立 `<script>` 标签的求值效果
+ * （`var eagle = new Eagle()` + `eagle.utils.tree = new TreeUtil()`）。
+ *
+ * 时序契约：必须在**任何消费方之前**调用。已知求值期读点：`core/shim/demoSeed.ts` 的
+ * duplicateChecker 保鲜（`if (!window.eagle) return`——脚本摘除后不再早于它则静默失效）、
+ * 主窗 React 树与驱动面的 `eagle.utils.tree.walk`、`BatchSavePanel` 的 `eagle.urlEnlarger`。
+ * 调用点见 `core/eagleBase.ts`（main.tsx 首个 import，ESM 按源码顺序求值即该时序保证）。
+ *
+ * 幂等：`window.eagle` 已存在（bundle/多入口场景）时不覆写，只在缺成员时补齐。
+ */
+export function installEagleBase(): void {
+  const w = window as any;
+  if (!w.eagle) w.eagle = eagle;
+  const e = w.eagle;
+  if (!e.utils) e.utils = {};
+  if (!e.utils.tree) e.utils.tree = eagle.utils.tree;
+  if (!e.urlEnlargerRemote) e.urlEnlargerRemote = eagle.urlEnlargerRemote;
 }
 

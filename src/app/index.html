@@ -194,8 +194,11 @@
 
     <div id="tag-manager-drag-badge" class="tag-manager-drag-badge"></div>
 
-    <script src="js/lib/eagle-api.js"></script>
-    <script src="js/lib/api/url-enlarger.js"></script>
+    <!-- R6：eagle-api.js（eagle 基座）与 url-enlarger.js（大图规则类）两个独立脚本摘除——
+         逐字移植为 react/core/eagleApi.ts（installEagleBase）与 react/core/urlEnlarger.ts
+         （installUrlEnlarger），由 react/core/eagleBase.ts 在 main.tsx 首个 import 装配，
+         时序等价原「脚本先于 React 模块求值」（demoSeed 求值期读 window.eagle）。
+         原内联脚本 eagle.urlEnlargerRemote.load() 同批移入 eagleBase.ts。 -->
     <!-- b1-9bx-A：tippy v6.3.7（window.tippy）退役——自研 tippyLite（react/core/tippyLite.ts）
          经 installBundleGlobals 供给（tippy(el,opts) 构造 + destroy；css 1289B 逐字运行时注入；
          [tippy]/[tippy-content]/[tippy-placement] 标记属性契约与 useTippy 消费面零改动，
@@ -240,16 +243,15 @@
          installBundleGlobals 供给双全局（供给链契约 stage-smoke b1-9z 断言面不变；
          data-enabletime 原框架即 no-op 按 date-only 等价实现，考据见 PROGRESS b1-9bx2）；
          flatpickr.min.css（head:17）保留 = .flatpickr-* 类名契约样式。 -->
-    <script src="js/services/lazy-load-manager.js"></script>
+    <!-- R6：lazy-load-manager.js 独立脚本摘除——738 行逐字移植 react/core/lazyLoadManager.ts；
+         实例仍由 core/libraryDomain.ts 在「加载库」时构造（现直接 import 该类，不再经
+         window 全局判断存在性），window.LazyLoadManager 兼容面由 installLazyLoadManager() 供给。 -->
     <!-- b1-9bl：smoothZoom vendor（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）退役——
          引擎逐字归位 react/core/smoothZoomEngine.ts + bitmapViewer.ts（$、#detail-container
          消费契约不变）。b1-9al 提取版 /vendor/eagle-smooth-zoom.js 同批摘除。 -->
     <!-- R5：shortcut-manager 经典脚本摘除——296 行纯应用代码逐字移植 react/core/shortcutManager.ts，
          window.ShortcutManager 由 installBundleGlobals() 供给（keymap/detailHooks 消费面不变）。 -->
     <!-- b1-9bj：colorpicker vendor（js+css）退役——自研 components/filter/ColorPicker.tsx -->
-    <script>
-        eagle.urlEnlargerRemote.load();
-    </script>
 <script type="module" src="/src/app/react/main.tsx"></script>
 </body>
 </html>

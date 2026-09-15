@@ -1,3 +1,7 @@
+// R6：必须最先求值——eagle 基座（原 js/lib/eagle-api.js + js/lib/api/url-enlarger.js 两个
+// 独立脚本 + 内联 urlEnlargerRemote.load 调用）。shimsLegacy 的演示态种子在模块求值期即读
+// window.eagle，ESM 按源码顺序求值 import，故次序即契约。见 core/eagleBase.ts。
+import './core/eagleBase';
 import './core/shimsLegacy';
 import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';

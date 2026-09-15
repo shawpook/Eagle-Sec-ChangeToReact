@@ -1,11 +1,40 @@
-globalThis.URLEnlarger = class {
+/**
+ * R6：`src/app/js/lib/api/url-enlarger.js`（1038 行）的 TS 逐字移植。
+ *
+ * 原实现是独立 `<script>` 标签（index.html:198），求值即把类挂到 globalThis.URLEnlarger，
+ * 并在尾行以 `eagle.urlEnlarger = new globalThis.URLEnlarger()` 装到 eagle 单例。消费面：
+ * `components/stage7/BatchSavePanel.tsx`（浏览器采集批存时把缩略图换成原图）经
+ * `eagle.urlEnlarger.isEnlargable/enlarge` 调用。R6 去掉脚本标签后由
+ * `installUrlEnlarger()` 供给——本模块不自行装配，装配点见 core/eagleBase.ts。
+ *
+ * 机械替换清单（不改业务逻辑）：
+ *  - `globalThis.URLEnlarger = class` → `export class URLEnlarger`；
+ *  - 全局 `eagle` → 从 ./eagleApi import 的同一单例（`const eagle: any`）；
+ *  - `new Promise(...)` → `new Promise<any>(...)`（泛型标注，消除 unknown 推断）；
+ *  - 原 `resolve(url, null)`（两参，实为只传 url）→ `resolve({ url, largeUrl: null })`，
+ *    与该方法其余分支的返回形状一致；调用方在 isEnlargable 已挡空 url，可达路径行为不变。
+ *  - `require`/`electron`/`ipcRenderer` 为 Electron renderer 全局，按 ambient 声明补齐类型。
+ *
+ *  遗留：`#isURLExists` 调 `eagle.urlTest`，全仓无供给方（迁移丢失）——按「逐字移植」原则
+ *  原样保留，登记为已知缺口（PROGRESS R6）。
+ */
+import { eagle as coreEagle } from './eagleApi';
+
+const eagle: any = coreEagle;
+
+/* Electron renderer 全局（nodeIntegration）：只补类型，不改运行期。 */
+declare const electron: any;
+declare const require: any;
+declare const ipcRenderer: any;
+
+export class URLEnlarger {
 	// NOTE: 為了避免每次都需檢查大圖網址是否損壞，浪費時間，所以在第一次檢查後，就會將檢查結果記錄下來
-	#ruleValidMap = {};
-	rules = [
+	#ruleValidMap: Record<string, boolean> = {};
+	rules: any[] = [
 		{
 			site: "Reddit",
 			srcPattern: "https://preview.redd.it/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				const pureURL = src.split("?")[0];
 				return pureURL.replace("preview.redd.it", "i.redd.it");
 			},
@@ -13,13 +42,13 @@ globalThis.URLEnlarger = class {
 		{
 			site: "deviantArt",
 			srcPattern: /https:\/\/images\S+\.wixmp\.com\/f\/\S+\/v1\/fill\/\S+\?token\S+/,
-			replace: (src) => {
-				const parseJwt = (token) => {
+			replace: (src: any) => {
+				const parseJwt = (token: any) => {
 					var base64Url = token.split(".")[1];
 					var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
 					var jsonPayload = decodeURIComponent(atob(base64)
 						.split("")
-						.map((c) => {
+						.map((c: any) => {
 							return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
 						})
 						.join(""));
@@ -46,7 +75,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "behance",
 			srcPattern: /(.*)behance.net\/(project_modules|projects)\/(.*)/,
-			replace: (src) => {
+			replace: (src: any) => {
 				let key = "/source/";
 				return src
 					.replace("/max_1200/", key)
@@ -61,17 +90,17 @@ globalThis.URLEnlarger = class {
 		{
 			site: "imgur",
 			srcPattern: /(.*)i\.imgur\.com\/(.*)/,
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/\?(.*)/, "?maxwidth=99999");
 			},
 		},
 		{
 			site: "twitter",
 			srcPattern: /(.*)twimg.com(.*)name=(.*)/,
-			replaceAsync: async (src) => {
+			replaceAsync: async (src: any) => {
 				const originalSrc = src;
 				src = src.replace(/name=(.*)/, "name=orig");
-				return new Promise((resolve) => {
+				return new Promise<any>((resolve: any) => {
 					const controller = new AbortController();
 					setTimeout(() => controller.abort(), 3000);
 					const p1 = fetch(src.replace("format=webp", "format=jpg"), {
@@ -83,7 +112,7 @@ globalThis.URLEnlarger = class {
 						signal: controller.signal,
 					});
 
-					Promise.all([p1, p2]).then((fetches) => {
+					Promise.all([p1, p2]).then((fetches: any) => {
 						if (fetches[0].status === 200) {
 							return resolve(fetches[0].url);
 						}
@@ -99,21 +128,21 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Bluesky",
 			srcPattern: "https://cdn.bsky.app/img/feed_thumbnail/plain/(.*)@jpeg",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace("feed_thumbnail", "feed_fullsize");
 			},
 		},
 		{
 			site: "midjourney",
 			srcPattern: "https://cdn.midjourney.com/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_\d+_N/, "").replace(/\.webp/, ".png");
 			},
 		},
 		{
 			site: "花瓣网 (v4) - 增加了 ?auth_key 支援",
 			srcPattern: "https://gd-hbimg-edge.huaban(img)?.com/(.*)",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str
 					.replace(/_\/fw[^?]*(?=\?|$)/, "")
 					.replace(/_sq\d+\/format[^?]*(?=\?|$)/, "")
@@ -126,7 +155,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "花瓣网 (v3)",
 			srcPattern: "https://gd-hbimg.huaban(img)?.com/(.*)",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str
 					.replace(/_\/fw(.*)/, "")
 					.replace(/_sq\d+\/format(.*)/, "")
@@ -143,7 +172,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "花瓣网 (v2)",
 			srcPattern: "(.*)hbimg.huaban.com/(.*)",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str
 					.replace(/_\/fw(.*)/, "")
 					.replace(/_sq\d+\/format(.*)/, "")
@@ -159,7 +188,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "花瓣网 (v1)",
 			srcPattern: "//hbimg[.]*/*",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str
 					.split("/format/")[0]
 					.replace(/_sq235$/, "")
@@ -172,21 +201,21 @@ globalThis.URLEnlarger = class {
 		{
 			site: "大作",
 			srcPattern: "(.*)bigurl(.*)",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str.replace("pc_236_webp_2x", "pc_680_webp").replace("pc_236_webp", "pc_680_webp");
 			},
 		},
 		{
 			site: "Lapa.ninja",
 			srcPattern: "(.*)cdn.lapaninja.com(.*)",
-			replace: (str) => {
+			replace: (str: any) => {
 				return str.replace("-thumb.jpg", ".jpg");
 			},
 		},
 		{
 			site: "Dribbble",
 			srcPattern: "https://cdn.dribbble.com/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				if (src.includes("userupload")) {
 					return src.split("?")[0];
 				}
@@ -213,14 +242,14 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Pexels",
 			srcPattern: "https?://images.pexels.com/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.split("?")[0] + "?auto=compress";
 			},
 		},
 		{
 			site: "Tenor",
 			srcPattern: "https://media.tenor.com/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/(d|M)\//, "C/");
 			},
 		},
@@ -228,7 +257,7 @@ globalThis.URLEnlarger = class {
 			site: "新浪微博 weibo",
 			srcPattern: /(.*)\/\/.*[.]sinaimg[.]cn\/([a-z]*)(\d+)\//,
 			ignoreCheck: true,
-			replace: (src) => {
+			replace: (src: any) => {
 				if (src.includes(".mp4")) {
 					return src;
 				}
@@ -240,7 +269,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "百度贴吧",
 			srcPattern: "https?://tiebapic[.]baidu[.]com/forum.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				var reg = /^(http:\/\/tiebapic\.baidu\.com\/forum\/)ab(pic\/item\/[\w.]+)/i;
 				var portrait = /\/sys\/portrait/;
 				var result = src.match(reg);
@@ -261,7 +290,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "豆瓣相册",
 			srcPattern: /https?:\/\/img[\d]*\.doubanio\.com\/.*/,
-			replace: (src) => {
+			replace: (src: any) => {
 				// NOTE: 不一定會有 original，如果遇到沒有的會出現空白畫面導致Eagle異常
 				return src
 					.replace(/[/]s[/]/, "/orginal/")
@@ -273,42 +302,42 @@ globalThis.URLEnlarger = class {
 		{
 			site: "pixAI.Art",
 			srcPattern: "https://images-ng.pixai.art/images/thumb/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace("/thumb/", "/orig/");
 			},
 		},
 		{
 			site: "Flickr",
 			srcPattern: ".*[.]staticflickr[.]com.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_[nms]\.jpg$/, "_b.jpg");
 			},
 		},
 		{
 			site: "颇可网 | poco.cn | 舊版, 相容性不確定",
 			srcPattern: "http?://img[d].*pocoimg*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_\d{3}.jpg$/, ".jpg");
 			},
 		},
 		{
 			site: "颇可网 | poco.cn | 新版",
 			srcPattern: "https://(.*).pocoimg.cn/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_H\d+./, ".");
 			},
 		},
 		{
 			site: "蘑菇街",
 			srcPattern: "https?://.*[.]mogucdn[.]com/.*.jpg",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_[\d]{3}x[\d]+.jpg$/, "_468x468.jpg").split(".jpg")[0] + ".jpg";
 			},
 		},
 		{
 			site: "Pinterest",
 			srcPattern: "https://(.*).pinimg.com/(.*).(jpg|png|webp)",
-			replaceAsync: async (originalSrc) => {
+			replaceAsync: async (originalSrc: any) => {
 				// 如果原始網址已經是75x75_RS或不包含圖片格式，直接返回
 				if (originalSrc.includes("75x75_RS") || !/\.(jpg|png|webp)/.test(originalSrc)) return originalSrc;
 
@@ -319,12 +348,12 @@ globalThis.URLEnlarger = class {
 						".png",
 						".webp",
 						".gif"];
-					const newSrcs = possibleFormats.map((ext) => baseSrc.replace(originalExt, ext));
+					const newSrcs = possibleFormats.map((ext: any) => baseSrc.replace(originalExt, ext));
 					const controller = new AbortController();
 					const timeoutId = setTimeout(() => controller.abort(), 3000);
 					const fetchOptions = { method: "HEAD", signal: controller.signal };
 
-					const responses = await Promise.all(newSrcs.map(async (src) => {
+					const responses = await Promise.all(newSrcs.map(async (src: any) => {
 						const response = await fetch(src, fetchOptions);
 						if (response.ok) {
 							clearTimeout(timeoutId);
@@ -332,7 +361,7 @@ globalThis.URLEnlarger = class {
 						}
 					}));
 
-					const validResponse = responses.find((response) => typeof response === "string");
+					const validResponse = responses.find((response: any) => typeof response === "string");
 					if (validResponse) {
 						return validResponse;
 					}
@@ -350,8 +379,8 @@ globalThis.URLEnlarger = class {
 			site: "pixiv",
 			srcPattern: /(.*)\/\/i\.pximg\.net\/(.*)/,
 			ignoreCheck: true,
-			replaceAsync: async (src) => {
-				return new Promise(async (resolve) => {
+			replaceAsync: async (src: any) => {
+				return new Promise<any>(async (resolve: any) => {
 					try {
 						const abortController = new AbortController();
 
@@ -381,13 +410,13 @@ globalThis.URLEnlarger = class {
 						// NOTE: 未採用，濫用別人家的資源好像不太好，雖然他沒說不能商用就是了
 
 						// 測試網址是否有效
-						const test1 = this.#isValidImageURL(originalPngUrl, abortController).then((result) => ({ group: "test1", result }));
-						const test2 = this.#isValidImageURL(originalJpgUrl, abortController).then((result) => ({ group: "test2", result }));
-						// const test3 = this.#isValidImageURL(alternativePngUrl).then((result) => ({ group: "test3", result }));
-						// const test4 = this.#isValidImageURL(alternativeJpgUrl).then((result) => ({ group: "test4", result }));
+						const test1 = this.#isValidImageURL(originalPngUrl, abortController).then((result: any) => ({ group: "test1", result }));
+						const test2 = this.#isValidImageURL(originalJpgUrl, abortController).then((result: any) => ({ group: "test2", result }));
+						// const test3 = this.#isValidImageURL(alternativePngUrl).then((result: any) => ({ group: "test3", result }));
+						// const test4 = this.#isValidImageURL(alternativeJpgUrl).then((result: any) => ({ group: "test4", result }));
 
 						// 比較哪一組測試結果最快回傳
-						Promise.race([test1, test2]).then((fastest) => {
+						Promise.race([test1, test2]).then((fastest: any) => {
 							abortController.abort("cancelled reason");
 							console.log("[pixiv-race-fetch] 最快速的組別是:", fastest.group);
 							console.log("[pixiv-race-fetch] 其輸出結果是:", fastest.result);
@@ -435,35 +464,35 @@ globalThis.URLEnlarger = class {
 		{
 			site: "1688",
 			srcPattern: "https?://cbu01.alicdn.com/img/ibank/.*..*x.*.jpg",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/\.\d+x.*\./, ".");
 			},
 		},
 		{
 			site: "淘宝",
 			srcPattern: /.(?:taobao|tb|ali)cdn(.+)_\d+x\d+.jpg(.*)/,
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_\d+x\d+.jpg(_.webp)?/, "");
 			},
 		},
 		{
 			site: "天猫",
 			srcPattern: /.(?:taobao|tb|ali)cdn(.+)_\d+x\d+\S\d+.jpg(.*)/,
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_\d+x\d+\S\d+.jpg(_.webp)?/, "");
 			},
 		},
 		{
 			site: "Amazon",
 			srcPattern: "https://(images-na.ssl-images|images-fe.ssl-images|m.media)-amazon.com/images/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/\.\_\S+\./, ".");
 			},
 		},
 		{
 			site: "京东",
 			srcPattern: "https://.*.360buyimg.com.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src
 					.replace(/\/n\d+\//, "/n0/")
 					.replace(/s\d+x\d+_?/, "")
@@ -475,7 +504,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Houzz",
 			srcPattern: "https://st.hzcdn.com/fimgs/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src
 					.replace(/_/, "_14-")
 					.replace("fimgs", "simgs")
@@ -485,35 +514,35 @@ globalThis.URLEnlarger = class {
 		{
 			site: "HouseBeautiful",
 			srcPattern: "https://hips[.]hearstapps[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/[.]jpg{1,}/, ".jpg").split("&resize=")[0];
 			},
 		},
 		{
 			site: "Officesnapshots",
 			srcPattern: "https://officesnapshots[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/-\d{3,4}x\d{3,4}/, "");
 			},
 		},
 		{
 			site: "Archilovers",
 			srcPattern: "https://cdn.archilovers.com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/(\S_\d+_|thumb\d_)/, "");
 			},
 		},
 		{
 			site: "AD",
 			srcPattern: "https://media[.]architecturaldigest[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/w_\d+/, "w_5000").replace(/,h_\d+/, "");
 			},
 		},
 		{
 			site: "Archdaily 中文版",
 			srcPattern: "https?://images[.]adsttc[.]com[.]qtlcn[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src
 					.replace(/thumb_jpg/, "large_jpg")
 					.replace("/medium_jpg/", "/large_jpg/")
@@ -523,7 +552,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "ArchDaily 国际版",
 			srcPattern: "https?://images[.]adsttc[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src
 					.replace(/slideshow/, "large_jpg")
 					.replace(/thumb_jpg/, "large_jpg")
@@ -534,7 +563,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Dezeen",
 			srcPattern: "https://static[.]dezeen[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src
 					.replace(/slideshow/, "large_jpg")
 					.replace(/thumb_jpg/, "large_jpg")
@@ -544,22 +573,22 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Archiproducts",
 			srcPattern: "https://img[.]edilportale[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/-thumbs.*.[a-z]_/, "s/").replace(/news.*.[a-z]_/, "news/");
 			},
 		},
 		{
 			site: "officesnapshots wordpress",
 			srcPattern: "https://officesnapshots.com/wp-content/uploads/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/-\d+x\d+-(.*)\./, ".").split("?w=")[0];
 			},
 		},
 		{
 			site: "wordpress 通用 2.0 (asnyc)",
 			srcPattern: "/wp-content/uploads/.*",
-			replaceAsync: async (src) => {
-				return new Promise((resolve) => {
+			replaceAsync: async (src: any) => {
+				return new Promise<any>((resolve: any) => {
 					let newsrc = src.replace(/-\d+x\d+/, "").split("?w=")[0];
 					let isDoubleExt = newsrc.match(/\.[a-z]{3,4}\.[a-z]{3,4}$/);
 
@@ -581,7 +610,7 @@ globalThis.URLEnlarger = class {
 					}
 
 					Promise.all(promises)
-						.then((fetches) => {
+						.then((fetches: any) => {
 							if (fetches[1] && fetches[1].status === 200) {
 								return resolve(fetches[1].url);
 							}
@@ -603,22 +632,22 @@ globalThis.URLEnlarger = class {
 		{
 			site: "Squarespace 通用",
 			srcPattern: "https://static[0-9][.]squarespace[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/format=[0-9]{3,4}w/, "format=3000w");
 			},
 		},
 		{
 			site: "bilibili专栏",
 			srcPattern: "https://(.*).hdslb.com/(.*)@(.*).(webp|avif)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.split("@")[0];
 			},
 		},
 		{
 			site: "AliyunOSS 通用",
 			srcPattern: /\?x-oss-process=\S+/,
-			replace: (src) => {
-				const removeQueryParameter = (url, parameter) => {
+			replace: (src: any) => {
+				const removeQueryParameter = (url: any, parameter: any) => {
 					let urlObject = new URL(url);
 					let params = urlObject.searchParams;
 					params.delete(parameter);
@@ -631,21 +660,21 @@ globalThis.URLEnlarger = class {
 		{
 			site: "小红书",
 			srcPattern: "https?://sns-webpic-qc.xhscdn.com/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/:\/\/[^/]+(\.xhscdn.com\/+)[0-9]+\/+[0-9a-f]{10,}\/+([^/.?#!]+)(?:[?#!].*)?/, "://sns-img-al$1$2").split("!")[0];
 			},
 		},
 		{
 			site: "Medium",
 			srcPattern: "https://cdn-images-[0-9][.]medium[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/\/max\/\d{2,4}/, "");
 			},
 		},
 		{
 			site: "Medium | 新版",
 			srcPattern: "https://miro.medium.com/v2/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/\/[^/]*:[^/]*\//g, "/");
 			},
 		},
@@ -653,8 +682,8 @@ globalThis.URLEnlarger = class {
 			site: "Artstation",
 			srcPattern: "https://cdn(.*).artstation.com/(.*)",
 			ignoreCheck: true,
-			replaceAsync: async (src) => {
-				return new Promise(async (resolve) => {
+			replaceAsync: async (src: any) => {
+				return new Promise<any>(async (resolve: any) => {
 					try {
 						const abortController = new AbortController();
 
@@ -667,15 +696,15 @@ globalThis.URLEnlarger = class {
 						const large4kSrc = largeSrc.replace(/large/, "4k");
 
 						// 測試網址是否有效
-						const test1 = this.#isValidImageURL(large4kSrc, abortController).then((result) => ({ src: large4kSrc, valid: result }));
-						const test2 = this.#isValidImageURL(largeSrc, abortController).then((result) => ({ src: largeSrc, valid: result }));
+						const test1 = this.#isValidImageURL(large4kSrc, abortController).then((result: any) => ({ src: large4kSrc, valid: result }));
+						const test2 = this.#isValidImageURL(largeSrc, abortController).then((result: any) => ({ src: largeSrc, valid: result }));
 
 						// 等待所有測試結束
-						Promise.all([test1, test2]).then((results) => {
+						Promise.all([test1, test2]).then((results: any) => {
 							abortController.abort();
 
 							// 篩選出有效的網址
-							const validResults = results.filter((result) => result.valid);
+							const validResults = results.filter((result: any) => result.valid);
 							if (validResults.length > 0) {
 								// 如果有有效的網址，則回傳第一個
 								resolve(validResults[0].src);
@@ -691,14 +720,14 @@ globalThis.URLEnlarger = class {
 		{
 			site: "GameUI",
 			srcPattern: "https://image.gameuiux.cn.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/_list/, "_detail");
 			},
 		},
 		{
 			site: "GameUI2",
 			srcPattern: "https://img.gameui.net/*",
-			replace: (src) => {
+			replace: (src: any) => {
 				// 只會有 "-1"
 				// -1@1x520
 				if (src.match(/(-1@\d+x\d+)/)) {
@@ -716,28 +745,28 @@ globalThis.URLEnlarger = class {
 		{
 			site: "interiordesign",
 			srcPattern: "https://d4qwptktddc5f[.]cloudfront[.]net/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.replace(/easy_thumbnails\/thumbs_/, "").replace(/[.]jpg.*/, ".jpg");
 			},
 		},
 		{
 			site: "meiye",
 			srcPattern: "(.*)image.meiye.art/(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.split("?imageMogr2")[0].split("?vframe")[0];
 			},
 		},
 		{
 			site: "即刻",
 			srcPattern: "https://cdn(.*)[.]ruguoapp[.]com/.*",
-			replace: (src) => {
+			replace: (src: any) => {
 				return src.split("?imageMogr2")[0];
 			},
 		},
 		{
 			site: "腾讯云 通用",
 			srcPattern: "https://(.*)?imageMogr2(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				if (src.includes("sign-algorithm=")) return src;
 				if (src.includes("?imageMogr2")) src = src.split("?imageMogr2")[0];
 				return src;
@@ -746,7 +775,7 @@ globalThis.URLEnlarger = class {
 		{
 			site: "腾讯云 通用 #2",
 			srcPattern: "https://(.*)?imageView2(.*)",
-			replace: (src) => {
+			replace: (src: any) => {
 				if (src.includes("q-sign-algorithm=")) return src;
 				if (src.includes("?imageView2")) src = src.split("?imageView2")[0];
 				return src;
@@ -784,13 +813,13 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 原始圖片網址
 	 * @returns {Promise<{ url: string, largeUrl: string }>} 回傳原始圖片網址與大圖網址
 	 */
-	async enlarge(url, timeout = 3000) {
+	async enlarge(url: any, timeout: any = 3000) {
 		// 如果 Eagle App 本體支援轉大圖功能的話，就把該功能交給他處理，這裡直接回傳原始圖片網址跳出
 		if (this.isEagleHasAbilityToEnlarge) {
 			return { url, largeUrl: null };
 		}
 
-		const timeoutPromise = new Promise((resolve) =>
+		const timeoutPromise = new Promise<any>((resolve: any) =>
 			setTimeout(() => {
 				this.log(`URLEnlarger.enlarge timeout, url: ${url}`);
 				return resolve({ url, largeUrl: null });
@@ -799,8 +828,8 @@ globalThis.URLEnlarger = class {
 		return Promise.race([this.#convertURL(url), timeoutPromise]);
 	}
 
-	async enlargeWithoutCheckEagleHasAbility(url) {
-		const timeoutPromise = new Promise((resolve) =>
+	async enlargeWithoutCheckEagleHasAbility(url: any) {
+		const timeoutPromise = new Promise<any>((resolve: any) =>
 			setTimeout(() => {
 				this.log(`URLEnlarger.enlarge timeout, url: ${url}`);
 				return resolve({ url, largeUrl: null });
@@ -817,16 +846,16 @@ globalThis.URLEnlarger = class {
 	 * @param {number} eachTimeout 每個網址的timeout時間
 	 * @returns {Promise<Array<{ url: string, largeUrl: string }>>} 回傳原始圖片網址與大圖網址
 	 */
-	async enlargeBatch(urls, eachTimeout = 3000) {
+	async enlargeBatch(urls: any, eachTimeout: any = 3000) {
 		// 如果 Eagle App 本體支援轉大圖功能的話，就把該功能交給他處理，這裡直接回傳原始圖片網址跳出
 		if (this.isEagleHasAbilityToEnlarge) {
-			return urls.map((url) => ({ url, largeUrl: null }));
+			return urls.map((url: any) => ({ url, largeUrl: null }));
 		}
 
 		let workers = [];
 
 		for (let url of urls) {
-			const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ url, largeUrl: null }), eachTimeout));
+			const timeoutPromise = new Promise<any>((resolve: any) => setTimeout(() => resolve({ url, largeUrl: null }), eachTimeout));
 			const racePromise = Promise.race([this.#convertURL(url), timeoutPromise]);
 			workers.push(racePromise);
 		}
@@ -841,13 +870,13 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 原始圖片網址
 	 * @returns {boolean} 回傳規則是否存在
 	 */
-	isEnlargable(url) {
+	isEnlargable(url: any) {
 		if (!url) return false;
 
 		// NOTE: 如果有一個超大的base64(>=100000)跑進來，會導致瀏覽器當機，況且他也不應該進來轉大圖，所以一定要過濾掉
 		if (url.includes("data:image") || url.includes("blob:")) return false;
 
-		return this.rules.find((rule) => {
+		return this.rules.find((rule: any) => {
 			try {
 				const regexp = RegExp(rule?.srcPattern);
 				if (regexp.test(url)) {
@@ -865,9 +894,9 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 原始圖片網址
 	 * @returns {Promise<{ url: string, largeUrl: string }>} 回傳原始圖片網址與大圖網址
 	 */
-	async #convertURL(url) {
-		return new Promise(async (resolve) => {
-			if (!url) return resolve(url, null);
+	async #convertURL(url: any) {
+		return new Promise<any>(async (resolve: any) => {
+			if (!url) return resolve({ url, largeUrl: null });
 			if (url.indexOf("data:image") > -1) return resolve({ url, largeUrl: null });
 			if (!(url.startsWith("http://") || url.startsWith("https://"))) return resolve({ url, largeUrl: null });
 
@@ -912,12 +941,12 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 原始圖片網址
 	 * @returns
 	 */
-	async #ruleReplace(rule, url) {
-		return new Promise((resolve) => {
+	async #ruleReplace(rule: any, url: any) {
+		return new Promise<any>((resolve: any) => {
 			if (rule.replace) {
 				return resolve(rule.replace(url));
 			} else if (rule.replaceAsync) {
-				rule.replaceAsync(url).then((largeUrl) => {
+				rule.replaceAsync(url).then((largeUrl: any) => {
 					return resolve(largeUrl);
 				});
 			} else {
@@ -932,9 +961,9 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url
 	 * @returns {Promise<boolean>} 回傳圖片網址是否存在
 	 */
-	async #isURLExists(url) {
-		return new Promise((resolve) => {
-			eagle.urlTest(url, {}).then((result) => {
+	async #isURLExists(url: any) {
+		return new Promise<any>((resolve: any) => {
+			eagle.urlTest(url, {}).then((result: any) => {
 				console.log(`[URLEnlarger] ${url} ${result.responseStatus}`);
 				resolve(result.responseStatus === true);
 			});
@@ -947,7 +976,7 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 圖片網址
 	 * @returns {Promise<string>} 回傳圖片網址
 	 */
-	async #isValidImageURL(url, controller = null) {
+	async #isValidImageURL(url: any, controller: any = null) {
 		if (this.isRunningInEagleApp) {
 			return this.#checkURLByEagle(url);
 		} else {
@@ -955,8 +984,8 @@ globalThis.URLEnlarger = class {
 		}
 	}
 
-	async #checkURLByEagle(url) {
-		return new Promise((resolve) => {
+	async #checkURLByEagle(url: any) {
+		return new Promise<any>((resolve: any) => {
 			const request = url.startsWith("https") ? require("https") : require("http");
 			request.get(url,
 				{
@@ -966,7 +995,7 @@ globalThis.URLEnlarger = class {
 						Referer: url,
 					},
 				},
-				(res) => {
+				(res: any) => {
 					if (res.statusCode >= 400) {
 						return resolve(false);
 					} else {
@@ -976,8 +1005,8 @@ globalThis.URLEnlarger = class {
 		});
 	}
 
-	async #checkURLByImageElement(url, controller) {
-		return new Promise((resolve) => {
+	async #checkURLByImageElement(url: any, controller: any) {
+		return new Promise<any>((resolve: any) => {
 			let img = new Image();
 			img.src = url;
 			img.onload = () => {
@@ -992,7 +1021,7 @@ globalThis.URLEnlarger = class {
 			};
 
 			if (controller) {
-				controller.signal.addEventListener("abort", ({ target }) => {
+				controller.signal.addEventListener("abort", ({ target }: any) => {
 					// controller.signal.removeEventListener("abort", abortListener);
 					img.onload = null;
 					img.onerror = null;
@@ -1008,8 +1037,8 @@ globalThis.URLEnlarger = class {
 	 * @param {string} url 圖片網址
 	 * @returns {Promise<string>} 回傳圖片網址
 	 */
-	async #isValidImageURLRejectable(url) {
-		return new Promise((resolve, reject) => {
+	async #isValidImageURLRejectable(url: any) {
+		return new Promise<any>((resolve: any, reject: any) => {
 			let img = new Image();
 			img.src = url;
 			img.onload = () => {
@@ -1024,7 +1053,7 @@ globalThis.URLEnlarger = class {
 		});
 	}
 
-	log(message) {
+	log(message: any, ..._ignored: any[]) {
 		try {
 			if (ipcRenderer) {
 				ipcRenderer.send("electron-info", `[bg] ${message}`);
@@ -1033,6 +1062,12 @@ globalThis.URLEnlarger = class {
 			}
 		} catch (err) {}
 	}
-};
+}
 
-eagle.urlEnlarger = new globalThis.URLEnlarger();
+/**
+ * R6 装配点：把实例挂到 eagle 单例（等价原尾行 `eagle.urlEnlarger = new globalThis.URLEnlarger()`）。
+ * 幂等：重复调用不重建实例（rules 内的 #ruleValidMap 缓存需在会话内保持）。
+ */
+export function installUrlEnlarger(): void {
+  if (!eagle.urlEnlarger) eagle.urlEnlarger = new URLEnlarger();
+}

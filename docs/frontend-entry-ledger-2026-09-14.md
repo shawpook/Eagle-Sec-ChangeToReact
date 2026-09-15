@@ -2,6 +2,18 @@
 
 台账建立：2026-09-14（R0）。R1 更新：同日。工作区：`H:/dev/Eagle-Sec-development - 副本`。分支：`react-in-place`。基线：R0 = `195dc3ab` 之上 `14ff61a2`；R1 见提交记录。
 
+> ## ⚠ M0 订正说明（2026-09-15 追加）
+>
+> 本文件是 **2026-09-14 的 R0/R1 记录**，保留原日期、原结构与原表述以供追溯。
+> 2026-09-15 的 M0 审计（`docs/plan-2026-09-15-full-workspace-legacy-audit.md` §3.4 F26）判定其中 **6 处口径失真**。
+> 下列订正**就地插入**在对应条目内，一律采用「**原表述 → 现口径**」形式，**不删除历史记录、不把本文改写成像是当天写的**。
+> 矩阵口径的完整重建见 **`docs/frontend-entry-ledger-m0-2026-09-15.md`**；六条对照的汇总见该文 §4。
+>
+> 需一并声明的时点边界：本文的产物类结论基于 **2026-09-14 时点的已存在产物**；
+> 本轮 M0 核查所在的工作区副本**不存在 `dist/`**，故下文凡标 **[M0推]** 的产物路径均为**构建规则推导**，非观测结果。
+> 另：`tests/dist-entry-check.mjs` 已在 `00352c1f`（M0 闭包门禁批次）改为**缺资源无条件 FAIL**，
+> 本文 §5/§6 中「仅剩 2 条 WARN」的表述属**当时代码**的历史记录，不再代表当前门禁行为。
+
 本台账供后续批次取用。**“有 React 入口”不等于“该窗口状态/交互已收敛”**——本表只登记入口与加载方式，迁移深度见报告 §4 与批次计划 R5。
 
 ## 1. 加载机制（R1 后）
@@ -10,6 +22,11 @@
 - 开发态：`frontend/vite.preview.config.mjs` 的 `configureServer`（105–170 行）按 URL 直出页面，只补 `window.__EAGLE_API_BASE_URL/__EAGLE_EXTENSION_BASE_URL` 与 react-refresh 前置脚本；`/` 重定向、`replaced/` 页与 `pdf-viewer/*.js` 仍由该中间件处理。
 - 正式构建：`rollupOptions.input`（约 230 行）含 11 个页面 + `pages.html`；`transformIndexHtml` 按文件路径补 API 地址与 collect 模板清洗。产物路径与 URL 形状一致（`dist/frontend/src/app/index.html` …）。
 - 静态资产：`publicDir = frontend/public` 整目录复制；`eagle-production-assets` 插件在 `closeBundle` 交付 `src/app`（排除 `.html`/`react`）、`src/my_modules`、`src/i18n`、`src/config.js`，并从产物删除 `mock-library`/`mock-assets`（开发数据）。
+  - **[M0 订正 F26-5｜原表述 → 现口径]** 原表述「交付 `src/app`（**排除 `.html`/`react`**）」不精确。
+    **现口径**：过滤谓词实际为「排除 `react/` 子树」+「排除 `src.endsWith('.html') && REACT_PAGE_ENTRIES[rel]` 命中的**已登记 React 页 HTML**」，**其余 `.html` 一律复制**。
+    即 `pdf-viewer/web/viewer.html`、`model-viewer/website/{index,embed}.html` 等引擎页按原样交付；源码注释同此（`frontend/vite.preview.config.mjs:232-239`）。
+    证据：`frontend/vite.preview.config.mjs:232-239`；`REACT_PAGE_ENTRIES` 定义 `frontend/vite.preview.config.mjs:53-58、64-67` 与 `tests/frontend-gate-manifest.mjs:2-14`。
+    完整口径见 `docs/frontend-entry-ledger-m0-2026-09-15.md` §1.2、§4.5。
 - Electron：`electron/main.cjs:8` 读 `EAGLE_PREVIEW_URL`（默认仍是开发地址 5176）；子窗与工作台 URL 从该 URL 的 origin 推导（R1 起，不再硬编码 5176）。
 - 生产运行：`npm run build` → `npm run start:prod`（本地静态服务 + 后端 + Electron），或 `npm run serve:frontend` 单起静态服务。
 - 门禁：`npm run test:production` = `tests/dist-entry-check.mjs`（产物入口/资源检查）+ `tests/production-smoke.mjs`（Electron 正式启动冒烟，不依赖 Vite dev）。
@@ -21,7 +38,7 @@
 | 1 | 主界面 | `/src/app/index.html` | `src/app/index.html` | `react/main.tsx` | 顶层窗口 | — | 已构建，冒烟通过 |
 | 2 | 偏好设置 | `/src/app/preferences.html` | 同路径 | `react/preferences/entry.tsx` | 主窗子窗 | tippy、ShortcutManager | 已构建 |
 | 3 | 预览大窗 | `/src/app/preview-window.html` | 同路径 | `react/preview-window/entry.tsx` | 主窗子窗（`originalPreviewUrl` main.cjs:699 派生）| 媒体播放 | 已构建 |
-| 4 | 采集窗口 | `/src/app/collect-window/index.html` | 同路径 | `react/collect-window/entry.tsx` | 主窗子窗 | jQuery / jQuery UI / SweetAlert / CollectItem | 已构建 |
+| 4 | 采集窗口 | `/src/app/collect-window/index.html` | 同路径 | `react/collect-window/entry.tsx` | 主窗子窗 | jQuery / jQuery UI / SweetAlert / CollectItem `⚠M0 订正 F26-1，见下` | 已构建 |
 | 5 | EXIF 查看器 | `/src/app/exif-viewer/index.html` | 同路径 | `react/viewers/exif/entry.tsx` | 查看器子窗 | — | 已构建 |
 | 6 | RAW 查看器 | `/src/app/raw-viewer/index.html` | 同路径 | `react/viewers/raw/entry.tsx` | 查看器子窗 | dcraw（`src/my_modules/raw-parser/dcraw.js`）| 已构建（my_modules 已交付）|
 | 7 | native 查看器 | `/src/app/native-viewer/index.html` | 同路径 | `react/viewers/native/entry.tsx` | 查看器子窗 | 后端 nativePreview + pdf.js worker | 已构建 |
@@ -31,10 +48,24 @@
 | 11 | 文档查看器 | `/src/app/react/viewers/document/index.html` | 同路径（18 个 TS/TSX）| — | iframe 子窗（`core/documentViewer.ts:60`）| 自研渲染 | 已构建 |
 | 12 | PDF 查看器 | `/src/app/pdf-viewer/web/viewer.html` | 同路径 | 无（PDF.js）| 查看器子窗 | PDF.js | 已交付（引擎页原样复制）|
 | 13 | 3D 查看器 | `/src/app/model-viewer/website/{index,embed}.html` | 同路径 | 无（O3DV）| 主+嵌入入口 | O3DV | 已交付（引擎页原样复制）|
-| 14 | 注册 / 设备管理 | `/src/app/{registration,manage-device}.html` | `frontend/public/replaced/*.html` | 无 | 顶层窗口 | — | 中间件直出，未进产物（有意）|
-| 15 | thumbnail.html | `/src/app/thumbnail.html` | 同路径 | 无（空壳）| — | — | **R6 已退役**（全仓零引用；产物本就排除 `src/app/*.html`）|
+| 14 | 注册 / 设备管理 | `/src/app/{registration,manage-device}.html` | `frontend/public/replaced/*.html` | 无 | 顶层窗口 | — | 中间件直出，未进产物（有意）`⚠M0 订正 F26-2，见下` |
+| 15 | thumbnail.html | `/src/app/thumbnail.html` | 同路径 | 无（空壳）| — | — | **R6 已退役**（全仓零引用；产物本就排除 `src/app/*.html`）`⚠M0 订正 F26-5：此处「排除 src/app/*.html」同属旧表述，实为仅排除已登记 React 页 HTML —— 退役结论不变，理由的措辞已订正` |
 | 16 | 工具/静态页 | `/pages.html`、`/workbench.html`、`/roadmap.html`、`/media-viewer/*`、`/browser-extension/*`、`/vendor/*` | `frontend/public/*` | 无 | — | 随 public 复制；workbench 被 Electron 菜单引用（main.cjs:1705）|
 | 17 | 旧指令模板 | — | `src/app/js/directives/*.html`（64 个）| 无 | — | — | **R6 已退役**（连同 controllers/modules 共 186 个文件，见 §8）|
+
+> **M0 订正 F26-1（第 4 行｜采集窗口）｜原表述 → 现口径**
+> 原表述：专用引擎列写 `jQuery / jQuery UI / SweetAlert / CollectItem`。
+> **现口径**：该窗 **jQuery / jQuery UI / SweetAlert 的 JS 框架已退役**，现状为自研交互层——自研 `makeDraggable`（`src/app/react/components/interactions/draggable.ts` 头注释「D-2f：自研 draggable（替代 jQuery UI `.draggable()`）」，消费点 `react/collect-window/tagPanel.tsx:15、28、43`）、自研 sortable（`react/collect-window/contextMenu.tsx:393`）、自研弹窗（`react/collect-window/entry.tsx:13-14` 记 `sweetalert2.all.min.js` 退役）、`$(document).ready` 改原生（`react/collect-window/api/env.ts:302`）。
+> **保留的是 CSS 类名契约而非 JS 框架**：`src/app/collect-window/index.html:10-13` 显式说明 `sweetalert2.min.css` 仅为 `.swal2-*` 类名契约；`:8-9` 记 jQuery UI CSS 链接退役。
+> **仍需登记的真实经典脚本**：该页仍有 3 个非 React 经典 script（`chinese_convert.js`、`pinyinlite.js`、`tiny-pinyin.js`，`index.html:27-29`）——引擎，不是框架。
+> 口径纪律：**CSS 保留不等于 JS 框架活跃**；CollectItem 系旧 controller 概念，R5 后由 React 域承接。
+
+> **M0 订正 F26-2（第 14 行｜注册 / 设备管理）｜原表述 → 现口径**
+> 原表述：「中间件直出，**未进产物**（有意）」——把**两个不同概念**压成了一句。
+> **现口径（拆为两条）**：
+> ① **原文件确实进产物**：`frontend/public/replaced/{registration,manage-device}.html` 随 `publicDir` 整目录复制，落到 `dist/frontend/replaced/*.html`（**[M0推]**，本副本无 `dist/`；依据 `frontend/vite.preview.config.mjs:111` 与 `:261-263` 只删 `mock-library`/`mock-assets`）。`tests/frontend-gate-manifest.mjs:20` 亦把二者列入 `STATIC_PAGES`，即**产物检查期望它们存在**。
+> ② **旧 URL 在生产态缺映射**：产品导航 `frontend/public/pages.html:62-63` 指向 `/src/app/{registration,manage-device}.html`，而这两个 URL 只有 **dev 中间件**直出（`frontend/vite.preview.config.mjs:145-154` 的 `readReplacement()`）；生产静态服务 `scripts/serve-frontend.mjs` 只做 `path.join(root, url)` 文件查找，**不产生该映射**。
+> 口径纪律：**「文件没交付」与「URL 没映射」是两回事**，不可再合并叙述。
 
 > 十个窗口入口（1–4、5–10）第一条 import 均为 `core/shimsLegacy.ts`。
 > **R2 已完成**：该文件由 3401 行单 IIFE 拆为 `core/shim/` 下 8 个模块
@@ -64,10 +95,16 @@
 ## 5. 生产资源交付与排除（R1）
 
 - 交付：`src/app`（排除 `.html`/`react`）、`src/my_modules`、`src/i18n`、`src/config.js`。
+  - **[M0 订正 F26-5｜原表述 → 现口径]** 原表述「交付 `src/app`（**排除 `.html`/`react`**）」不精确。
+    **现口径**：过滤谓词为「排除 `react/` 子树」+「排除 `src.endsWith('.html') && REACT_PAGE_ENTRIES[rel]` 命中的**已登记 React 页 HTML（11 条）**」，**其余 `.html` 全部复制**。
+    证据：`frontend/vite.preview.config.mjs:232-239`（含源码注释「只排除由 Vite 产出的 React 页 HTML；pdf-viewer/model-viewer 等引擎页无 React 入口，按原样交付（R1）」）；`REACT_PAGE_ENTRIES` 见 `frontend/vite.preview.config.mjs:53-58、64-67` 与 `tests/frontend-gate-manifest.mjs:2-14`。
+    本条与下方第 4 条「引擎页按原样复制」是**同一规则的两面**，原表述会让读者以为二者矛盾。
   - `src/config.js` 与 `src/i18n` 是关键补充：`appRoot` 为 `/src`，运行时 `require(appRoot + '/config.js')` 取 `EagleConfig`（含 `VIDEO_FORMATS`）。缺这两项时生产态在 `hoverPreview` 初始化处 `EagleConfig.VIDEO_FORMATS.map` 崩溃（R1 冒烟实测定位）。
 - 排除：`frontend/public/mock-library`、`mock-assets`（开发/演示数据）在 `closeBundle` 从产物删除。
 - 引擎页：`src/app` 内除 10 个 React 页 HTML 外的 `.html`（pdf-viewer、model-viewer、旧指令模板）按原样复制；PDF 与 3D 查看器无 React 入口，作为专用引擎页交付。
+  - **[M0 订正｜计数]** 该处「10 个 React 页 HTML」应作 **11 条**（10 个传统窗口页 + 文档查看器页）。见 `tests/frontend-gate-manifest.mjs:2-14` 的 `REACT_PAGES` 清单。
 - 已知既有源缺陷（源码与产物均缺，dev 同样 404；非 R1 引入）：`icon.svg`、`js/vendors/tippy.js`（preferences / font-viewer）、collect-window 的 `../css/jquery-ui.min.css`（实际在 `collect-window/css/`）与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html` 与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties`。**R5/R6 已全部消除**——`tests/dist-entry-check.mjs` 现仅剩 2 条 WARN，均为 `pages.html` 指向有意排除的演示路由（registration / manage-device）。
+  - **[M0 订正｜时点边界]** 「仅剩 2 条 WARN」是 **2026-09-14 当时的门禁行为**。`tests/dist-entry-check.mjs` 已在 `00352c1f` 重构：`warnings`/`warn()`/`EXCLUDED_ROUTES` 全部移除，缺资源改为**无条件 `fail()`**；当前只剩不影响退出码的 `notes`（范围说明），不再输出 `WARN`。复核见 `tests/dist-entry-check.mjs:160、226、239-241` 与 `git show 00352c1f -- tests/dist-entry-check.mjs`。
 
 ## 6. 入口处置清单
 
@@ -126,16 +163,57 @@ node tests/typecheck.mjs
 | `js/directives/**`、`js/controllers/**`、`js/modules/**` | **已删除**（186） | Angular 指令模板/控制器与 flatpickr·angular-notify 副本；无加载点 |
 | `js/lib/**` | **已删除**（8） | 主窗旧 API 全局（eagle-api 尾件 + `lib/api/{ai-*,combine-images,custom-export,filter,inspector}` + `utils/tree.js`），已由 `core/eagleClasses.ts`/`core/eagleApi.ts` 承接 |
 | `js/workers/**` | 保留 | `new Worker('js/workers/{bitmapWorker,calHammingDistance,tifWorker}.js')`（`core/bitmapViewer.ts`、`core/eagleClasses.ts`、`components/detail/commentHooks.ts`）；libheif.js/.wasm 由 bitmapWorker 加载 |
-| `js/plugin/**` | 保留 | `require(appRoot+'/app/js/plugin')`（`core/bundleGlobals.ts:1737`、`pluginModule` 供给）|
-| `js/plugins/eagle-note-plugin.js` | 保留 | `preview-window/controller.ts:58` 现役 require |
-| `js/api-server-v2.js` + `api-v2-playground{,-config}.js` | 保留 | `apiServerDomain.ts:1342` require；playground 经 `api-server-v2.js:117` require |
-| `js/utils/{unorm,remainingFilenameLength,getBestURL,is-accelerator,flipImage,rotateImage,downloadFile,ignoreMenuShortcuts,piexif}.js` | 保留 | 各 domain / `plugin/index.js` 现役 require（moduleRegistry 亦登记前六项）|
+| `js/plugin/**` | 保留 `⚠M0 订正 F26-3` | `require(appRoot+'/app/js/plugin')`（`core/bundleGlobals.ts:1737`、`pluginModule` 供给）|
+| `js/plugins/eagle-note-plugin.js` | 保留 `⚠M0 订正 F26-3` | `preview-window/controller.ts:58` 现役 require |
+| `js/api-server-v2.js` + `api-v2-playground{,-config}.js` | 保留 `⚠M0 订正 F26-3` | `apiServerDomain.ts:1342` require；playground 经 `api-server-v2.js:117` require |
+| `js/utils/{unorm,remainingFilenameLength,getBestURL,is-accelerator,flipImage,rotateImage,downloadFile,ignoreMenuShortcuts,piexif}.js` | 保留 `⚠M0 订正 F26-3` | 各 domain / `plugin/index.js` 现役 require（moduleRegistry 亦登记前六项）|
 | `js/utils/{captureHTML,icns2png,magick,qs}.js` | **已删除** | 全仓零 require |
 | `js/vendors/{tga,libtga,wavesurfer.min,videojs/**,sweetalert2/sweetalert2.min.css,bignumber}.js` | 保留 | `commentHooks.ts`/`detailHooks.ts`/`preview-window.html` 现役 require、标签或 CSS；bignumber 被生产 vendor `eagle-match-rules.js` 使用 |
 | `js/vendors/lodash.js`、`html2canvas.min.js`、`Typr.js`、`colorpicker/**` | **已删除** | 均已退役或零引用（lodash b1-9bc 摘标签、colorpicker b1-9bj 自研化）|
 | `js/debug-reporter.js`、`thumbnail.html`、`js/scroll to top button 效能優化.md` | **已删除** | 零引用 |
-| `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` | 保留待定 | 未接入构建链的候选功能（PROGRESS b1-9al 登记为「仅注释残留」）；删除属产品取舍，未在本批处理 |
+| `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` | 保留待定 `⚠M0 订正 F26-4` | 未接入构建链的候选功能（PROGRESS b1-9al 登记为「仅注释残留」）；删除属产品取舍，未在本批处理 |
 | `@egjs/react-infinitegrid`（package.json + lockfile）| **已移除** | 全仓零 import；`window.ig` 是主窗自建 v4 facade（`boxGridEngine`），与该包无关（由 `m1-A8-eg-infinitegrid` 断言 `typeof w.ig.getItems === 'function' && !w.eg` 守护）|
+
+> **M0 订正 F26-3（§8 第 4–7 行｜`js/plugin/**`、`eagle-note-plugin`、`api-server-v2`、`js/utils/*`）｜原表述 → 现口径**
+> 原表述：以「**现役 require**」为由保留，等于把「源码里有 `require(...)` 文本」当作「磁盘模块被实际执行」。
+> **现口径**：这些 require 的**解析结果是 `moduleRegistry` 的替身**，磁盘原模块并未由该链执行：
+
+| 路径 | require 的实际解析结果 | 证据 |
+|---|---|---|
+| `/app/js/plugin` | `pluginModule`（shim 内构造的替身对象，定义于 `core/shim/browserRuntime.ts:387`） | `src/app/react/core/shim/moduleRegistry.ts:84` |
+| `/app/js/plugins/eagle-note-plugin` | `{}`（空对象） | `moduleRegistry.ts:85` |
+| `/app/js/api-server-v2` | `{ initAPIServerV2() {} }`（空实现） | `moduleRegistry.ts:83` |
+| `utils/flipImage.js`、`utils/rotateImage.js` | `() => {}`（空函数，**无 demo-only 限制**） | `moduleRegistry.ts:106-107` |
+| `utils/remainingFilenameLength.js` | `() => 240` | `moduleRegistry.ts:102` |
+| `utils/getBestURL.js` | `() => ''` | `moduleRegistry.ts:103` |
+| `utils/is-accelerator.js` | `() => true` | `moduleRegistry.ts:104` |
+| `utils/unorm.js` | `{ nfc: 恒等, nfd: 恒等 }` | `moduleRegistry.ts:105` |
+| 未命中以上任一路径 | `genericStub(req)` 万能对象 | `moduleRegistry.ts:128` |
+
+> **且这些 `.js` 仍随产物交付**：`src/app` 的复制 filter 不排除 `.js`（`frontend/vite.preview.config.mjs:232-239`）。
+> 因此正确标签是 **「被截获」+「闲置但交付」**，不是「现役」。
+> **特别提示**：`flipImage`/`rotateImage` 返回空函数是 `docs/plan-2026-09-15-full-workspace-legacy-audit.md` **F06 的 P0 写回缺陷**来源——把它们与其余项并列在同一张「保留清单」里，会掩盖该缺陷。
+> 复核方法：读 `moduleRegistry.ts:71-128` 的 `requireModule` 分支表，逐条比对上表；不要以调用点的 require 文本为判据。
+
+> **M0 订正 F26-4（§8 末第 2 行｜tab-bar）｜原表述 → 现口径**
+> 原表述：「**未接入构建链**的候选功能（PROGRESS b1-9al 登记为「**仅注释残留**」）」。
+> **现口径（四点）**：
+> ① **JS 内有真实 Angular 调用，不是注释**：`frontend/public/tab-bar.js:68` `window.angular && document.body ? angular.element(document.body).scope() : null`；`:73` `window.angular ? angular.element(document.body).injector() : null`。
+> ② **随 public 交付**：`publicDir` 整目录复制 ⇒ `dist/frontend/tab-bar.js` / `.css`（**[M0推]**，本副本无 `dist/`）。它同时被登记为第一方图外脚本 `tests/frontend-gate-manifest.mjs:58`。故「未接入构建链」不准确。
+> ③ **无现役加载点**：`src/**`、`frontend/**` 的全部 HTML 中检索 `tab-bar` **零命中**；亦不在 `rollupOptions.input`。
+> ④ **闭环测试存在但未登记执行**：`tests/tab-bar-closed-loop.mjs` 在 `package.json`、`run-react-suite.mjs`、`run-attached-nonsuite.mjs`、`frontend-acceptance` 的任一清单中**均无引用**（仅本文档与 `src/app/react/PROGRESS.md` 的历史记录提到它）；其断言依赖主窗渲染出 `#eagle-tab-bar`（`:217-226`）。**该测试当前能否通过属代码链推导，未运行验证。**
+> 正确标签：**闲置但交付**（主标签）。「仅注释残留」与代码事实相反。
+
+> **M0 订正 F26-6（全文｜源码注释不得当作行为证明）｜原表述 → 现口径**
+> 原表述：本文多处直接引用源码注释作为行为依据（如 §1「`shimsLegacy.ts` 退化为 5 行兼容入口」、§7.1 各行的「原状」）。
+> **现口径**：`frontend/public/shims.js` **已删除**（删除提交 `e00abd21`：`feat(shims): 收尾批 E9（P4-b/P5）—— 删 shims.js + mock-data.js…`），但**仍有 20+ 处源码注释以它为行为依据**，例如：
+> - `src/app/react/core/channelBridge.ts:9、11、25、85、405`（「语义逐字对齐 `shims.js` 的对应分支」）
+> - `src/app/react/core/detailDeliveryGate.ts:2`（「自 `frontend/public/shims.js:56-232` 迁入」）
+> - `src/app/react/core/documentViewer.ts:4`、`core/driverApi.ts:7`、`core/ipcWriteState.ts:4`、`core/returnBridge.ts:2`、`core/sourceMode.ts:4`、`core/scopeFace.ts:16`、`core/machineryInfra.ts:141-143`、`global/eagleGlobals.ts:2`、`main.tsx:82、219`
+> - 测试与构建侧：`tests/txt-update-closed-loop.mjs:10、63`、`tests/empty-trash-closed-loop.mjs:118`、`tests/native-preview-closed-loop.mjs:136`、`frontend/vite.preview.config.mjs:29`
+>
+> 同类「注释承诺超出代码事实」还有：`main.tsx:224-240、267` 附近声称「再 await」而现场为 `void import('./core/externalSupplyRegistrar')`（计划书 F10）；`core/scopeFace.ts` 对晚注册字段的承诺（计划书 F11，原文即「现有注释承诺偏大」）。
+> **口径纪律：本文及后续文档不得把源码注释当作行为证明。**凡依据来自注释的断言，必须标注为**代码链推导 / 待运行验证**，并以**当前存在**的文件与符号为证据。
 
 另：R6 一并删除 `frontend/vite.preview.config.mjs` 的 `allowSingleColorPalette` /
 `sanitizeCollectTemplates`（两者目标串已不存在、且只作用于 collect 分支，实为 no-op），

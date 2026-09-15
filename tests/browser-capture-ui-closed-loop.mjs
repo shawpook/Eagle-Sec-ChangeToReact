@@ -123,10 +123,13 @@ try {
       return false;
     }
   }, 'Vite startup');
-  const inspectorResponse = await fetch(`http://127.0.0.1:${vitePort}/src/app/js/directives/inspector.html`);
-  const inspectorHtml = await inspectorResponse.text();
-  if (!inspectorResponse.ok || inspectorHtml.includes('palettes.length <= 1') || !inspectorHtml.includes('palettes.length === 0')) {
-    throw new Error('Vite inspector response still hides valid single-color palettes');
+  // R6：守卫目标由已退役的 Angular 模板（src/app/js/directives/inspector.html，本批 git rm）
+  // 改为**现役实现** —— components/inspector/Inspector.tsx 的 paletteShow。同一语义：
+  // 「恰好一个调色板」必须显示（修复前判据 `palettes.length <= 1` 会把它藏掉）。
+  const inspectorResponse = await fetch(`http://127.0.0.1:${vitePort}/src/app/react/components/inspector/Inspector.tsx`);
+  const inspectorSource = await inspectorResponse.text();
+  if (!inspectorResponse.ok || inspectorSource.includes('palettes.length <= 1') || !inspectorSource.includes('item.palettes.length === 0')) {
+    throw new Error('Inspector still hides valid single-color palettes');
   }
 
   const createResponse = await fetch(`http://127.0.0.1:${apiPort}/api/library/create`, {

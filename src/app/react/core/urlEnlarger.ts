@@ -472,14 +472,14 @@ export class URLEnlarger {
 			site: "淘宝",
 			srcPattern: /.(?:taobao|tb|ali)cdn(.+)_\d+x\d+.jpg(.*)/,
 			replace: (src: any) => {
-				return src.replace(/_\d+x\d+.jpg(_.webp)?/, "");
+				return src.replace(/_\d+x\d+.jpg(_\.webp)?/, "");
 			},
 		},
 		{
 			site: "天猫",
 			srcPattern: /.(?:taobao|tb|ali)cdn(.+)_\d+x\d+\S\d+.jpg(.*)/,
 			replace: (src: any) => {
-				return src.replace(/_\d+x\d+\S\d+.jpg(_.webp)?/, "");
+				return src.replace(/_\d+x\d+\S\d+.jpg(_\.webp)?/, "");
 			},
 		},
 		{

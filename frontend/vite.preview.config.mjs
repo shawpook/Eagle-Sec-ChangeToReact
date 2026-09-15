@@ -43,10 +43,8 @@ function injectDevPreamble(html) {
   return html.replace('</head>', `    ${REACT_REFRESH_PREAMBLE}\n</head>`);
 }
 
-function readEntryPage(file, { collect = false } = {}) {
-  let html = fs.readFileSync(file, 'utf8');
-  if (collect) html = sanitizeCollectTemplates(allowSingleColorPalette(html));
-  return injectDevPreamble(injectPreviewScripts(html));
+function readEntryPage(file) {
+  return injectDevPreamble(injectPreviewScripts(fs.readFileSync(file, 'utf8')));
 }
 
 // b1-9af：viewer 窗接管通用路由——iframe 查看器页逐个切 React 后在此登记
@@ -79,19 +77,12 @@ function injectViewerConfig(html) {
   );
 }
 
-function sanitizeCollectTemplates(html) {
-  return html.replace(
-    /ng-mouseup="\s*ng-mouseup="([^"]*)"/g,
-    'ng-mouseup="$1"'
-  );
-}
-
-function allowSingleColorPalette(html) {
-  return html.replace(
-    'selected[0].palettes.length <= 1',
-    '!selected[0].palettes || selected[0].palettes.length === 0'
-  );
-}
+// R6：sanitizeCollectTemplates / allowSingleColorPalette 一并删除——两个中间件改写的都是
+// 已退役的 Angular 模板：前者修 `ng-mouseup="ng-mouseup="`（旧采集模板产物，全仓 0 命中），
+// 后者把 `selected[0].palettes.length <= 1` 改成 `=== 0`（唯一命中在
+// src/app/js/directives/inspector.html，该文件已随本批 git rm）。二者现状均为 no-op，
+// 且只作用于 collect 分支。「单色面板」修复语义已归位 React 侧
+// （components/inspector/Inspector.tsx 的 paletteShow）。
 
 function readReplacement(name) {
   return fs.readFileSync(path.join(frontendPublic, 'replaced', name), 'utf8');
@@ -148,7 +139,7 @@ export default defineConfig({
           }
           if (url === '/src/app/collect-window/index.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/collect-window/index.html'), { collect: true }));
+            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/collect-window/index.html')));
             return;
           }
           if (url === '/src/app/registration.html') {
@@ -179,7 +170,7 @@ export default defineConfig({
             const file = path.join(workspaceRoot, url);
             if (fs.existsSync(file)) {
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.end(readEntryPage(file, { collect: url.startsWith('/src/app/collect-window/') }));
+              res.end(readEntryPage(file));
               return;
             }
           }
@@ -198,8 +189,8 @@ export default defineConfig({
         if (html.includes('<title>Eagle Document Viewer</title>')) {
           return injectViewerConfig(html);
         }
-        // R1：正式构建按文件路径补 API 地址与 collect 模板清洗（React 入口已在源 HTML 中，
-        // 由 Vite 正常打包；开发态由上面的中间件直出，不走到这里）。
+        // R1：正式构建按文件路径补 API 地址（React 入口已在源 HTML 中，由 Vite 正常打包；
+        // 开发态由上面的中间件直出，不走到这里）。
         const filename = ctx?.filename || (ctx?.path ? path.join(workspaceRoot, ctx.path) : '');
         const rel = filename ? path.relative(workspaceRoot, filename).split(path.sep).join('/') : '';
         if (!REACT_PAGE_ENTRIES[rel]) {
@@ -207,11 +198,7 @@ export default defineConfig({
           // （启动契约在 React 入口 shimsLegacy）。
           return html;
         }
-        let out = injectPreviewScripts(html);
-        if (rel.startsWith('src/app/collect-window/')) {
-          out = sanitizeCollectTemplates(allowSingleColorPalette(out));
-        }
-        return out;
+        return injectPreviewScripts(html);
       },
     },
     {

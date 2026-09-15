@@ -1132,7 +1132,11 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
     snapshot.selectedCount === 1 &&
     item &&
     !item.processingPalette &&
-    !(item.noPreview || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext] || (item.palettes?.length || 0) <= 1);
+    // R6：随 js/directives/inspector.html 退役一并归位「单色面板」修复——原 vite dev 中间件
+    // allowSingleColorPalette 只在服务该 Angular 模板时改写条件，React 侧一直是修复前的
+    // 判据（调色板数 ≤ 1 即隐藏，于是恰好一个调色板时不显示）。语义 = 有调色板即显示。
+    // （browser-capture-ui-closed-loop 以本行为守卫，故此处不得出现修复前的字面判据。）
+    !(item.noPreview || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext] || !item.palettes || item.palettes.length === 0);
   const palettes = paletteShow && item ? (sortHSL(item.palettes || []) || []).slice(0, 10) : [];
 
   return (

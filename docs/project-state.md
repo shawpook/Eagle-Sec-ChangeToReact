@@ -229,6 +229,13 @@ e6f6383e docs(m0): 纳入总体任务书
   Coordinator 已批准。
 
 ### 本轮已集成（5 个 Worker，均已核验后才合并）
+> ⚠️ **合并后全量回归未通过**：`REACT SUITE FAILED: 4`（77 项：OK 70 + retry-OK 3 + FAIL 4）——
+> `react-stage7a-smoke` / `react-stage7c-smoke` / `react-stage8e2-smoke` / `continuous-grid-scroll`。
+> 根因是 **M2-1 引入的真实回归**：它把 `genericStub` 从"静默返回替身"改为"调用期抛错"
+> （方向正确），但没把**真实存在却未登记**的模块补进登记表，于是 `compare-versions`
+> （实际在 `src/node_modules/compare-versions`）落入抛错分支，主窗启动路径中断。
+> 已派 **M2-1fix**（`task_6f79bc8608a8` / `ctx_1978100e92dd`）修复，见 §9。
+> **在该修复合并并通过全量回归前，不得把本轮视为验收通过。**
 1. **F06 第三批**（W14 / `fd378cf5`）：`moduleRegistry.ts` 仅改 106-107 两行解桩
    （`() => {}` → `loadJsModule(req)`）；新增 `services/imageTransformRoute.ts` 作**格式分流唯一判定点**；
    `electron/{main,preload}.cjs` 新增具名通道 `item:image-transform`（信封而非 reject，保住后端错误码）；
@@ -278,6 +285,7 @@ e6f6383e docs(m0): 纳入总体任务书
 
 | 阻塞 | 影响 | 处置 |
 |---|---|---|
+| **M2-1 引入的回归**：未登记但真实存在的模块（`compare-versions` 等）落入 `genericStub` 的抛错分支 | **全量回归 FAILED 4**；主窗启动路径中断 | M2-1fix 修复中（见 §8）。差分已取证：**需补真实加载 4 项**（`compare-versions`/`electron-referer`/`junk`/`stopword`），**应保持显式失败 3 项**（`${appRoot}/app/js/plugin`、`http`、`https`）；另有 `archiver`/`fast-glob`（已登记但被映射为 no-op）与 `JsonRestServer.start` 等需消费者取证 |
 | ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并 |
 | ~~F06 中间态（解桩前写文件明确拒绝）~~ | — | ✅ 已由 F06 第三批解桩闭合 |
 | **多个 Worker 并行跑 Vite/Electron 类测试会互相破坏共享依赖缓存** | 成片假失败、`SUITE_EXIT=127` | 已定为口径（D9）：Worker 只跑自家定向测试，全量由 Coordinator 串行跑。**后续派单沿用此约定** |

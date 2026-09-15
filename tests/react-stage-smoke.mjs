@@ -277,6 +277,16 @@ try {
           const d = f.contentDocument;
           const article = d && d.querySelector('.content .article');
           window.__b1_9aj.support = d ? d.body.style.display === 'block' : null;
+          // R5：tippy 供给面（font-viewer.html 原 ../js/vendors/tippy.js 标签曾 404，
+          // 入口的 typeof window.tippy 守卫会静默早退 → 激活/停用气泡全失效）
+          try {
+            const w = f.contentWindow;
+            const btns = d ? Array.prototype.slice.call(d.querySelectorAll('.activate-btn')) : [];
+            window.__b1_9aj.tippy = {
+              provided: typeof w.tippy === 'function',
+              instances: btns.filter(function (b) { return !!b._tippy; }).length,
+            };
+          } catch (err3) { /* 下一 tick 再试 */ }
           const html = article ? (article.innerHTML || '') : '';
           if (html.indexOf('Moonlight') > -1) {
             window.__b1_9aj.ok = true;
@@ -368,6 +378,7 @@ try {
     ['b1-9ah-gif-viewer-react', `window.__b1_9ah && window.__b1_9ah.glue === true && window.__b1_9ah.ok === true`],
     ['b1-9ai-text-editor-react', `window.__b1_9ai && window.__b1_9ai.ok === true`],
     ['b1-9aj-font-viewer-react', `window.__b1_9aj && window.__b1_9aj.ok === true`],
+    ['b1-9aj-font-viewer-tippy', `window.__b1_9aj && window.__b1_9aj.tippy && window.__b1_9aj.tippy.provided === true && window.__b1_9aj.tippy.instances > 0`],
   ];
 
   const failures = [];

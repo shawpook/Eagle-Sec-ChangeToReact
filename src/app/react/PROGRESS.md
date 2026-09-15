@@ -9238,3 +9238,53 @@ C-6 从「带五个例外的规则」变成「无例外、全仓生效」，是 
 **附**：采集窗 `js/lib/api/preference.js`（334 行）存在于目录却**未被任何标签加载**，
 且其唯一定义物 `eagle.preference` 在本窗零消费（消费者只有死代码 `env.isReady`）——
 记为死文件候选，留 R6 与 API 迁移批一并处置。
+
+---
+
+## R5 实施：全仓资源引用清扫（字体查看器 tippy 修复 + 2 处死引用清账 + R1 门禁修正）
+
+**动机**：上一批为采集窗/偏好窗加的「资源可达性」断言暴露的是一**类**缺陷，而非两例。故对
+`src/app/**`（排除 `react/`，其入口由构建产出）做了一次**全量静态审计**：逐页解析 `script[src]`
+与 `link[href]`，核对目标文件是否存在。
+
+**审计结果（修复前）**：3 处死引用。
+
+1. **`src/app/font-viewer/font-viewer.html` → `../js/vendors/tippy.js`（真实能力缺陷）**
+   与偏好窗**完全同型**：文件已随 b1-9bx-A 退役批删除、标签漏摘 → `window.tippy` 恒 undefined；
+   而 `viewers/font/entry.tsx:450` 有 `if (typeof (window as any).tippy !== 'function') return;`
+   守卫，于是**激活/停用两个按钮的气泡静默失效**（守卫让缺陷无声）。
+   修复：入口模块求值期 `installTippy()`（preview-window/entry.tsx 先例）+ 摘除死标签。
+   新增断言 `b1-9aj-font-viewer-tippy`（iframe 内 `typeof tippy==='function'` 且 `.activate-btn`
+   至少一个已有 `_tippy` 实例）。**负向验证**：注掉 `installTippy()` → 该断言 FAIL；恢复 → PASS。
+
+2. **`src/app/model-viewer/website/embed.html` → `../build/o3dv.website.min-dev.js`（真实能力缺陷）**
+   该窗目录下只有 `libs/` 与 `website/`，**无 `build/`** → 引擎脚本 404 → `OV` 未定义 →
+   紧随其后的 `OV.SetWebsiteEventHandler(...)` 与 `OV.StartEmbed('../libs')` 全部抛错，
+   嵌入式 3D 查看页整体不可用。同一引擎页 `index.html:21` 用的是 `../libs/o3dv.website.min.js`
+   （库文件内已含 `StartEmbed` 面）→ 对齐同一路径。
+
+3. **`src/app/index.html` → `icon.svg`（死引用，非能力缺陷）**
+   `git log --all -- src/app/icon.svg` 全历史无此文件（从未入库），标签本身还是逗号错位的畸形写法
+   （`rel="shortcut icon" , href="icon.svg" ,`）；Electron 窗口无浏览器 chrome，favicon 无显示面
+   → 整行删除（**不注掉**：见下条）。
+
+**R1 门禁修正：`tests/dist-entry-check.mjs` 改为剥注释后扫描**。
+原实现把 HTML 注释里的 `src/href` 也计入（正则直接扫全文），产生两个后果：①注释掉的死引用长期占
+WARN；②想「注掉」一个死标签却消不掉 WARN。新口径 = **「运行期实际会被请求的引用必须可达」**，
+故扫描前 `html.replace(/<!--[\s\S]*?-->/g, '')`（`checkResources` 与入口脚本检测两处均剥）。
+修正效果：`model-viewer/website/index.html` 内注释块里的 `<a href="info/index.html">` 不再误报。
+
+**验证（权威门禁 = 一次正式构建 + dist-entry-check）**：
+- `npm run build` — exit 0（11.4s，含运行时资产拷贝）。
+- `node tests/dist-entry-check.mjs` — **FAIL 0，WARN 2**（WARN 仅剩 `pages.html` 指向
+  registration/manage-device 两条**有意排除**的演示路由）。修复前该两项 WARN（icon.svg /
+  embed.html 引擎）与注释误报（info/index.html）均已清零。
+- **负向验证**：向产物页临时追加 `<script src="js/definitely-missing-r5.js">` → 立即报
+  `WARN … 源码与产物均缺失`（WARN 3），还原后回到 2 —— 证明剥注释没有削弱检测力。
+- `react-stage-smoke`（含新增 b1-9aj-font-viewer-tippy）passed；`typecheck` 0 诊断；`sentinel` OK。
+
+**方法论入档**：同一类缺陷（退役批只改部分窗口 → 标签/路径漏摘 → 能力静默失效）在 R5 内已出现
+**4 次**（偏好 tippy、采集 url-enlarger、采集 swal CSS、字体查看器 tippy），且每次都**逃过既有全部
+动态测试**——因为 404 标签不影响其它能力，而消费点的 `typeof x === 'function'` 守卫又让能力缺陷无声。
+结论：**静态资源可达性必须由静态门禁兜底**（dist-entry-check + 两个窗口的运行时资源断言），
+不能只靠行为测试。

@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <link rel="shortcut icon" , href="icon.svg" , type="image/x-icon">
+    <!-- R5：favicon 标签删除——其 href 指向从未入库的文件（git 全历史无 src/app/icon.svg），
+         原标签另有逗号错位的畸形写法；Electron 窗口无浏览器 chrome，favicon 无实际显示面。
+         整行删除而非注掉：dist-entry-check 的 src/href 正则也会扫到注释内容，注掉无法消除 WARN。 -->
     <link rel="stylesheet" href="css/modules/angular-notify/angular-notify.min.css">
     <link rel="stylesheet" href="css/vendors/sweetalert2/sweetalert2.min.css">
     <title>Eagle</title>

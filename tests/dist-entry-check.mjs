@@ -54,6 +54,11 @@ if (!fs.existsSync(distRoot)) {
 
 const ATTR_RE = /(?:src|href)\s*=\s*"([^"]+)"/g;
 
+// R5：先剥掉 HTML 注释再扫描。注释内的 src/href 在运行期**不会被请求**（浏览器不解析注释里的标签），
+// 把它们计入会产生两类误判：①注释掉的死引用长期占据 WARN；②想「注掉」一个死标签却消不掉 WARN。
+// 本项口径即「运行期实际会被请求的引用必须可达」，故以剥注释后的文本为准。
+const stripHtmlComments = (html) => html.replace(/<!--[\s\S]*?-->/g, '');
+
 function distPathFor(ref, pageRel) {
   const clean = ref.split('?')[0].split('#')[0];
   return clean.startsWith('/')
@@ -70,7 +75,7 @@ function srcPathFor(ref, pageRel) {
 
 function checkResources(pageRel) {
   const filePath = path.join(distRoot, pageRel);
-  const html = fs.readFileSync(filePath, 'utf8');
+  const html = stripHtmlComments(fs.readFileSync(filePath, 'utf8'));
   for (const m of html.matchAll(ATTR_RE)) {
     const ref = m[1];
     if (/^(https?:|data:|mailto:|blob:|\/\/|#)/.test(ref) || ref.includes('${')) continue;
@@ -85,7 +90,7 @@ function checkResources(pageRel) {
 for (const rel of ENTRY_PAGES) {
   const filePath = path.join(distRoot, rel);
   if (!fs.existsSync(filePath)) { fail(`缺少页面 ${rel}`); continue; }
-  const html = fs.readFileSync(filePath, 'utf8');
+  const html = stripHtmlComments(fs.readFileSync(filePath, 'utf8'));
   if (/\/src\/app\/react\//.test(html)) fail(`${rel} 残留 React 源码路径（开发态入口泄漏到产物）`);
   const moduleSrc = html.match(/<script type="module"[^>]*src="([^"]+)"/);
   if (!moduleSrc) fail(`${rel} 没有 module 入口脚本`);

@@ -23,7 +23,11 @@
 	<link rel="stylesheet" type="text/css" href="css/sidebar.css">
 	<link rel="stylesheet" type="text/css" href="css/website.css">
 	<link rel="stylesheet" type="text/css" href="css/embed.css">
-	<script type="text/javascript" src="../build/o3dv.website.min-dev.js"></script>
+	<!-- R5：引擎脚本路径修正——原 ../build/o3dv.website.min-dev.js 指向不存在的 dev 构建
+	     （src/app/model-viewer 下只有 libs/ 与 website/，无 build/）。该 404 会让 OV 未定义，
+	     紧随其后的 SetWebsiteEventHandler/StartEmbed 全抛错。同引擎页 index.html:21 用的是
+	     ../libs/o3dv.website.min.js（该库文件内含 StartEmbed 面），此处对齐同一路径。 -->
+	<script type="text/javascript" src="../libs/o3dv.website.min.js"></script>
 	<!-- website end -->
 
 	<!-- analytics start -->

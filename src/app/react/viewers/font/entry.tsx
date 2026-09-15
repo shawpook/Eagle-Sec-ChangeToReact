@@ -16,6 +16,13 @@ import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fontI18nStrings, fontTranslation, buildAlphabetHTML } from './fontContent';
+import { installTippy } from '../../core/tippyLite';
+
+// R5：本 bundle 不走 installBundleGlobals（那是主窗装配面），在模块求值期自行补装。
+// font-viewer.html 原引用的 ../js/vendors/tippy.js 已随 b1-9bx-A 退役批从磁盘删除，但标签
+// 漏摘——window.tippy 恒 undefined，激活/停用按钮的两个气泡静默失效（entry 内的
+// `typeof window.tippy !== 'function'` 守卫会直接早退）。按 preview-window/entry.tsx 先例补装。
+installTippy();
 
 // HTML 内联 throttle 逐字（滚轮缩放用）
 function throttle(fn: any, delay: number, immediate: boolean, isDebounce: boolean) {

@@ -103,7 +103,9 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W11** | task_18b97e0f8847 | ctx_c4300aea974c | **M1-5 F06 前端失败语义与写回收敛** | ✅ **已集成(`25f84998`)**，release_unknown（终端待清） |
 | **W12** | task_114936ac524e | ctx_5cb9a69fa7fc | **M1-6 F08/F09 动作供给与派发收口** | ✅ **已集成(`9b96d346`)**，终端 retained |
 | **W13** | task_18aeb93aa2fc | ctx_88eeaf5f4776 | **M2-1 有限 RuntimeServices 与显式能力失败** | 🔄 运行中（worktree `m2-runtime-services`） |
-| **W14** | task_b796fd95dc94 | ctx_9957879a3dd8 | **M1-7 F06 前端真实能力接线（格式分流）** | 🔄 运行中（worktree `m1-f06-wiring`） |
+| **W14** | task_6988e84a7be3 | ctx_9ca58917eee7 | **M1-7 F06 前端真实能力接线（格式分流）** | 🔄 收尾中（`m1-f06-wiring2`；首次派单因 ask 通道受阻重派） |
+| **W15** | task_1e1194c99c58 | ctx_abc83ddf074b | **M1-F04 预览窗 boot 迁出经典内联脚本** | 🔄 运行中（`m1-f04-boot`） |
+| **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 外围工具页进模块图 + 统一运行时地址策略** | 🔄 刚派（`m5-tools-address`） |
 
 已停止/废弃的 dispatch（均因 Claude Code Bypass 确认框吞掉 prompt，见 §7）：
 `ctx_5663f9e12c59`、`ctx_a7448bed8767`、`ctx_a2cc223b93bb`、`ctx_bfea030a61fb`（全部 stopped）
@@ -165,6 +167,22 @@ e6f6383e docs(m0): 纳入总体任务书
 
 4. **沙箱工具调用偶发 `[Tool result missing due to internal error]`** —— 重跑即可。
 
+5. **`worker-start` 返回 `outcome_unknown / turn_start_unobserved` 多为投递慢，不是失败**
+   - 症状：`worker-show` 长期停在 `start_unknown`，邮箱无该 dispatch 的 heartbeat，
+     `terminal read --screen` 只看到欢迎界面的空 `❯` 提示符。
+   - **实测投递延迟可超过 60 秒**；再等一会读终端就能看到 Worker 已在读文件/调工具。
+   - **处置：先不要 `worker-stop`**。先 `worker-read --limit 20` 看**内容**（出现 Reading/工具调用
+     即正常）；只有欢迎界面就**再等 60–120 秒重读**；持续数分钟完全无变化才考虑重派，
+     且重派要换新的 worktree 名。**本轮曾两次误杀正在正常启动的 Worker**，教训记入
+     `env-orca-start-unknown-not-failure.md`。
+   - **不要**用 `orca terminal send` 对启动中的 Worker 试探（`--input` 非有效 flag，应
+     用 `--text ... --enter`），那段文本会作为用户输入进入它的会话并干扰任务。
+
+6. **并行 Worker 的测试口径（用户 2026-09-15 指示）**：Worker **只跑自己负责区域的针对性测试**，
+   不跑 `tests/run-react-suite.mjs` 全量回归——全量套件含 Electron smoke，多个 Worker 同跑会
+   互相杀进程（实测 M2-1 的 `taskkill electron.exe` 直接导致 F06 第三批的 stage smoke 连续 FAIL）。
+   **全量回归由 Coordinator 在合并前统一跑。** 各 Worker 的 spec 均已写入此约定。
+
 ---
 
 ## 8. 下一步计划（恢复时从这里继续）
@@ -201,12 +219,22 @@ e6f6383e docs(m0): 纳入总体任务书
   **一次性** IPC `app-status-library-loaded`，任一侧推迟即永久丢事件（三组 A/B 实测）。
   Coordinator 已批准。
 
-### 已派（运行中）
-3. **F06 第三批**（W14 / `task_b796fd95dc94`）—— 解桩 + 格式分流唯一判定点 + 经 IPC 接后端端点。
-   spec 存于 `outputs/_spec-f06-3.txt`（未跟踪）。要求先做可行性实测（piexif 可加载性、
-   `file://` 读图、主窗入口可达性），不可行须如实报告并给降级方案。
-4. **M2-1**（W13 / `task_18aeb93aa2fc`）—— 有限 RuntimeServices + 消除「未知能力返回成功」
-   + `browser-connected` 独立态。spec 存于 `outputs/_spec-m2-1.txt`（未跟踪）。
+### 已派（运行中，4 个并行）
+3. **F06 第三批**（W14 / `task_6988e84a7be3` / `ctx_9ca58917eee7`，worktree `m1-f06-wiring2`）
+   —— 解桩 + 格式分流唯一判定点 + 经 IPC 接后端端点。spec: `outputs/_spec-f06-3.txt`（未跟踪）。
+   已确认产出：`moduleRegistry.ts` 两行改为 `loadJsModule(req)`；新增
+   `services/imageTransformRoute.ts`（唯一判定点，前端只声明 JPEG 一组，其余格式/错误码判据归后端
+   单点）；`electron/{main,preload}.cjs` 新增具名通道 `item:image-transform`（信封而非 reject，
+   以保住后端结构化错误码）。它实测出渲染层 Canvas 路径**不可用**（`url.pathToFileURL` 拿到 mock、
+   `CanvasToBMP`/`APNG` 未安装），故 PNG 等改走后端。
+4. **M2-1**（W13 / `task_18aeb93aa2fc` / `ctx_88eeaf5f4776`，worktree `m2-runtime-services`）
+   —— 有限 RuntimeServices + 消除「未知能力返回成功」+ `browser-connected` 独立态。
+   spec: `outputs/_spec-m2-1.txt`（未跟踪）。`runtimeServices.ts` 739 行、无 `@ts-nocheck`/`any`；
+   契约测试 20/20。
+5. **F04**（W15 / `ctx_abc83ddf074b`，worktree `m1-f04-boot`）—— 预览窗 boot 迁出内联脚本。
+   spec: `outputs/_spec-f04.txt`（未跟踪）。
+6. **M5-1**（W16 / `ctx_445c33347b34`，worktree `m5-tools-address`）—— 外围工具页/媒体页进模块图
+   + 统一运行时地址策略。spec: `outputs/_spec-m5-1.txt`（未跟踪）。
 
 ### 立即可派（依赖已满足）
 5. **F04 预览窗 boot 移出前置内联脚本**——spec 已备好（`outputs/_spec-f04.txt`，未跟踪）。

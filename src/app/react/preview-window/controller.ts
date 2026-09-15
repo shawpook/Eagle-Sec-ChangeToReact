@@ -173,7 +173,6 @@ function notify(): void {
         console.error('[eagle-preview-controller] listener error', err);
       }
     });
-    runWatchers();
   } finally {
     notifying = false;
   }
@@ -252,47 +251,19 @@ const scope: any = {
   mousetrap: {},
 };
 
-/* ---- $watch/$on/$evalAsync/$apply 门面（兼容 detailHooks 既有调用） ---- */
-
-const watchers: Array<{ get: () => any; fn: (n: any, o: any) => void; last: any }> = [];
-
-function runWatchers(): void {
-  for (const w of watchers) {
-    let next: any;
-    try {
-      next = w.get();
-    } catch (err) {
-      continue;
-    }
-    if (next !== w.last) {
-      const prev = w.last;
-      w.last = next;
-      try {
-        w.fn(next, prev);
-      } catch (err) {
-        console.error('[eagle-preview-controller] watcher error', err);
-      }
-    }
-  }
-}
-
-scope.$root = scope;
-scope.$$phase = false;
-scope.$watch = (expr: string, fn: (n: any, o: any) => void) => {
-  const get =
-    expr === 'theme'
-      ? () => scope.theme
-      : expr === 'current.id'
-        ? () => (scope.current ? scope.current.id : undefined)
-        : () => undefined;
-  const w = { get, fn, last: get() };
-  watchers.push(w);
-  return () => {
-    const i = watchers.indexOf(w);
-    if (i > -1) watchers.splice(i, 1);
-  };
-};
-scope.$on = () => () => {};
+/* ---- 兼容提交钩子（R5 收窄：watcher 门面已删，仅留外部消费者所需的提交钩子） ----
+ *
+ * R5 实测结论（考据，非推断）：
+ *  - `$watch` / `$watchCollection` / `$on` / `$apply` **全仓零活调用方**（`grep -rn '\$watch'`
+ *    在 src/app/react 下非注释行 0 命中；`$on`/`$apply` 同）——原来那套 `watchers` +
+ *    `runWatchers()` 是为阶段5 detailHooks 的既有调用保留的，而 detailHooks 早已在
+ *    b1-9bz-C-4 改为 store 订阅，故本批**整体删除**（连 `notify()` 里的 `runWatchers()` 调用）。
+ *  - `$evalAsync` **有仓内活消费者**：`electron/main.cjs` 的预览窗冒烟驱动器
+ *    （`window.__eaglePreviewController` → `scope.current = item; scope.$evalAsync();`，
+ *    main.cjs 内的 selectNext/selectPrev/viewItem/视频帧等 5 处）用它触发 React 重渲染。
+ *    main.cjs 非 ESM 且不在哨兵扫描面内，故该提交钩子保留——这是**有据保留**，不是遗漏。
+ *    语义 = `notify()`（与对外导出的 notifyController() 同一实现）。
+ */
 scope.$evalAsync = (fn?: (s: any) => void) => {
   try {
     if (fn) fn(scope);
@@ -301,14 +272,8 @@ scope.$evalAsync = (fn?: (s: any) => void) => {
   }
   notify();
 };
-scope.$apply = (fn?: (s: any) => void) => {
-  try {
-    if (fn) fn(scope);
-  } catch (err) {
-    console.error('[eagle-preview-controller] $apply', err);
-  }
-  notify();
-};
+scope.$root = scope;
+scope.$$phase = false;
 
 /* ---- cgNotify 等价层（angular-notify.min.js 逐字语义，无 Angular 版；9a-2） ----
  * 模板：.cg-notify-message[.cg-notify-message-center] > (隐藏的 message div) +

@@ -9359,3 +9359,65 @@ WARN；②想「注掉」一个死标签却消不掉 WARN。新口径 = **「运
 采集窗的 classic 数据面**清零**：`js/` 下只剩 `vendors/{chinese_convert,pinyinlite,tiny-pinyin}.js`
 （面板拼音/简繁搜索在用）。累计本 R5 已在采集窗退役 jQuery、jQuery UI、SweetAlert2、
 shortcut-manager 相关的全部经典脚本与 12 个 API 文件。
+
+---
+
+## R5 实施：预览窗 watcher 门面收窄（并解答上一批遗留的「环境相关消费者」问题）
+
+**改动**：`src/app/react/preview-window/controller.ts` —— 删除 `watchers` / `runWatchers()` /
+`scope.$watch` / `scope.$on` / `scope.$apply`，以及 `notify()` 内的 `runWatchers()` 调用；
+保留 `scope.$evalAsync`（有具名消费者，见下）。
+
+### 1. 上一批的悬念已定位：消费者就是 `electron/main.cjs`
+
+上一批删门面被 `preview-delivery-closed-loop` 证伪（`selectNext error: scope.$evalAsync is not a
+function`），当时只知「环境相关、与插件加载失败同现」。本批定位到确切位置：
+
+`electron/main.cjs` 的**预览窗冒烟驱动器**里，`scope = window.__eaglePreviewController`，
+在 5 处「改 `scope.current` 后触发重渲染」的写法中调用 `scope.$evalAsync()`：
+
+| 行 | 场景 |
+|---|---|
+| 2999 | `selectNext()` 后取 `nextId` |
+| 3006 | `selectPrev()` 后取 `prevId` |
+| 3043 | `viewItem()`：逐项 `scope.current = item; scope.$evalAsync()` |
+| 3126 | 视频帧场景 |
+| 3179 | 坏视频降级场景 |
+
+即「环境相关」= **跨进程注入的驱动脚本**（非 ESM、不在哨兵扫描面 `src/app/react` 内、也不被任何
+`src/app/react` 检索覆盖）。这同时解释了为什么删除会失败、以及为什么它在生产代码里而非测试代码里。
+
+### 2. 收窄的依据：watcher 面**零活调用方**，提交钩子**有活调用方**
+
+- `$watch` / `$watchCollection` / `$on` / `$apply`：`grep -rn '\$watch' src/app/react/` 的**非注释行
+  0 命中**（`$on`/`$apply` 同）。原注释自述「兼容阶段5 detailHooks 既有调用」，而 detailHooks 早在
+  b1-9bz-C-4 已改为 store 订阅（`$watch('theme')` → bodyState 订阅等），门面已成死重。
+- `$evalAsync`：上表 5 处 + 主窗驱动器同款用法；`core/driverApi.ts` 对**主窗**保留 `$evalAsync`
+  no-op 提交钩子（自述「仅为兼容提交钩子」）——子窗保留同款钩子是既有架构约定，不是遗漏。
+
+故本批删除的是**watcher 机制**，保留的是**提交钩子**，并在代码注释里逐条登记依据与消费者位置。
+
+### 3. 验证
+
+- `node tests/preview-delivery-closed-loop.mjs` — **OK**（正是那条证伪过删除的测试：`$evalAsync`
+  仍工作，`selectNext/selectPrev` 导航断言通过）。
+- `react-stage9a2` / `react-stage9a3` / `native-preview-closed-loop` / `main-ui-workflow` — 见下节。
+- `typecheck` 0 诊断；`react-rewrite-sentinel` OK（C-6 现已覆盖 preview-window：若有人重新引入
+  `scope.$watch(` / `.$apply(` 会立即红，删除具备回归保护）。
+
+### 4. 顺带核验：`main-ui-workflow-closed-loop` 是**既有 flaky**，非本 R5 引入（R7 证据）
+
+过程中它失败过（`MAIN_WORKFLOW_SMOKE_ERROR … inspector operation result timeout … last={"reason":"no-event"}`），
+故做了对照实验（同一台机、逐次杀干净 electron）：
+
+| 配置 | 结果 |
+|---|---|
+| 我的 R5 工作区（无 classic shortcut-manager 标签） | FAIL, FAIL, OK, OK |
+| 我的工作区 + 手工加回该标签 | OK, OK, OK, FAIL |
+| **R5 之前的状态**（`git show 2683656b:` 取回 index.html/bundleGlobals/shortcut-manager.js） | **OK, FAIL, FAIL** |
+
+**结论**：该失败在 R5 之前的状态下同样复现（3 次中 2 次），签名逐字相同；与 classic 标签无关，
+与我的改动无关。失败机制为驱动器等 `item:operation-result` IPC（8s×5 轮全无事件），属源码注释已
+点明的「shim 的 updateMany 走后端 HTTP，负载下整体失败」类事件丢失——**记为 R7「核验历史低频失败
+并记录复现证据」的一条实测证据**（复现率约 2/3，非 1/10 的偶发）。
+实验用文件均已还原（`git status` 仅剩本批的 `preview-window/controller.ts`）。

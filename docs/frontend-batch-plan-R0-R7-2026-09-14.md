@@ -13,9 +13,9 @@
 | R2 | 启动层与环境边界 | **已完成**（2026-09-14） | R1 的入口清单 |
 | R3 | 完整类型检查 | 范围清零完成；12 文件 nocheck 待随域撤销 | R0；结合 R2 接口推进 |
 | R4 | 主应用业务与状态收敛 | **已完成**（2026-09-14；199 字段具名写点化，回退/函数挂载退役面移交 R6） | R2 / R3 的共享边界 |
-| R5 | 独立窗口与查看器 | 待实施 | R1 / R2 / R3；共享服务沿用 R4 |
-| R6 | 旧代码、资产与文档收尾 | 待实施 | 对应消费者已迁出 |
-| R7 | 统一交付验收 | 待实施 | R1–R6 |
+| R5 | 独立窗口与查看器 | **已完成**（2026-09-14；含文档查看器归入 `viewers/document`、查看器父窗具名通道） | R1 / R2 / R3；共享服务沿用 R4 |
+| R6 | 旧代码、资产与文档收尾 | **已完成**（2026-09-14；旧脚本 TS 化、186 个 Angular 遗留退役、`@egjs/react-infinitegrid` 移除、README/台账重写） | 对应消费者已迁出 |
+| R7 | 统一交付验收 | **已完成**（2026-09-15；统一入口 `npm run test:acceptance`，逐项结论见 `docs/frontend-acceptance-2026-09-14.md`） | R1–R6 |
 
 ## R0：锁定当前成果，完成入口与测试门禁整理（已完成）
 
@@ -356,6 +356,15 @@ node tests/ui-interactions-closed-loop.mjs
 node tests/react-rewrite-sentinel.mjs
 ```
 
+### 实施结果（2026-09-14）
+
+- 偏好窗去 tippy / ShortcutManager；采集窗旧 API 全局转 TS 模块；预览窗 watcher 门面收敛为 store 订阅；
+  六查看器父窗通道归一为 `viewers/shared/parentChannel.ts`；文档查看器迁入 `src/app/react/viewers/document`。
+- 哨兵 `scopedOut` 逐窗豁免**全部撤除**——scope 面（`$apply/$watch/$broadcast/$on`）自此无目录级例外。
+- 收官：全量套件 ALL GREEN（71/71，零 FAIL 零 RETRY，`0889b058`）；`main-ui-workflow` 的
+  `inspector no-event` 经对照实验判定为**既有低频 flake**（复现证据见
+  `docs/frontend-acceptance-2026-09-14.md` §5.2）。流水见 `src/app/react/PROGRESS.md` 的 R5 段。
+
 ## R6：按真实依赖清理旧代码、资产和文档
 
 ### 目标
@@ -390,6 +399,17 @@ node tests/react-rewrite-sentinel.mjs
 node tests/run-react-suite.mjs
 npm run build
 ```
+
+### 实施结果（2026-09-14）
+
+- 主界面残余脚本迁为具名 TS 模块：`eagle-api.js` → `core/eagleApi.ts` + `core/eagleBase.ts`、
+  `url-enlarger.js` → `core/urlEnlarger.ts`、`lazy-load-manager.js` → `core/lazyLoadManager.ts`；
+  `src/app/index.html` 只剩一个模块入口标签。
+- 依「静态引用 + 动态 require + `moduleRegistry` 路径表 + 测试 + `new Worker`」五路联合建立保留清单后，
+  退役 186 个 Angular 遗留（directives/controllers/modules）+ 36 个零引用残留；移除
+  `@egjs/react-infinitegrid`（`window.ig` 自建 facade 保留）。
+- 顺带归位「单色面板」修复（此前只存在于 dev 中间件对**已死**模板的改写里，React 侧一直未生效）。
+- README 与入口台账按当前架构重写；收官证据见 `src/app/react/PROGRESS.md` 的 R6 段。
 
 ## R7：建立一个能代表完整迁移的验收入口
 
@@ -426,6 +446,22 @@ npm run build
 node tests/run-react-suite.mjs
 node tests/full-regression-isolated.mjs
 ```
+
+### 实施结果（2026-09-15）
+
+- **统一入口**：`npm run test:acceptance`（`tests/frontend-acceptance.mjs`）——`static`（类型门禁 + 架构哨兵
+  + shim 边界 + scope 收敛）→ `build` → `artifact`（产物入口/资源 + Electron 正式启动冒烟）→
+  `regression`（React 全量套件 71 项 + 套件外关键闭环 6 项）；`backend`（隔离全量回归）因**宿主
+  `fs.cpSync` 缺陷**移出默认分段，单列不写成通过。
+- **覆盖面守卫**：`tests/react-suite-manifest.mjs` 为清单与分类的单一事实来源；验收前校验
+  「必需测试存在且确被某命令执行」，防止以删测试制造绿色。首次运行即查出 2 个长期未被任何命令执行的
+  关键闭环（`item-persistence`、`electron-write-path`），另 2 项只在 `test:full` 里——已全部接入。
+- **分类分开维护**：静态门禁 7 / 开发态行为探针 64 / 产物行为测试 2 / 套件外闭环 6；源码文本探针
+  显式登记 1 处（不当作行为验证）。
+- **低频失败核验**：`react-s2-sidebar-dnd` 隔离复跑 6/6 通过（套件内偶发首败）；`main-ui-workflow`
+  4 轮 2 过 2 败，签名与 R5 之前状态逐字相同（既有 flake）；附着式截图回归 5 项红全部归因
+  （3 项端口硬编码、1 项内嵌页判空、1 项架构上不适用改为显式 SKIP）。
+- 逐项结论与未覆盖项：`docs/frontend-acceptance-2026-09-14.md`。
 
 ## 依赖顺序
 

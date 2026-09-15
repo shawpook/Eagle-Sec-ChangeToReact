@@ -9670,3 +9670,90 @@ main-ui-workflow `inspector no-event` 对照实验（迁移前状态同样复现
 
 **下一阶段 = R7**（统一交付验收入口：全范围类型检查 + 入口/架构检查 + 正式构建 + 关键业务回归 +
 正式产物冒烟串成单一命令，并把历史低频失败与复现证据入档）。
+
+---
+
+## R7：统一交付验收入口（2026-09-15）
+
+**目标**：建立单一前端验收命令，覆盖类型 / 入口与会话架构 / 正式构建 / 关键业务回归 / 正式产物冒烟，
+并对完整迁移给出**可复核**的完成判断（未通过项与未覆盖项明确标注，宿主问题单列）。
+
+### 工作项与落点
+
+| # | 工作项 | 落点 |
+|---|---|---|
+| 1 | 统一验收入口 | 新增 `tests/frontend-acceptance.mjs`：`static`（typecheck + sentinel + shim 边界 + scope 收敛）→ `build` → `artifact`（`dist-entry-check` + `production-smoke`，依赖 build，失败记 BLOCKED）→ `regression`（套件 71 项 + 套件外闭环 6 项）；`backend`（隔离全量回归）为**选做段**（宿主问题，见下）。`package.json` 新增 `test:acceptance` / `test:acceptance:list` / `test:static` / `test:artifact` / `test:persistence` / `test:attached` |
+| 2 | 清单与分类单一事实来源 | 新增 `tests/react-suite-manifest.mjs`（套件清单 71 + 分类 + 产物测试 + 套件外闭环 + 验收必需项 24 + 源码文本探针登记）；`tests/run-react-suite.mjs` 改为 import，不再自持数组 |
+| 3 | 覆盖面守卫 | 验收执行**前**校验：登记文件存在、`REQUIRED_TESTS` 必须被本入口某步骤真正执行（套件 ∪ 产物 ∪ 套件外 ∪ `npm test` 现读清单）；不满足即 `ACCEPTANCE_COVERAGE_FAIL` 且**不执行任何分段**。首次运行即查出 2 个孤立测试 |
+| 4 | 覆盖缺口与端口硬编码修复 | 见下表 |
+| 5 | 历史低频失败核验 | 三份复现矩阵（sidebar-dnd / main-ui-workflow / continuous-grid-scroll）+ 附着式 5 项红的端口对照实验 |
+| 6 | 宿主环境单列 | `fs.cpSync` 最小复现 + backend 段两次对照（无补丁 FAIL / 加临时补丁 45/45 全绿） |
+| 7 | 文档 | 新增 `docs/frontend-acceptance-2026-09-14.md`；README 当前状态/校验命令/文档索引；入口台账 §7/§7.1；批次计划状态表 + R5/R6/R7 实施结果 |
+
+### 覆盖缺口与端口硬编码（工作项 4 明细）
+
+| 位置 | 原状 | 处置 |
+|---|---|---|
+| `tests/item-persistence-closed-loop.mjs`、`tests/electron-write-path-closed-loop.mjs` | **package.json 与套件零引用**（报告 §6「编辑与持久化」却把它们列为验证手段）→ 长期未跑 | 先单独实跑确认通过（`ITEM_PERSISTENCE_CLOSED_LOOP_OK` / `WRITE_PATH_CLOSED_LOOP_OK ops=8 reqs=8`），再接入 `test:persistence` + 验收入口；**断言零改动** |
+| `tests/export-progress-closed-loop.mjs` | 只在 `npm run test:full` 的 `test:export-progress` 里 | 接入验收入口 `regression` 段 |
+| `tests/run-attached-nonsuite.mjs` | 未登记任何 npm 脚本（只在注释里说明用法） | 新增 `npm run test:attached` |
+| `frontend/public/workbench.html:397` | `const API = 'http://127.0.0.1:41695'` 硬编码 | 改读 `window.__EAGLE_API_BASE_URL`（保留 41695 兜底） |
+| `frontend/vite.preview.config.mjs` 开发中间件 | public 目录 HTML 直出、无注入 | 为 `frontend/public/**/*.html` 补同一注入面（路径限定在 publicDir 内） |
+| `tests/screenshot-regression.mjs`（plugin 页 URL） | 硬编码 `http://127.0.0.1:41695/plugins/...` | 改用 `EAGLE_API_URL`（兜底 41695） |
+| `electron/main.cjs:3528`（插件烟测窗 URL） | 硬编码 41695 | 改用同文件第 9 行的 `apiBase` |
+| `src/app/model-viewer/website/index.html:103` | 无条件读 `window.frameElement.getAttribute("callback")` → 顶层直连时抛 `TypeError`（null），后续 `body.classList.add('show')` 永不执行 → **整页空白** | 判空；iframe 内行为逐字不变（修复后实测 `#main_file_name === "box.glb"`） |
+| `tests/run-react-suite.mjs` | 二连败才打印断言尾部（首败不留证，R6 那次无法归因） | 首败即打印尾部；过滤为空时**回落原始尾部** |
+| `tests/continuous-grid-scroll.mjs:177-186` | 末端反向滚轮：固定 `delay(400)` 后断言位移 > 100px | 改为**上限 2s 轮询**（判据与断言文本不变；同仓先例 sidebar-dnd dragend 清理 150ms → 轮询 5s） |
+| `tests/screenshot-regression.mjs`（gif 页） | 顶层直连驱动 gif 查看器（架构上不可能：需父窗 Node 通道） | 改**显式 SKIP + 理由**（不计入通过）；真实上下文覆盖指向 `react-stage-smoke` b1-9ah |
+
+### 低频失败核验（工作项 5 明细）
+
+| 项 | 复现矩阵 | 判定 |
+|---|---|---|
+| `react-s2-sidebar-dnd-closed-loop` | 隔离串行 6 次 **6/6 PASS**（11.3–14.6s）；R6 全量套件内 1 次首败重跑即过 | 长套件下的环境级偶发（断言基于 scope 信号，不依赖视觉） |
+| `main-ui-workflow-closed-loop`（inspector `no-event`） | 串行 4 次：**PASS, PASS, FAIL, FAIL**（失败 57.4s / 60.8s，签名 `last={"reason":"no-event"}` 逐字一致） | **既有低频**：R5 的对照实验显示 R5 之前状态同样复现 `OK, FAIL, FAIL`；机制见 `electron/main.cjs:1907/2102-2132`（`imagesChange` 读到空名早退不发，驱动写入与渲染读取的时序竞争） |
+| `continuous-grid-scroll`（末端反向滚轮） | 串行 4 次：**PASS, PASS, FAIL, PASS**（失败 81.8s，`wheel reverses immediately at list end`）；修复后串行 **4/4 PASS**（132–144s） | 固定 400ms 等待窗口过窄：失败现场 `loaded:6/boxes:44`、懒加载队列仍有 6 项 + 17 个 pending、图片 `complete` 但 `naturalWidth:0`（未解码）→ 已在源码侧改为有上限轮询 |
+| 附着式 5 项红（`workbench`/`plugin`/`workbench-interactions`/`gif`/`model`） | 端口对照实验（同一代码：随机端口栈 vs 默认端口栈） | 3 项=端口硬编码；1 项=内嵌页 `frameElement` 判空；1 项=顶层直连不适用（改 SKIP） |
+
+### 宿主环境单列（工作项 6 明细，不写成通过）
+
+- **最小复现**（Node v22.23.0，本机）：对 `frontend/public/mock-library/Eagle Reverse Demo.library` 执行
+  `fs.cpSync(src, dst, {recursive:true})` → 进程**无输出**直接退出，`NODE_EXIT=127`。排除因素：无符号链接
+  （0 个）、非超长路径（最深 111 字符）、非大目录（22 目录 / 58 文件）。
+- **影响**：`tests/roadmap-panels.mjs:139`；`backend/src/{importer.js:364,library-migration.js:55,library-backup-service.js:147}`。
+- **两次对照**（`--stages=backend`）：无补丁 → 前 **34/45 全绿**后在 `library-migration.mjs` 处
+  `fetch failed / ECONNRESET`（backend 进程在处理 `/api/library/migrate` 时死亡，该路径命中
+  `library-migration.js:55` 的 `cpSync`）；把 4 处 `cpSync` 临时换成等价手工递归拷贝 →
+  **`FULL_REGRESSION_ISOLATED_OK`，45/45 全绿**（119.5s）。补丁用完即 `git checkout --` 还原（不入库）。
+- **结论**：阻断点确为宿主缺陷，与迁移无关。故 `backend` 段移出默认分段，单列且**不写成通过**。
+
+### 验证（R7 证据）
+
+- `npm run test:acceptance` → **`FRONTEND_ACCEPTANCE_ALL_GREEN`**（exit 0）：static 四步 PASS、
+  `npm run build` PASS、`dist-entry-check` PASS（FAIL 0 / WARN 2）+ `production-smoke` PASS、
+  套件 **71 项：OK 69 + retry-OK 2**（`main-ui-workflow`、`react-s2-sidebar-dnd`——均为既有低频项）、
+  套件外 6 项全 PASS。同日另一次运行（`continuous-grid-scroll` 等待窗口加固**之前**）同为 ALL GREEN、
+  套件 `OK 70 + retry-OK 1`（retry 项即 `continuous-grid-scroll`，§5.4 的首次观测）；加固后它首跑即过。
+- 首败留证立刻见效：最终运行里 `react-s2-sidebar-dnd` 首败断言名到手——
+  `SIDEBAR_DND_CLOSED_LOOP_FAIL dragend cleanup timeout`（拖拽结束清理未在 5s 轮询窗口内完成，
+  非拖拽语义断言失败），已写入验收文档 §5.1。
+- `node tests/frontend-acceptance.mjs --stages=backend` → FAIL（宿主问题，见上；加临时补丁 45/45 绿）。
+- `npm run test:attached` → **`ATTACHED_NONSUITE OK`**（`screenshot-regression 16/16（SKIP gif）` +
+  `workbench-interactions PASS`）。
+- 三份复现矩阵见上表；详见 `docs/frontend-acceptance-2026-09-14.md` §5/§7/§9。
+
+### R7 完成判据对照
+
+| 判据 | 状态 |
+|---|---|
+| 报告 §6 验收矩阵各项均有可复核结果 | ✅ 逐项结论见验收文档 §3（11 行）；其中「大列表性能」「backend 段」「start:prod 人工路径」「3D 内嵌行为」**明确标注未覆盖/宿主阻断** |
+| 未通过项明确标注，不以套件数量/源码后缀/一次 build 成功替代 | ✅ §8 汇总表；部分段运行只打印 `PARTIAL_OK`，不打印 ALL GREEN |
+| 类型检查 0 诊断、正式产物冒烟与关键业务回归均有证据 | ✅ `TYPECHECK_OK: 0 诊断`；`PRODUCTION_SMOKE_OK`；套件 71 + 套件外 6 + 附着式全绿 |
+
+**R7 净产出**：1 个统一验收入口 + 1 个清单/分类事实来源 + 覆盖面守卫；4 项覆盖缺口修复（2 个孤立测试
+首次接入）；4 处端口硬编码归位；1 处内嵌页判空修复；2 处测试可诊断性/等待窗口加固；
+3 份低频失败复现矩阵；1 份最终验收记录（含未通过项与宿主问题单列）。
+
+**迁移收官**：R0–R7 全部完成。遗留项（**明确未覆盖，不以通过论**）见验收文档 §8：宿主 `fs.cpSync`
+缺陷导致的 backend 段、10,000 条真实库性能、`start:prod` 人工使用路径、`gif` 在顶层直连场景、
+3D 查看器内嵌上下文行为、57 个 `LEGACY_SCOPE_SLOTS` 挂载槽。

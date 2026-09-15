@@ -89,11 +89,26 @@
 
 ```powershell
 Set-Location -LiteralPath 'H:/dev/Eagle-Sec-development - 副本'
+npm run test:acceptance     # R7 统一前端验收入口（静态门禁 → 正式构建 → 产物检查/冒烟 → 关键业务回归）
+node tests/frontend-acceptance.mjs --list   # 覆盖面 + 分类 + 分段（不执行）
 npm run build
 npm run test:production     # 产物入口/资源检查 + Electron 正式启动冒烟
 npm run start:prod          # 本地静态服务 + 后端 + Electron（真实使用）
 node tests/typecheck.mjs
 ```
+
+> **R7 验收结论**：报告 §6 验收矩阵逐项结论、未通过/未覆盖项、历史低频失败复现证据与宿主环境单列
+> 见 `docs/frontend-acceptance-2026-09-14.md`。
+
+## 7.1 R7 对交付页面的改动（端口硬编码与内嵌页判空）
+
+| 位置 | 原状 | 处置 |
+|---|---|---|
+| `frontend/public/workbench.html:397` | `const API = 'http://127.0.0.1:41695'` 硬编码 | 改读 `window.__EAGLE_API_BASE_URL`（保留 41695 兜底） |
+| `frontend/vite.preview.config.mjs` 开发中间件 | public 目录 HTML 直出、无注入 | 为 `frontend/public/**/*.html` 补同一注入面（路径限定在 publicDir 内） |
+| `tests/screenshot-regression.mjs`（plugin 页 URL） | 硬编码 `http://127.0.0.1:41695/plugins/...` | 改用 `EAGLE_API_URL`（兜底 41695） |
+| `electron/main.cjs:3528`（插件烟测窗 URL） | 硬编码 41695 | 改用同文件第 9 行的 `apiBase`（随 `EAGLE_API_URL` 变化） |
+| `src/app/model-viewer/website/index.html:103` | 无条件读 `window.frameElement.getAttribute(...)`，顶层打开即抛异常、整页空白 | 判空（iframe 内行为不变） |
 
 > **R5 迁移记录（文档查看器）**：原 `frontend/document-viewer/` 已迁入 `src/app/react/viewers/document/`
 > （与其余六个查看器同址），源 HTML/TS/样式随迁；同步改造四处引用：`core/documentViewer.ts:60` 的 URL 构造、

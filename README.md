@@ -2,9 +2,9 @@
 
 工作区：`H:/dev/Eagle-Sec-development - 副本`（分支 `react-in-place`）。
 
-## 当前状态（R6，2026-09-14）
+## 当前状态（R7，2026-09-15）
 
-前端是**原地（in-place）Angular → React 19 + TypeScript + Vite 迁移**，已完成到 R6：
+前端是**原地（in-place）Angular → React 19 + TypeScript + Vite 迁移**，R0–R7 全部完成：
 
 - **运行期没有 Angular**：`app.bundle.js`（4.4MB）已于 b1-9al 删除，`frontend/public/shims.js`、
   `mock-data.js` 已于 E9 删除，`src/app/js/directives|controllers|modules`（186 个 Angular
@@ -24,8 +24,9 @@
 - 开发态与构建态共用同一份源 HTML（React 入口写在页面里）；开发中间件只补 API 地址与
   react-refresh 前置脚本。生产构建 `npm run build` 产出 `dist/frontend/`，URL 形状与开发态一致。
 
-**尚未完成**：R7（统一交付验收入口：单一命令串起全范围类型检查 + 入口/架构检查 + 正式构建 +
-关键业务回归 + 正式产物冒烟）。批间路线见 `docs/frontend-batch-plan-R0-R7-2026-09-14.md`。
+**验收**：统一入口 `npm run test:acceptance`（静态门禁 → 正式构建 → 产物入口/冒烟 → 关键业务回归四段，
+含覆盖面守卫，防止「删测试得绿色」）。逐项结论、历史低频失败复现证据与**宿主环境阻断项**见
+`docs/frontend-acceptance-2026-09-14.md`；批间路线见 `docs/frontend-batch-plan-R0-R7-2026-09-14.md`。
 
 ## 启动
 
@@ -52,15 +53,22 @@ npm run serve:frontend # 只起静态服务
 ## 校验命令
 
 ```powershell
-npm run typecheck             # src/app/react 全范围类型检查（0 诊断门禁）
-npm run test:react-suite      # React 全量回归套件（71 项，顺序隔离执行）
+npm run test:acceptance       # 统一前端验收：静态门禁 + 正式构建 + 产物检查/冒烟 + 关键业务回归
+node tests/frontend-acceptance.mjs --list   # 覆盖面与分类（不执行）；--stages=static 只跑静态门禁
+npm run typecheck             # src/app/react 全范围类型检查（0 诊断门禁，验收 static 段之一）
+npm run test:react-suite      # React 全量回归套件（71 项，顺序隔离执行；失败重跑一次并打印首败断言）
 npm run test:continuous-grid  # 连续网格几何 + 滚动/自动定位闭环（套件内的两项单跑）
 npm run test:production       # 产物入口/资源检查 + Electron 正式启动冒烟（需先 npm run build）
-npm test                      # 后端 API / 资源库 / 导入导出等后端链
+npm run test:attached         # 附着式（Chrome 无头）：截图回归 17 页（1 页按理由 SKIP）+ workbench 交互
+npm run test:persistence      # 落盘读回 + 写路径单路由（真实后端 / 真实 main 处理器）
+npm test                      # 后端 API / 资源库 / 导入导出等后端链（45 项）
 npm run test:full             # npm test + 后端与 Electron 全链 + 截图回归
 ```
 
-改动启动、IPC、全局状态或跨窗契约时请扩大回归面；日常批次跑受影响项 + `npm run typecheck` 即可。
+改动启动、IPC、全局状态或跨窗契约时请扩大回归面；日常批次跑受影响项 + `npm run typecheck` 即可，
+提交前跑 `npm run test:acceptance`。
+**宿主提示**：本机 `fs.cpSync(recursive)` 会硬崩 Node（exit 127），`npm test` 中经库迁移/备份恢复路径的
+用例受影响；隔离全量回归须用文档化的不入库临时补丁，故它不在验收默认分段内（`--stages=backend` 单列）。
 
 ## 目录
 
@@ -89,9 +97,10 @@ docs/                        迁移报告、批次计划、入口台账
 
 | 文档 | 用途 |
 |---|---|
-| `docs/frontend-batch-plan-R0-R7-2026-09-14.md` | R0–R7 批次计划与各批实施结果（**先读这个**） |
-| `docs/2026-09-14_frontend-migration-remaining-report.md` | 迁移剩余量调查报告（R 划分的依据） |
-| `docs/frontend-entry-ledger-2026-09-14.md` | 15 类交付页面的入口台账与处置清单 |
+| `docs/frontend-acceptance-2026-09-14.md` | **最终验收记录**（R7）：§6 验收矩阵逐项结论、未通过/未覆盖项、历史低频失败复现证据、宿主环境单列 |
+| `docs/frontend-batch-plan-R0-R7-2026-09-14.md` | R0–R7 批次计划与各批实施结果 |
+| `docs/2026-09-14_frontend-migration-remaining-report.md` | 迁移剩余量调查报告（R 划分与验收矩阵的依据） |
+| `docs/frontend-entry-ledger-2026-09-14.md` | 交付页面入口台账、R6 保留清单（逐路径消费者）与复核命令 |
 | `docs/e5-5-shims-retirement-plan.md` | shim 退役计划（E 阶段） |
 | `docs/manual-qa-2026-09-13.md` | 实机 QA 记录 |
 | `src/app/react/PROGRESS.md` | 逐批实施流水（含每批验证命令与结果，体量大） |

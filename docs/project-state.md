@@ -2,7 +2,7 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-15（M0 收官；M1 进行中：F15/F13/F06后端/F10/F08F09/F06前端 已集成）
+> 最后更新：2026-09-16（M1 全项集成完毕；M2 第一批、M5 第一批、F04 均已集成）
 
 ---
 
@@ -33,11 +33,11 @@
 | 批次 | 状态 | 说明 |
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
-| **M1** 优先修功能闭环 | 🔄 **进行中** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / **F06 前端 ✅** / F06 能力接线 🔄 / F04 未派 |
-| M2 替代万能 shim | 🔄 **已启动**（提前并行） | F07 能力矩阵调研已交付（§6）；**M2-1 运行中** |
-| M3 经典业务脚本进模块图 | ⏸ 待 M2 | — |
-| M4 窗口与 scope 收口 | ⏸ 待 M1/M2/M3 | — |
-| M5 外围工具 UI 与生产配置 | ⏸ 待 M0/M2 | 可与 M3/M4 并行 |
+| **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
+| M2 替代万能 shim | 🔄 **第一批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1 已集成**（RuntimeServices + 三态 + 能力缺失即失败）；后续批次见 §8 |
+| M3 经典业务脚本进模块图 | ⏸ 待派 | — |
+| M4 窗口与 scope 收口 | ⏸ 待派 | — |
+| M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边见 §8 |
 | M6 扩展与插件专项 | ⏸ 待 M2/M5 | — |
 | M7 最小产物与遗留隔离 | ⏸ 待替代就位 | 退役审计已交付（§6） |
 | M8 最终收官 | ⏸ | — |
@@ -51,6 +51,11 @@
 已集成的提交（自下而上）：
 
 ```
+1fc34443 test(m1): 修复 F06 分流测试的 flaky 时序依赖（改为确定性等待真实落盘）  [W17]
+926ccd84 feat(m5): 外围工具页/媒体页迁入 React 模块图 + 运行期地址单一来源（F17/F22）  [W16]
+257ebd1c fix(m1): F04 预览窗 boot 迁入模块图（显式依赖、先安装后挂载）  [W15]
+90cc3501 feat(m2): 有限 RuntimeServices + 三态运行模式 + 能力缺失即明确失败  [W13]
+fd378cf5 feat(m1): F06 第三批 —— 解桩 + 格式分流唯一判定点 + 非 JPEG 后端通路  [W14]
 25f84998 fix(m1): F06 前端失败语义与写回收敛（单一写回实现 + 回执校验落库）  [W11]
 9b96d346 fix(m1): F08/F09 跨窗动作供给闭环 + 主窗内部字符串派发消除    [W12]
 7b4e4a5f docs(state): W8(F10) 已集成、W12(F08/F09) 已派发，刷新台账
@@ -102,10 +107,11 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W10** | task_1ec4ff82fdf1 | ctx_0fb8e0d33d86 | **M1-4 F06 后端图像变换端点** | ✅ **已集成(`c3987c6f`)，已释放** |
 | **W11** | task_18b97e0f8847 | ctx_c4300aea974c | **M1-5 F06 前端失败语义与写回收敛** | ✅ **已集成(`25f84998`)**，release_unknown（终端待清） |
 | **W12** | task_114936ac524e | ctx_5cb9a69fa7fc | **M1-6 F08/F09 动作供给与派发收口** | ✅ **已集成(`9b96d346`)**，终端 retained |
-| **W13** | task_18aeb93aa2fc | ctx_88eeaf5f4776 | **M2-1 有限 RuntimeServices 与显式能力失败** | 🔄 运行中（worktree `m2-runtime-services`） |
-| **W14** | task_6988e84a7be3 | ctx_9ca58917eee7 | **M1-7 F06 前端真实能力接线（格式分流）** | 🔄 收尾中（`m1-f06-wiring2`；首次派单因 ask 通道受阻重派） |
-| **W15** | task_1e1194c99c58 | ctx_abc83ddf074b | **M1-F04 预览窗 boot 迁出经典内联脚本** | 🔄 运行中（`m1-f04-boot`） |
-| **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 外围工具页进模块图 + 统一运行时地址策略** | 🔄 刚派（`m5-tools-address`） |
+| **W13** | task_18aeb93aa2fc | ctx_88eeaf5f4776 | **M2-1 有限 RuntimeServices 与显式能力失败** | ✅ **已集成(`90cc3501`)** |
+| **W14** | task_6988e84a7be3 | ctx_9ca58917eee7 | **M1-7 F06 前端真实能力接线（格式分流）** | ✅ **已集成(`fd378cf5`)**（首次派单因 ask 通道受阻重派） |
+| **W15** | task_1e1194c99c58 | ctx_abc83ddf074b | **M1-F04 预览窗 boot 迁入模块图** | ✅ **已集成(`257ebd1c`)** |
+| **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 工具页/媒体页进模块图 + 运行期地址** | ✅ **已集成(`926ccd84`)** |
+| **W17** | task_2f6fabf7dd28 | ctx_54b60df66dc7 | **F06 分流测试 flaky 修复** | ✅ **已集成(`1fc34443`)** |
 
 已停止/废弃的 dispatch（均因 Claude Code Bypass 确认框吞掉 prompt，见 §7）：
 `ctx_5663f9e12c59`、`ctx_a7448bed8767`、`ctx_a2cc223b93bb`、`ctx_bfea030a61fb`（全部 stopped）
@@ -137,6 +143,9 @@ e6f6383e docs(m0): 纳入总体任务书
 | D6 | **F06 宽高持久化落点裁定：不新建 v2 通道**（W11 提问） | 仓库中 `/api/v2/item/updateMany` **路由不存在**，只有 `/api/item/updateMany`；`V2_ALLOWED_FIELDS` 只是 `item-workflow-service.js:185` 的 contract 分支字段集。且 `thumbnail-task-service.js:451-462` 的 `commitThumbnail` 本就写 width/height。宽高权威落点由后端变换端点在**同一请求内**原子完成；前端只做「等待回执 + 校验落库 + 未落库则显式报错」 |
 | D7 | **F06 存在一个有意为之的中间态**：W11 合并后、F06 能力接线（第三批）合并前，写文件模式的旋转/翻转会**明确报错拒绝** | 桩未解（`moduleRegistry.ts:106-107`），能力探测按函数元数判为不可用。这正是 W11 的目的——把「静默假成功」换成「诚实失败」；闭合依赖第三批解桩 + 接后端端点。**该窗口期内写文件不可用是已知且接受的**，不是回归 |
 | D8 | **并行 Worker 的文件所有权切分**：`core/shim/moduleRegistry.ts` 归 F06 第三批，shim 其余 7 个文件归 M2-1 | 两者都要碰 shim 层但落点不同；不切分则并行编码必然冲突。M2 的能力声明（`imageOps`）与 F06 的格式分流是**正交维度**（环境 × 格式），整合留给 Coordinator |
+| D9 | **Worker 不跑全量回归**（用户 2026-09-15 指示）；全量由 Coordinator 在**无并行 Worker** 时统一跑 | 各 worktree 的 `node_modules` 是共享 junction，`node_modules/.vite/deps` 也共享——任一 Vite 实例 hash 不匹配就**先删该缓存再重建**，被 teardown 打断即永久缺失，导致其他 Worker 的 Vite/smoke 测试成片假失败（M2-1 实测 `SUITE_EXIT=127`、F06 第三批实测 stage7d4/7d5a/7d5b 连续 FAIL）。M2-1 用 HEAD 对照（stash 前后报错文本与行号完全一致）证明非其改动所致 |
+| D10 | **测试里的"等异步完成"必须是有上限的条件轮询，不得用固定轮数推进假计时器** | F06 第三批的 `drainIo(timers, 60)` 实测整段仅约 0.3ms 墙钟、与真实 fs 写盘无关；注入 +10ms 即需约 228 轮，12 并发可稳定复现断言失败。已改为「推进假计时器 + 有上限轮询真实条件（10s）+ 超时打印现场」 |
+| D11 | **`tests/react-suite-manifest.mjs` 的 `REACT_SUITE` 长度必须每次合并后重新数** | 历史上注释与实际长度多次不同步（写过 71/72/73），本批合并后实际为 **77**。已在 `run-react-suite.mjs` 头部写明"必须重新数" |
 
 ---
 
@@ -219,22 +228,36 @@ e6f6383e docs(m0): 纳入总体任务书
   **一次性** IPC `app-status-library-loaded`，任一侧推迟即永久丢事件（三组 A/B 实测）。
   Coordinator 已批准。
 
-### 已派（运行中，4 个并行）
-3. **F06 第三批**（W14 / `task_6988e84a7be3` / `ctx_9ca58917eee7`，worktree `m1-f06-wiring2`）
-   —— 解桩 + 格式分流唯一判定点 + 经 IPC 接后端端点。spec: `outputs/_spec-f06-3.txt`（未跟踪）。
-   已确认产出：`moduleRegistry.ts` 两行改为 `loadJsModule(req)`；新增
-   `services/imageTransformRoute.ts`（唯一判定点，前端只声明 JPEG 一组，其余格式/错误码判据归后端
-   单点）；`electron/{main,preload}.cjs` 新增具名通道 `item:image-transform`（信封而非 reject，
-   以保住后端结构化错误码）。它实测出渲染层 Canvas 路径**不可用**（`url.pathToFileURL` 拿到 mock、
-   `CanvasToBMP`/`APNG` 未安装），故 PNG 等改走后端。
-4. **M2-1**（W13 / `task_18aeb93aa2fc` / `ctx_88eeaf5f4776`，worktree `m2-runtime-services`）
-   —— 有限 RuntimeServices + 消除「未知能力返回成功」+ `browser-connected` 独立态。
-   spec: `outputs/_spec-m2-1.txt`（未跟踪）。`runtimeServices.ts` 739 行、无 `@ts-nocheck`/`any`；
-   契约测试 20/20。
-5. **F04**（W15 / `ctx_abc83ddf074b`，worktree `m1-f04-boot`）—— 预览窗 boot 迁出内联脚本。
-   spec: `outputs/_spec-f04.txt`（未跟踪）。
-6. **M5-1**（W16 / `ctx_445c33347b34`，worktree `m5-tools-address`）—— 外围工具页/媒体页进模块图
-   + 统一运行时地址策略。spec: `outputs/_spec-m5-1.txt`（未跟踪）。
+### 本轮已集成（5 个 Worker，均已核验后才合并）
+1. **F06 第三批**（W14 / `fd378cf5`）：`moduleRegistry.ts` 仅改 106-107 两行解桩
+   （`() => {}` → `loadJsModule(req)`）；新增 `services/imageTransformRoute.ts` 作**格式分流唯一判定点**；
+   `electron/{main,preload}.cjs` 新增具名通道 `item:image-transform`（信封而非 reject，保住后端错误码）；
+   宽高仍走 W11 既有通道 + 回执校验，未新增第二条写入路径。
+   **实测改正调研推断**：渲染层 Canvas 路径**不可用**（`url.pathToFileURL` 拿到 mock、`CanvasToBMP`/`APNG`
+   未安装），故 PNG 等改由后端权威处理；**主窗快捷键不可达**（入口实为 DetailToolbar 工具栏按钮）。
+2. **M2-1**（W13 / `90cc3501`）：`core/runtimeServices.ts`（739 行，无 `@ts-nocheck`/`any`）+ 八服务单点装配 +
+   三态运行模式（electron / browser-connected / demo）+ 未知能力改为明确失败 + 契约测试 20/20。
+   **发现**：`genericStub` 必须在 require **调用期**抛错（"取值即抛"会让 `installBundleGlobals()` 整体中断、
+   主窗不渲染）；`archiver`/`fast-glob` 在 node_modules 中真实存在却被 `moduleRegistry.ts` 的 bareModules
+   映射为 no-op（**记入残留项**，所有权外）。
+3. **F04**（W15 / `257ebd1c`）：**重大发现——内联 boot 本来就是死代码**（`appRoot is not defined` 在解析期整体中止，
+   `EagleConfig` 之后的全局从未安装成功），迁移的实质是"把从未生效的供给改成真正生效"。
+   新增 `preview-window/boot.ts` + `entry.tsx` 的顺序不变量（import 在 controller 之前 +
+   `assertPreviewBootInstalled()` 在 createRoot 之前）；`global.js` 只删 marker 块。
+   **未做实机验证**（共享 Vite 预打包 URL 在本机负载下全部 5s 超时挂起）。
+4. **M5-1**（W16 / `926ccd84`）：`frontend/runtime-config.mjs` 统一运行期地址（dev 中间件与
+   `serve-frontend.mjs` 共用、产物内不含端口常量）；workbench/roadmap/media-viewer 四页迁入模块图且
+   **URL 一个未变**；媒体改走后端受控取址；新增 `tests/frontend-public-policy.mjs` 9/9。
+   **顺带修掉生产缺陷**：`serve-frontend` 的 `/file` 代理先 decode 再重建 URL 导致 `%2F`→`/`、
+   缩略图服务路由不匹配返回 404——改为原样透传后 200。
+5. **F06 flaky 修复**（W17 / `1fc34443`）：见 D10。
+
+### 下一步（可立即派）
+6. **M2 后续批次**：逐模块撤销 shim 的 8 个 `@ts-nocheck`（460 条类型债）、清理 guarded Angular 分支（F01）、
+   收敛 `moduleRegistry.ts` 的 bareModules no-op（archiver/fast-glob）。
+7. **M3**（F03/F16 经典业务脚本与自有 Worker）、**M4**（F11–F14 窗口收口）、**M6**（F18/F19 扩展与插件）、
+   **M7**（F02/F20/F24 遗留隔离）——注意 M5 的 `frontend-gate-manifest.mjs` 所有权需与后续批次切分。
+8. **M8 最终验收**。
 
 ### 立即可派（依赖已满足）
 5. **F04 预览窗 boot 移出前置内联脚本**——spec 已备好（`outputs/_spec-f04.txt`，未跟踪）。
@@ -255,9 +278,10 @@ e6f6383e docs(m0): 纳入总体任务书
 
 | 阻塞 | 影响 | 处置 |
 |---|---|---|
-| ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并（`c3987c6f` / `25f84998` / `27e5053a`） |
-| **F06 中间态**：解桩前，写文件模式的旋转/翻转会被明确拒绝 | 用户可见的功能不可用窗口 | 已知且接受（D7）；W14 合并后闭合 |
-| 并行 Worker 同跑全量回归会互相干扰（表现为 `exit=null` 进重试） | 验收噪声 | 控制并行度；F04 因此暂缓派遣 |
-| `~/.claude/settings.json` 的 `skipDangerousModePermissionPrompt` 会被静默抹掉 | worker 启动失败（Bypass 确认框吞 prompt） | 每次派遣前复查（见 §7.1） |
-| F04/F17/M5/M6 需要真实 Electron / 浏览器 / 扩展安装验证 | 验收深度 | 到批次时再定验证方式；Worker 未验证项必须如实标注 |
-| `H:/resources/plugin_templates` 与 `H:/dev/plugins/example-service-plugin` 在工作区外，本轮只读核查未找到 | F19 | 涉及工作区外资源，必要时向用户确认 |
+| ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并 |
+| ~~F06 中间态（解桩前写文件明确拒绝）~~ | — | ✅ 已由 F06 第三批解桩闭合 |
+| **多个 Worker 并行跑 Vite/Electron 类测试会互相破坏共享依赖缓存** | 成片假失败、`SUITE_EXIT=127` | 已定为口径（D9）：Worker 只跑自家定向测试，全量由 Coordinator 串行跑。**后续派单沿用此约定** |
+| **`~/.claude/settings.json` 的 `skipDangerousModePermissionPrompt` 会被静默抹掉** | Worker 卡在 Bypass 确认框 | 每次派遣前复查（§7.1）。当日已复发 4 次 |
+| **Worker 的 dispatch prompt 常停在输入框未提交** | 表现为"停在空提示符"，实际在等 Enter | 读终端查 `draft:` 字段，`orca terminal send --terminal <handle> --enter` 提交（§7.5） |
+| **实机验证仍受限**：共享 Vite 预打包 URL 在本机负载下全部超时挂起 | F04 的"迁移后预览窗仍可用"、F06 的端到端均未实机验证 | 无并行 Worker 时重试；仍不可行则如实标注为未验证项并带入 M8 |
+| `H:/resources/plugin_templates` 与 `H:/dev/plugins/example-service-plugin` 在工作区外 | F19 | 涉及工作区外资源，必要时向用户确认 |

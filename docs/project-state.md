@@ -33,7 +33,7 @@
 | 批次 | 状态 | 说明 |
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
-| **M1** 优先修功能闭环 | 🔄 **进行中** | F15 ✅ / F13-preview ✅ / **F06 后端 ✅** / **F10 ✅** / F06 前端 🔄 / F08·F09 🔄 / F04 未派 |
+| **M1** 优先修功能闭环 | 🔄 **进行中** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / **F08·F09 ✅** / F06 前端 🔄 / F04 未派 |
 | M2 替代万能 shim | ⏸ 待 M1 | F07 能力矩阵调研已交付（§6），可直接进入实现 |
 | M3 经典业务脚本进模块图 | ⏸ 待 M2 | — |
 | M4 窗口与 scope 收口 | ⏸ 待 M1/M2/M3 | — |
@@ -51,10 +51,12 @@
 已集成的提交（自下而上）：
 
 ```
-4e39d389 docs(state): W10 后端图像变换端点已集成，刷新进度与下一步
+9b96d346 fix(m1): F08/F09 跨窗动作供给闭环 + 主窗内部字符串派发消除    [W12]
+7b4e4a5f docs(state): W8(F10) 已集成、W12(F08/F09) 已派发，刷新台账
 27e5053a fix(m1): F10 跨窗供给启动就绪收敛为单一 Promise（真正 await）  [W8]
-df02b8df docs(state): 建立项目状态文件制度
+4e39d389 docs(state): W10 后端图像变换端点已集成，刷新进度与下一步
 c3987c6f feat(m1): F06 后端图像变换端点，旋转/翻转写回闭环            [W10]
+df02b8df docs(state): 建立项目状态文件制度
 284f4535 docs(m0): 建立入口台账矩阵并就地订正 F26 六处失真          [W4]
 9abf8008 fix(m0): 替代展示页按真实 URL 交付，静态页缺口 A–G 闭合（FAIL 12→5）  [W3-B]
 6184c0c5 fix(m0): worker 路径改为站点根绝对路径 + 已知缺失精确登记（FAIL 12→7） [W3-A]
@@ -98,7 +100,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W8** | task_b29062f1f261 | ctx_9f589180c733 | **M1-3 F10 启动就绪 Promise** | ✅ **已集成(`27e5053a`)**，终端 retained |
 | **W10** | task_1ec4ff82fdf1 | ctx_0fb8e0d33d86 | **M1-4 F06 后端图像变换端点** | ✅ **已集成(`c3987c6f`)，已释放** |
 | **W11** | task_18b97e0f8847 | ctx_c4300aea974c | **M1-5 F06 前端失败语义与写回收敛** | 🔄 运行中 |
-| **W12** | task_114936ac524e | ctx_5cb9a69fa7fc | **M1-6 F08/F09 动作供给与派发收口** | 🔄 运行中（刚派发） |
+| **W12** | task_114936ac524e | ctx_5cb9a69fa7fc | **M1-6 F08/F09 动作供给与派发收口** | ✅ **已集成(`9b96d346`)**，终端 retained |
 
 已停止/废弃的 dispatch（均因 Claude Code Bypass 确认框吞掉 prompt，见 §7）：
 `ctx_5663f9e12c59`、`ctx_a7448bed8767`、`ctx_a2cc223b93bb`、`ctx_bfea030a61fb`（全部 stopped）
@@ -161,19 +163,27 @@ e6f6383e docs(m0): 纳入总体任务书
 
 ### 进行中（等结果）
 1. **W11**（F06 前端失败语义与写回收敛）→ 收结果、核验、合并
-2. **W12**（F08/F09 动作供给与派发收口）→ 收结果、核验、合并
+   - 状态：实现与测试已完成（`tests/image-ops-writeback.mjs` 12/12、typecheck OK），
+     正在等后台全量 React 套件跑完再发 worker_done
 
 ### 已完成（本轮新增）
+- ✅ **W12 F08/F09 动作供给与字符串派发收口**（`9b96d346`）：契约 10→17 项，
+  新增 `core/crossWindowActions.ts`（类型化端口，指向既有业务实现，未建第二套持久化）、
+  `core/viewOpenActions.ts`、`core/internalDispatch.ts`；13 处 `scope[fn]` 改具名直调。
+  验收 `tests/f08f09-action-supply-contract.mjs` 13/13（台账 34 条未迁移动作，删条即失败）。
+  **诚实遗留**：`openWithDefault/openWithFinder/copyImage` 唯一实现在 preview-window 子窗，
+  主窗要用须新增 IPC 而 electron/** 本轮禁改，故记入缺失清单；
+  `renameItem(name)/setRating(stars)` 签名与派单文字的偏差理由已写入代码头部
+  （既有实现作用于主窗当前选中集，加 ids 等于引入第二条持久化路径）；
+  字体重命名与 0–5 星仅为 node:vm 隔离单测，**未做 Electron 实机验证**。
 - ✅ **W10 F06 后端变换端点**（`c3987c6f`）：`POST /api/item/imageTransform` + v2 镜像，
   单请求原子完成「写源文件 → 重生成缩略图 → 更新 metadata 宽高」，结构化错误码，
   JPEG 按方案 C 以 415 拒绝。验收 `tests/image-transform-closed-loop.mjs` 逐像素验证 + 失败不写盘。
 - ✅ **W8 F10 启动就绪 Promise**（`27e5053a`）：`core/bootSequence.ts` 单一就绪序列，
-  真正 await 供给注册并校验 10/10 后才置 ready；未就绪窗口跨窗调用改抛
-  `ExternalSupplyNotReadyError`（不再静默 undefined）。
+  真正 await 供给注册才置 ready；未就绪窗口跨窗调用改抛 `ExternalSupplyNotReadyError`。
   **记录在案的顺序偏离**：实测「先 await 供给再域接管」不可实现——挂载+六域接管处注册主进程
-  **一次性** IPC `app-status-library-loaded`，任一侧推迟即永久丢事件（三组 A/B 实测：
-  都提前 OK；仅挂载提前 / 仅接管提前均 FAIL）。故保留挂载+接管在同一同步前缀，
-  供给注册仍被真正 await 且先于就绪宣告。Coordinator 已批准该方案。
+  **一次性** IPC `app-status-library-loaded`，任一侧推迟即永久丢事件（三组 A/B 实测）。
+  Coordinator 已批准。
 
 ### 立即可派（依赖已满足）
 3. **F06 第三批：前端接上真实能力**（依赖 W11 合并；W10 端点已就绪）

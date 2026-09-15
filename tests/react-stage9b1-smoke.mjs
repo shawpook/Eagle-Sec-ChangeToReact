@@ -359,6 +359,51 @@ try {
     return items.some((el) => el.textContent.indexOf('Bulk-60') > -1);
   })()`);
 
+  // ── 9b-3（R5）：js/lib/api/* + collect-item.js 迁移为 TS 模块后的全局形状等价 ──
+  // 键集与顺序是「迁移而非重写」的判据：值为**迁移前实测**的 Object.keys(window.eagle).sort()，
+  // 顺序为 installCollectApi() 的装配次序（装配后逐键记录）。值类型同时校验，防止空壳占位。
+  await assertExprOn(pw, 'pw4g-eagle-keys', `(() => {
+    const keys = Object.keys(window.eagle || {}).sort();
+    const expected = ['crypto','dialog','env','fetch','fetchLargeJSON','folder','i18n','item','library','tag','utils'];
+    return JSON.stringify(keys) === JSON.stringify(expected);
+  })()`);
+  await assertExprOn(pw, 'pw4g-eagle-order', `(() => {
+    const eagle = window.eagle || {};
+    const expectedType = {
+      utils: 'object', env: 'object', crypto: 'object', i18n: 'object',
+      fetch: 'function', fetchLargeJSON: 'function', folder: 'object',
+      library: 'object', tag: 'object', item: 'object', dialog: 'object',
+    };
+    for (const [k, t] of Object.entries(expectedType)) {
+      if (typeof eagle[k] !== t) return false;
+    }
+    // 子命名空间与关键方法面（消费点：controller/folderPanel/LibrarySwitcher）
+    return typeof eagle.utils.tree.walk === 'function'
+      && typeof eagle.utils.url.isSameHost === 'function'
+      && typeof eagle.utils.clearWeirdCharacters === 'function'
+      && typeof eagle.utils.urlToBase64 === 'function'
+      && typeof eagle.env.shouldShowNewCollectWindow === 'function'
+      && typeof eagle.env.isBackground === 'function'
+      && typeof eagle.env.browser === 'object'
+      && typeof eagle.env.os === 'object'
+      && typeof eagle.library.info === 'function'
+      && typeof eagle.library.history === 'function'
+      && typeof eagle.library.normalizePath === 'function'
+      && typeof eagle.folder.create === 'function'
+      && typeof eagle.folder.all === 'function'
+      && typeof eagle.folder.recent === 'function'
+      && typeof eagle.tag.all === 'function'
+      && typeof eagle.item.addFile === 'function'
+      && typeof window.CollectItem === 'function';
+  })()`);
+  // CollectItem 字段默认值（models/collect-item.js 逐字：含 width/height 2048 与 star undefined）
+  await assertExprOn(pw, 'pw4g-collect-item-shape', `(() => {
+    const item = new window.CollectItem();
+    return item.title === '' && item.src === '' && item.url === '' && item.type === 'image'
+      && Array.isArray(item.tags) && item.tags.length === 0 && item.annotation === ''
+      && item.width === 2048 && item.height === 2048 && item.star === undefined;
+  })()`);
+
   // ── 9b-3（R5）：资料夹「新建子资料夹」确认框 = swal 消费面 ──
   // createFolder（folderPanel.tsx:446）用 swal({input:'text', showCancelButton, …})，
   // 是本窗唯一 SweetAlert 调用点。断言契约（vendor sweetalert2 与自研 installDialog 均应通过）：

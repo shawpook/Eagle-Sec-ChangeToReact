@@ -16,43 +16,18 @@
 	<body>
 		<!-- 阶段9b-1：collect-window React 化——Angular（CollectApp/CollectController/四个面板指令/
 		     modules）已由 src/app/react/collect-window/* 承接；body 只剩 React 宿主。
-		     保留：js/lib/api/*（window.eagle 数据面，fetch 经 shims 重写 41595→测试后端）、
-		     vendors（chinese_convert/pinyinlite/tiny-pinyin，面板引擎与 save 依赖；R5 起
-		     jquery/jquery-ui/sweetalert2 已全部退役）、
-		     models/collect-item.js（plain JS 全局类）。 -->
+		     R5：js/lib/api/*（window.eagle 数据面）与 models/collect-item.js **全部退役**——
+		     逐字移植为 react/collect-window/api/*.ts，由入口的 installCollectApi() 在模块求值期
+		     装配（顺序与键集由 stage9b1 的 pw4g 断言钉住）。fetch 经 shims 重写 41595→测试后端。
+		     保留：vendors（chinese_convert/pinyinlite/tiny-pinyin，面板搜索与 save 依赖；
+		     jquery/jquery-ui/sweetalert2 已在 R5 前序批退役）。 -->
 		<div id="eagle-collect-react-host"></div>
 
-		<script>
-			// b1-9bz-E9（P5）：require 链 boot 摘除——appRoot/settings/preferences 由 shimsLegacy
-			//（React 入口第一 import）等价供给（electronSettings mock 同一实例）。
-			window.eagle = {};
-		</script>
-		<script src="js/lib/api/utils.js"></script>
-		<script src="js/lib/api/env.js"></script>
-		<script src="js/lib/api/crypto.js"></script>
-		<script src="js/lib/api/i18n.js"></script>
-		<script src="js/lib/api/fetch.js"></script>
-		<!-- R5：url-enlarger.js 标签退役——该文件在采集窗目录不存在（404），且本窗零消费
-		     `eagle.urlEnlarger`（唯一消费点是主窗 BatchSavePanel）。 -->
-		<script src="js/lib/api/folder.js"></script>
-		<script src="js/lib/api/library.js"></script>
-		<script src="js/lib/api/tag.js"></script>
-		<script src="js/lib/api/item.js"></script>
-		<script src="js/lib/api/swal-dialog.js"></script>
-
 		<!-- 外部套件 -->
-		<!-- R5：jquery-1.8.0.min.js + jquery-ui.min.js 退役——本窗 React 代码零 jQuery 消费
-		     （D-2f 已把 jQuery UI sortable/draggable/resizable 换自研），classic 侧仅剩
-		     env.js 的 isDOMReady 与 swal-dialog.js 的 iframe 操作，均已改 Native。 -->
-		<!-- R5：sweetalert2.all.min.js 退役——window.swal 由 entry 的 installDialog()
-		     （自研 react/core/dialog.ts，.swal2-* 类名逐字复刻）供给。 -->
 		<script src="js/vendors/chinese_convert.js"></script>
 		<script src="js/vendors/pinyinlite.js"></script>
 		<script src="js/vendors/tiny-pinyin.js"></script>
 
-		<!-- 模型（plain JS 全局类） -->
-		<script src="js/models/collect-item.js"></script>
-		<script>window.CollectItem = CollectItem;</script>
 	<script type="module" src="/src/app/react/collect-window/entry.tsx"></script>
 	</body>
 </html>

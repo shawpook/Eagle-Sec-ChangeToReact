@@ -9288,3 +9288,74 @@ WARN；②想「注掉」一个死标签却消不掉 WARN。新口径 = **「运
 动态测试**——因为 404 标签不影响其它能力，而消费点的 `typeof x === 'function'` 守卫又让能力缺陷无声。
 结论：**静态资源可达性必须由静态门禁兜底**（dist-entry-check + 两个窗口的运行时资源断言），
 不能只靠行为测试。
+
+---
+
+## R5 实施：采集窗旧 API 全局迁移收官（`js/lib/api/*` + `collect-item.js` → TS 模块）
+
+**批边界**：采集窗剩余 12 个 classic 脚本（11 个 API + 1 个模型类）逐字移植为
+`src/app/react/collect-window/api/*.ts`，HTML 脚本区只剩三个拼音/简繁 vendor；
+源文件全部删除。改动：`collect-window/index.html`、`collect-window/entry.tsx`、新增 api/ 13 个 TS 模块、
+`tests/react-stage9b1-smoke.mjs`（+3 断言）。
+
+### 1. 先测后迁：用探针取「迁移前事实」，不靠推断
+
+迁移前先跑一次**实测探针**（临时脚本，已删）连到真实 Electron 采集窗，取回：
+
+- `Object.keys(window.eagle).sort()` = `["crypto","dialog","env","fetch","fetchLargeJSON",
+  "folder","i18n","item","library","tag","utils"]`（**11 键**）
+- 各键类型 + 关键方法面存在性
+- `eagle.logger` / `eagle.runtime` / `eagle.extension` / `eagle.screenCapturer` / `eagle.preference`
+  全部 **undefined**
+- `eagle.env.shouldShowNewCollectWindow(null)` **抛错**（读 `eagle.preference.usingCollect`）
+
+这几条事实直接决定了迁移的取舍（见下节），也成了验收判据（pw4g）。
+
+### 2. 迁移中的三个关键决策（都有事实依据）
+
+1. **`preference.js` 不移植，直接删除**。它**从未被任何 `<script>` 标签加载**（11 个 API 文件里唯一
+   没上页的），因此 `eagle.preference` 迁移前就是 undefined；其消费者只有 `env.isReady()` /
+   `env.shouldShowNewCollectWindow()` / `i18n.init()`，三者在本窗均无调用方。删除它使键集**保持不变**
+   （pw4g 断言 preference **不得**出现）——这不是遗漏，是被断言钉住的等价。
+2. **`eagle.logger`/`runtime`/`extension`/`screenCapturer` 照原样保留引用，不补实现**。
+   逐条核对可达性后确认：这些引用只出现在 `result.isRedirect` 分支、`item.addURL` / `batchSave`
+   （本窗无调用方）等**不可达路径**上。补一个 console logger 会改变这些路径的行为（ReferenceError →
+   静默继续），属未经测试验证的行为改动，故不做；模块头注释里逐条登记了不可达原因。
+3. **隐式全局 `isRedirect = true` 收为模块局部**。原 classic 脚本是 sloppy mode，该赋值创建隐式全局；
+   ESM 是严格模式，同样写法会抛 ReferenceError。该标志全仓无读取方且所在分支不可达，故收为
+   `let isRedirect = false`（对可达路径零影响），并在文件头注明。
+
+### 3. 时序：装配必须早于 controller 的求值期 IIFE
+
+`controller.ts` 模块尾有一个立即执行的 IIFE，**求值期**同步读 `eagle.env.browser.name` /
+`eagle.env.os.isMac`。故装配放在副作用模块 `api/installEagleApi.ts`（模块顶层调用
+`installCollectApi()`），并让 entry.tsx 以 `import './api/installEagleApi'` **先于** `import './shell'`
+——ESM 按 import 声明顺序求值依赖，这一条把「谁先谁后」变成源码可读的结构事实，而不是运行期巧合。
+
+### 4. 跨模块引用：`eagleRef.ts` 的惰性 Proxy
+
+各 API 模块之间互相引用（`utils` 读 `eagle.logger`、`env` 读 `eagle.fetch`、`item` 读 `eagle.utils`…），
+而模块求值**早于**装配。故导出 Proxy 转发到当时的 `window.eagle`，使各模块得以**保留原脚本里
+`eagle.foo` / `eagle.foo = new Foo()` 的逐字写法**——把 1800 行的转写风险压到最低（改动集中在
+类型标注与少量严格模式适配，方法体逐字）。
+
+### 5. 验收：形状等价 + 行为回归
+
+- **新增 `pw4g` 三断言**（形状等价，迁移的判据）：
+  - `pw4g-eagle-keys`：键集**逐字**等于迁移前实测值（排序后全等，多一个少一个都 FAIL）；
+  - `pw4g-eagle-order`：11 键类型 + 消费面子命名空间/方法面（`utils.tree.walk`、`utils.url.isSameHost`、
+    `env.os`/`env.browser`、`library.normalizePath`、`folder.all/recent/create`、`tag.all`、`item.addFile`
+    + `window.CollectItem`）；
+  - `pw4g-collect-item-shape`：CollectItem 九字段默认值（含 `width/height === 2048`、`star === undefined`）。
+  - **负向验证**：从 `installCollectApi()` 注释掉 `eagle.crypto` 一行 → `pw4g-eagle-keys` +
+    `pw4g-eagle-order` 立刻 FAIL；恢复即 PASS。
+- **行为回归**：`react-stage9b1` 全绿（init 序列 / 资料夹面板 60+ 项 vs-repeat 切片与滚底 / 星等 /
+  标题写回 / save 数据面 / 右键菜单 / tag 面板新建标签 / swal 弹窗 / jQuery 退役 / 资源可达）；
+  `react-stage9a2`、`react-stage9a3`、`collect-save-closed-loop` 全 OK；
+  `typecheck` 0 诊断（新模块**无一条 @ts-nocheck**，全部纳入门禁）；`sentinel` OK；资源审计 0 死引用。
+
+### 6. 结果
+
+采集窗的 classic 数据面**清零**：`js/` 下只剩 `vendors/{chinese_convert,pinyinlite,tiny-pinyin}.js`
+（面板拼音/简繁搜索在用）。累计本 R5 已在采集窗退役 jQuery、jQuery UI、SweetAlert2、
+shortcut-manager 相关的全部经典脚本与 12 个 API 文件。

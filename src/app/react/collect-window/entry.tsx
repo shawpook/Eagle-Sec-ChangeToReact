@@ -1,4 +1,8 @@
 import '../core/shimsLegacy';
+// R5：采集窗 window.eagle / window.CollectItem 的装配必须在 ./shell（→ controller.ts 模块尾
+// 立即执行的 IIFE，求值期同步读 eagle.env.browser.name）之前完成。ESM 按 import 声明顺序求值
+// 依赖，故本副作用模块置于 shell 之前即可，无需依赖外层调用顺序。
+import './api/installEagleApi';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
 import CollectShell from './shell';

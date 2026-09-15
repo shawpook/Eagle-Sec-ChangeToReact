@@ -9521,3 +9521,29 @@ parentIpc(): any         // 原生 ipcRenderer
 - 残留引用核查：`grep -rn "frontend/document-viewer"` 仅剩历史文档
   （迁移报告/计划/QA 记录，属「迁移前状态」的记录，按本仓惯例不改写）与本批 `项目结构.md`/台账中的
   「R5 由…迁入」说明。
+
+---
+
+## R5 收官：全量回归套件 ALL GREEN（71/71）
+
+R5 全部计划项完成后（偏好窗 / 采集窗 / 预览窗 / 六查看器 + 文档查看器），跑一次全量套件：
+
+```
+REACT SUITE ALL GREEN      ← 71/71 OK，零 FAIL、零 RETRY
+```
+
+关键项确认（逐行取自套件输出）：`react-rewrite-sentinel`(1) / `continuous-grid-layout`(4) /
+`shim-module-boundaries`(5) / `typecheck`(6) / `scope-field-convergence`(7) /
+`react-stage8e2`(33，偏好窗) / `react-stage9b1`(36，采集窗) /
+**`main-ui-workflow-closed-loop`(48)** / `continuous-grid-scroll`(61) 全 OK。
+
+**关于第 48 项**：它在本批过程中被观察到失败（inspector `no-event`），但对照实验证明其失败在
+R5 之前的状态下同样复现（3 次中 2 次、签名逐字相同），且同一配置下也出现过连续通过——
+属**既有 flaky**。本次全量运行中它一次通过，与「低频偶发」的记载一致。该实验的完整矩阵已记在
+上文「预览窗 watcher 门面收窄」一节的第 4 小节，作为 R7「核验历史低频失败并记录复现证据」的证据。
+
+**R5 净产出小结**（9 个提交）：偏好窗 tippy/ShortcutManager 退役；采集窗 SweetAlert2/jQuery/jQuery UI
+退役 + 12 个旧 API classic 脚本 TS 化；预览窗 watcher 门面收窄；六查看器父窗通道具名化；
+文档查看器归位；哨兵 `scopedOut` 豁免全撤（C-6 全仓）；资源可达性守卫 + 全仓死引用清扫。
+其中修复**六处真实缺陷**（两窗 tippy 漏摘、采集窗 swal CSS 随 vendor 丢失、主题气泡面板切换后
+失效与 popper 泄漏、字体查看器气泡失效、3D 嵌入页引擎 404），全部由新增断言暴露并有负向验证。

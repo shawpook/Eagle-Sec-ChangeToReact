@@ -9,13 +9,14 @@
 import '../../core/shimsLegacy';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import { driverScope, viewerParent } from '../shared/parentChannel';
 
 function GifPlayer() {
   const insRef = useRef<HTMLImageElement | null>(null);
   const fakeRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    try { (window.parent as any).focus(); } catch (err) { /* parent focus 失败不阻塞 */ }
+    try { viewerParent().focus(); } catch (err) { /* parent focus 失败不阻塞 */ }
     const urlParams = window.location.search.substr(1).split('&').reduce(function (accumulator: any, currentValue: string) {
       const pair = currentValue
         .split('=')
@@ -28,7 +29,7 @@ function GifPlayer() {
       return accumulator;
     }, {});
 
-    const parent = window.parent as any;
+    const parent = viewerParent();
     const appRoot = parent.require('app-root-path');
     const URL_MODULE = parent.require(appRoot + '/my_modules/url');
     const gifPath = urlParams.path;
@@ -47,7 +48,7 @@ function GifPlayer() {
 
     console.time('gifPlayer.load');
     // b1-9bz-E5-3：父窗驱动面优先 __eagleDriver，过渡期回落 parent.$bodyScope。
-    const parentScope = parent.__eagleDriver || parent.$bodyScope;
+    const parentScope = driverScope();
     let startTime: number | undefined;
 
     gifPlayer.load(function () {

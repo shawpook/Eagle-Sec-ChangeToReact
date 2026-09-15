@@ -9421,3 +9421,49 @@ function`），当时只知「环境相关、与插件加载失败同现」。�
 点明的「shim 的 updateMany 走后端 HTTP，负载下整体失败」类事件丢失——**记为 R7「核验历史低频失败
 并记录复现证据」的一条实测证据**（复现率约 2/3，非 1/10 的偶发）。
 实验用文件均已还原（`git status` 仅剩本批的 `preview-window/controller.ts`）。
+
+---
+
+## R5 实施：查看器父窗通道收敛为具名接口（`viewers/shared/parentChannel.ts`）
+
+**改动**：新增 `src/app/react/viewers/shared/parentChannel.ts`；六个查看器入口中**五处文件**的
+`window.parent as any` 与重复的驱动面优先序全部改走该具名面（exif 为被动渲染页，无父窗调用）。
+
+### 1. 迁移前的实际形态（勘察）
+
+六个查看器都是 main.cjs 建窗后内嵌的页面，凭 iframe 继承的 nodeIntegration 直读 `window.parent`：
+
+| 能力 | 用法 | 出现处 |
+|---|---|---|
+| Node 模块 | `parent.require('fs' / 'path' / 'app-root-path' / 'fs-extra' / '@electron/remote')` | raw / gif / text-editor / font / native |
+| 平台信息 | `parent.process.platform` / `.arch` | native / font |
+| 原生 IPC | `parent.ipcRenderer.send/invoke/on` | native / text-editor |
+| 全局面 | `parent.global.EAGLE_THUMBNAIL_TEMP_PATH` | native |
+| 父窗聚焦 | `(window.parent as any).focus()` | raw / gif |
+| **驱动面** | `parent.__eagleDriver \|\| parent.$bodyScope` | gif / font（**同一优先序写了两遍**） |
+
+驱动面用于回投父窗（`gifViewer.onProgress/onFinished`、`inspector.newName` + `imagesChange`、
+`preferences.general.language`）。优先 `__eagleDriver`（E5-3 起 core/driverApi.ts 的显式白名单面）
+是既定约定，但散落两处、且各入口都自己 `as any`——没有单一 seam。
+
+### 2. 收敛后的面（named，语义逐字不变）
+
+```ts
+viewerParent(): any      // 父窗对象（require/process/ipcRenderer/global/focus）
+driverScope(): any       // __eagleDriver 优先、过渡期回落 $bodyScope（原两处重复写法归一）
+parentRequire(name)      // 最常用能力：parent.require(name)
+parentIpc(): any         // 原生 ipcRenderer
+```
+
+全部为**惰性读取**（每次调用现取 `window.parent`），不在模块求值期缓存；父窗缺失时的行为与原先
+`(window.parent as any).x` 完全一致（照样抛错），**不新增吞错**。
+
+### 3. 验证
+
+- `rg 'window.parent as any' src/app/react` —— 仅剩 `parentChannel.ts` 内（单点 seam）；
+  五个入口文件的散落写法清零，驱动面重复写法由 2 处归 1 处。
+- `react-stage-smoke`（一个测试内覆盖 exif/raw/native/gif/text-editor/font 六个查看器的 React
+  接管闭环）— **passed**；`native-preview-closed-loop`（native 查看器 + `parent.require(fs/path/
+  child_process)` 路径）、`text-save-closed-loop` / `text-detail-closed-loop`（text-editor 的
+  `parent.require(fs/fs-extra/@electron/remote)` 与保存链）— 全 OK。
+- `typecheck` 0 诊断。

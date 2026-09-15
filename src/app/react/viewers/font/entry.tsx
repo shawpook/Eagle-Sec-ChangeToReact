@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fontI18nStrings, fontTranslation, buildAlphabetHTML } from './fontContent';
 import { installTippy } from '../../core/tippyLite';
+import { driverScope, viewerParent } from '../shared/parentChannel';
 
 // R5：本 bundle 不走 installBundleGlobals（那是主窗装配面），在模块求值期自行补装。
 // font-viewer.html 原引用的 ../js/vendors/tippy.js 已随 b1-9bx-A 退役批从磁盘删除，但标签
@@ -87,9 +88,9 @@ function FontViewer() {
     {}
   );
 
-  const parent = window.parent as any;
+  const parent = viewerParent();
   // b1-9bz-E5-3：父窗驱动面优先 __eagleDriver（显式白名单），过渡期回落 parent.$bodyScope。
-  const $parentScope = parent.__eagleDriver || parent.$bodyScope;
+  const $parentScope = driverScope();
   const lng: string = $parentScope.preferences.general.language;
   const platform: string = parent.process.platform;
   const theme: string = urlParams.theme || 'gray';

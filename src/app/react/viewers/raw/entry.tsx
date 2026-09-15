@@ -8,6 +8,7 @@
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { viewerParent } from '../shared/parentChannel';
 
 function toArrayBuffer(buf: any): ArrayBuffer {
   const ab = new ArrayBuffer(buf.length);
@@ -24,7 +25,7 @@ function RawPlayer() {
   const [spec, setSpec] = useState<{ thumbUrl: string; className: string; rawPath: string } | null>(null);
 
   useEffect(() => {
-    try { (window.parent as any).focus(); } catch (err) { /* parent focus 失败不阻塞 */ }
+    try { viewerParent().focus(); } catch (err) { /* parent focus 失败不阻塞 */ }
     const params = new URLSearchParams(window.location.search);
     const dirPath = params.get('path') ?? '';
     const ext = params.get('ext') ?? '';
@@ -33,7 +34,7 @@ function RawPlayer() {
     const thumbPath = decodeURIComponent(dirPath) + rawName + '_thumbnail.png';
     let thumbUrl = '';
     try {
-      const parent = window.parent as any;
+      const parent = viewerParent();
       const appRoot = parent.require('app-root-path');
       const URL_MODULE = parent.require(appRoot + '/my_modules/url');
       thumbUrl = URL_MODULE.pathToFileURL(thumbPath).href;
@@ -61,7 +62,7 @@ function RawPlayer() {
     // dcraw 内嵌缩略图抽取（原 setTimeout 100ms 逐字）
     const timer = setTimeout(() => {
       try {
-        const parent = window.parent as any;
+        const parent = viewerParent();
         const fs = parent.require('fs');
         const buf = fs.readFileSync(rawPath);
         const jpegBuf = (window as any).dcraw(buf, { extractThumbnail: true });

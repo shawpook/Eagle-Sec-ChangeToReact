@@ -13,6 +13,7 @@
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { viewerParent } from '../shared/parentChannel';
 
 const MAX_DIMENSION = 120000000;
 
@@ -46,7 +47,7 @@ function NativeViewer() {
   }
 
   useEffect(() => {
-    const parent = window.parent as any;
+    const parent = viewerParent();
     const urlParams = window.location.search.substr(1).split('&').reduce(function (accumulator: any, currentValue: string) {
       const pair = currentValue
         .split('=')

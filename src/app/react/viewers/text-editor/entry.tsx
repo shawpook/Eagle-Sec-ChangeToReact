@@ -17,6 +17,7 @@
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { viewerParent } from '../shared/parentChannel';
 
 // HTML 内联 debounce 逐字（func, wait, immediate）
 function debounce(func: any, wait: number, immediate?: boolean) {
@@ -90,7 +91,7 @@ function TextEditor() {
   useEffect(() => {
     const s = stateRef.current;
     const saveImpl = function (this: any, callback: any) {
-      const parent = window.parent as any;
+      const parent = viewerParent();
       const fs = parent.require('fs');
       const el = contentRef.current;
       const text = el ? (el.textContent || '') : '';
@@ -159,7 +160,7 @@ function TextEditor() {
       if (!window.parent) {
         return;
       }
-      const parent = window.parent as any;
+      const parent = viewerParent();
       const fs = parent.require('fs');
       setIsLoaded(false);
       s.isLoaded = false;
@@ -201,7 +202,7 @@ function TextEditor() {
 
   // ── 初始化（参数解析 + txtPath + 首次 refresh + focus 对账）──
   useEffect(() => {
-    const parent = window.parent as any;
+    const parent = viewerParent();
     const s = stateRef.current;
     try { window.focus(); } catch (err) { /* window.focus 失败不阻塞 */ }
 
@@ -328,7 +329,7 @@ function TextEditor() {
   // ── 星标/切换直通 parent（text-editor.js 73-111 逐字；$eavlAsync 原始拼写为原 bug，经
   //    $evalAsync 修正语义——原行 `$parentScope.$eavlAsync()` 是静默 no-op）──
   const parentCall = (fn: string) => {
-    const _pw = window.parent as any;
+    const _pw = viewerParent();
     const p = _pw.__eagleDriver || _pw.$bodyScope;
     if (p && typeof p[fn] === 'function') p[fn]();
   };

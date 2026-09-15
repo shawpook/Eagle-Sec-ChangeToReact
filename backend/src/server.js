@@ -40,6 +40,7 @@ import { ColorAnalyzerService } from './color-analyzer.js';
 import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
+import { ImageTransformError, ImageTransformService } from './image-transform-service.js';
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
 import { isTextThumbnailExtension } from './file-format-policy.js';
 import { TextDetailError, readTextItemDetail } from './text-detail-service.js';
@@ -158,6 +159,11 @@ const customThumbnailService = new CustomThumbnailService({
     ...options,
     clearCustomThumbnail: true,
   }),
+});
+// F06：PNG/WebP 的旋转与翻转走后端 sharp（渲染层 Canvas 路径脆弱且被截获）。
+// 缩略图重生成与 metadata 宽高写入复用既有 ThumbnailTaskService 事务提交点。
+const imageTransformService = new ImageTransformService({
+  regenerate: (library, itemId) => thumbnailTasks.generate(library, itemId),
 });
 const controlledDownloader = getControlledDownloadService();
 const captureService = new CaptureService({
@@ -1849,6 +1855,15 @@ function sendThumbnailTaskError(res, err) {
   res.status(statusCode).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_GENERATION_FAILED' });
 }
 
+async function imageTransformResponse(req, res) {
+  try {
+    res.json(ok(await imageTransformService.transform(currentLibrary, req.body || {})));
+  } catch (err) {
+    const statusCode = err instanceof ImageTransformError ? err.statusCode : (err.statusCode || 500);
+    res.status(statusCode).json({ ...fail(err.message), code: err.code || 'WRITE_FAILED' });
+  }
+}
+
 function sendTextDetailError(res, err) {
   const statusCode = err instanceof TextDetailError ? err.statusCode : (err.statusCode || 422);
   res.status(statusCode).json({ ...fail(err.message), code: err.code || 'TEXT_DETAIL_READ_FAILED' });
@@ -1900,6 +1915,7 @@ app.post('/api/item/thumbnailTask/cancel', (req, res) => {
 app.post('/api/item/setCustomThumbnail', setCustomThumbnailResponse);
 app.post('/api/item/resetCustomThumbnail', resetCustomThumbnailResponse);
 app.post('/api/item/refreshThumbnail', refreshThumbnailResponse);
+app.post('/api/item/imageTransform', imageTransformResponse);
 
 app.post('/api/item/refreshPalette', async (req, res) => {
   try {
@@ -2562,6 +2578,7 @@ app.post('/api/v2/item/addToFolder', (req, res) => {
 app.post('/api/v2/item/setCustomThumbnail', setCustomThumbnailResponse);
 app.post('/api/v2/item/resetCustomThumbnail', resetCustomThumbnailResponse);
 app.post('/api/v2/item/refreshThumbnail', refreshThumbnailResponse);
+app.post('/api/v2/item/imageTransform', imageTransformResponse);
 app.post('/api/v2/item/thumbnailTask/start', (req, res) => {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;

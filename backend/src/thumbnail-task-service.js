@@ -334,12 +334,29 @@ export class ThumbnailTaskService {
       child: null,
       options,
     };
+    // saveItems 可能失败（例如库写锁被别人持有）。失败时必须把刚写入的注册信息撤干净，
+    // 否则 itemQueues 会永久留住该条目，之后任何重试都只会得到 THUMBNAIL_TASK_CONFLICT。
+    const previousProcessing = item.processingThumbnail;
+    const previousTask = item.thumbnailTask;
+    const hadError = Object.prototype.hasOwnProperty.call(item, 'thumbnailError');
+    const previousError = item.thumbnailError;
     this.tasks.set(task.id, task);
     this.itemQueues.add(key);
     item.processingThumbnail = true;
     item.thumbnailTask = task.id;
     delete item.thumbnailError;
-    saveItems(library);
+    try {
+      saveItems(library);
+    } catch (err) {
+      this.tasks.delete(task.id);
+      this.itemQueues.delete(key);
+      if (previousProcessing === undefined) delete item.processingThumbnail;
+      else item.processingThumbnail = previousProcessing;
+      if (previousTask === undefined) delete item.thumbnailTask;
+      else item.thumbnailTask = previousTask;
+      if (hadError) item.thumbnailError = previousError;
+      throw err;
+    }
     this.pending.push(task);
     this.#drain();
     return snapshotTask(task);

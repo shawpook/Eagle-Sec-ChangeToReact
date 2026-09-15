@@ -505,8 +505,11 @@ export function commitLibrarySnapshot(library, options = {}) {
   }
   library.metadata.generation = currentGeneration + 1;
   const targets = buildLibraryTargets(library);
-  const lock = acquireLibraryLock(rootDir, options.lockOptions || {});
+  let lock = null;
   try {
+    // 取锁也必须待在 try 内：上面已经把内存 generation +1，若在这里失败还逃过 catch 的还原，
+    // 内存态就永久领先磁盘态，此后每次 saveItems 都会 LIBRARY_VERSION_CONFLICT。
+    lock = acquireLibraryLock(rootDir, options.lockOptions || {});
     const prepared = prepareTransaction(library, targets, options.fileOperations || [], lock, { targetGeneration: library.metadata.generation });
     let result;
     try {

@@ -232,12 +232,11 @@
          react/core/artstation.ts 经 installBundleGlobals 供给（$.getJSON→fetch、
          parallelLimit 本地化、getUserInfo 两处哑雷拆除，录档见 PROGRESS P3-bx）；
          BatchRenameArtstationModals 的 vaildateUrl/blur 校验链消费面零改动。 -->
-    <script>
-        if (typeof module === 'object') { window.module = module; module = undefined; }
-        if (window.module) module = window.module;
-        // b1-9bz-E9（P5）：appRoot/i18n/EagleConfig 内联 boot 摘除——shimsLegacy（React 入口
-        // 第一 import）以同一 require 链等价供给（appRoot={path:'/src'} + MockI18n + config.js）。
-    </script>
+    <!-- R6：内联 `module` 兼容脚本删除——它把 Electron renderer 的 CommonJS `module` 经
+         `window.module` 转给当时的经典应用脚本（webpack UMD bundle 时代产物）。现 index.html
+         已无任何经典应用脚本（唯一脚本 = 下面 type="module" 的 React 入口，ESM 有自己的
+         `module` 语义不需该转接），且全仓检索 `window.module` 零消费方；原作用域内
+         `typeof module === 'object'` 在浏览器恒为 false，两条语句本就是 no-op。 -->
     <!-- b1-9bx2：flatpickr v3.0.6（window.flatpickr 函数选择器 + window.FlatpickrInstance
          构造器）+ l10n/zh.js 退役——自研月历（react/core/flatpickrLite.ts）经
          installBundleGlobals 供给双全局（供给链契约 stage-smoke b1-9z 断言面不变；

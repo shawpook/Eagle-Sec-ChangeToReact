@@ -28,7 +28,7 @@ const ENTRY_PAGES = [
   'src/app/gif-viewer/index.html',
   'src/app/text-editor/text-editor.html',
   'src/app/font-viewer/font-viewer.html',
-  'frontend/document-viewer/index.html',
+  'src/app/react/viewers/document/index.html',
 ];
 // 静态页（无 React 入口）：只查存在性与资源解析。
 const STATIC_PAGES = ['pages.html'];

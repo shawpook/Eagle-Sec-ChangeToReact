@@ -57,7 +57,7 @@ function collectVisibleAssetIds(): string[] {
 
 function viewerBaseUrl(): string {
   const origin = window.location.origin;
-  return `${origin}/frontend/document-viewer/index.html`;
+  return `${origin}/src/app/react/viewers/document/index.html`;
 }
 
 // Measure Eagle's own top toolbar so the viewer container leaves exactly the

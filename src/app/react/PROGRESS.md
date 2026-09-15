@@ -9467,3 +9467,57 @@ parentIpc(): any         // 原生 ipcRenderer
   child_process)` 路径）、`text-save-closed-loop` / `text-detail-closed-loop`（text-editor 的
   `parent.require(fs/fs-extra/@electron/remote)` 与保存链）— 全 OK。
 - `typecheck` 0 诊断。
+
+---
+
+## R5 实施：文档查看器归入 `src/app/react/viewers/document`（R5 计划项 5）
+
+**改动**：整树迁移 + 六处引用同步。
+
+| 面 | 改动 |
+|---|---|
+| 源树 | `frontend/document-viewer/` → `src/app/react/viewers/document/`（index.html + src/ 20 个文件；git 识别为 rename） |
+| 路由/URL | `core/documentViewer.ts:60` `${origin}/src/app/react/viewers/document/index.html` |
+| 构建入口 | `frontend/vite.preview.config.mjs` 的 `documentViewerEntry`（rollupOptions.input 键名 `document-viewer` 不变） |
+| **开发中间件** | 见下节——旧址由 Vite 原生 HTML 管线服务，新址落在 `/src/app/` 前缀下会被通用分支截走，故新增显式分支复刻原注入面 |
+| 主进程断言 | `electron/main.cjs` 的 iframe URL 子串断言 |
+| 门禁清单 | `tests/dist-entry-check.mjs` 入口页清单；`tests/typecheck.mjs` 的 scope guard |
+| 类型范围 | `tsconfig.json` 下线 `frontend/document-viewer/src/**` 两条独立 include（新址已在 `src/app/react/**` 覆盖内） |
+| 文档 | `项目结构.md`（目录树与路径）、`docs/frontend-entry-ledger-2026-09-14.md`（第 11 行台账 + R5 迁移记录） |
+
+### 1. 唯一有技术风险的点：开发态注入面
+
+旧址 `frontend/document-viewer/index.html` 不在任何中间件分支内 → 走 **Vite 原生 HTML 管线** →
+`transformIndexHtml` 的 `injectViewerConfig` 注入 `__EAGLE_API_BASE_URL` + `__EAGLE_THUMBNAIL_URL`
+（`lib/api.ts` 三个全局的其中两个），并由 plugin-react 自动补 refresh 前置。
+
+新址 `/src/app/react/viewers/document/index.html` 命中中间件的通用分支
+（`url.startsWith('/src/app/') && url.endsWith('.html')`）→ 那分支给的是
+`injectPreviewScripts`（API + **EXTENSION**，非 THUMBNAIL）与 collect 模板清洗，**注入面不同**。
+
+故在该通用分支**之前**新增显式分支，逐字复刻原注入面：
+`injectDevPreamble(injectViewerConfig(html))` —— 前者等价 plugin-react 的 refresh 前置（中间件直出
+会绕过该钩子），后者即迁移前 transformIndexHtml 对本文档页做的事。**没有引入新的注入语义**，
+也没有让文档页落到通用分支上去（那会改变它拿到的全局）。
+
+### 2. 类型门禁的 scope guard：收敛 + 加强
+
+- `tsconfig.json` 删除 `frontend/document-viewer/src/**` 两条（新址已被 `src/app/react/**` 覆盖）。
+- `tests/typecheck.mjs` 的 `REQUIRED_INCLUDE` 随之收敛为两个 `src/app/react` glob；
+  但「文档查看器不得被排除」的意图**保留并加强**：原守卫只禁 `exclude: frontend`，
+  现改为 `FORBIDDEN_EXCLUDE = ['frontend', 'frontend/', 'src/app/react/viewers/document', ...]`
+  —— 新址被单独排除同样会被拦下。**这是收紧而非放宽**（可见范围不变、被排除的路径集合变大）。
+
+### 3. 验证（逐面）
+
+- 开发态整链：`node tests/document-viewer-ui-closed-loop.mjs` — **OK**（该测试经 dev 中间件加载
+  iframe，并断言 iframe.src 与容器 `data-viewer-ready` 握手、渲染面 `.w-md-editor` 等存在，
+  即上述注入面与 URL 构造一并被覆盖）。
+- 后端 API 面：`node tests/document-viewer-api-smoke.mjs` — OK。
+- 产物面：`npm run build` exit 0；`node tests/dist-entry-check.mjs` — **FAIL 0，WARN 2**
+  （文档页入口 `PASS src/app/react/viewers/document/index.html 入口 /assets/document-viewer-*.js`；
+  WARN 仍是 `pages.html` 那两条有意排除项）。
+- 类型：`node tests/typecheck.mjs` — 0 诊断（新址文件全部在检查范围内；scope guard 已按上节更新）。
+- 残留引用核查：`grep -rn "frontend/document-viewer"` 仅剩历史文档
+  （迁移报告/计划/QA 记录，属「迁移前状态」的记录，按本仓惯例不改写）与本批 `项目结构.md`/台账中的
+  「R5 由…迁入」说明。

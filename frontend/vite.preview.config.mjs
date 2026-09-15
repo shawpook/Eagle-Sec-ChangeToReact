@@ -7,7 +7,10 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../');
 const frontendPublic = path.resolve(here, 'public');
-const documentViewerEntry = path.resolve(here, 'document-viewer/index.html');
+// R5：文档查看器已从 frontend/document-viewer 迁入 src/app/react/viewers/document
+// （与其余六个查看器同址；其源码本就在 typecheck 的 src/app/react 范围内，迁移后不再需要
+// tsconfig 的独立 include 条目）。
+const documentViewerEntry = path.resolve(workspaceRoot, 'src/app/react/viewers/document/index.html');
 const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692';
 const apiTarget = process.env.EAGLE_API_URL || 'http://localhost:41695';
 const extensionTarget = process.env.EAGLE_EXTENSION_URL || 'http://localhost:41693';
@@ -157,6 +160,19 @@ export default defineConfig({
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.end(readReplacement('manage-device.html'));
             return;
+          }
+          // R5：文档查看器迁入 /src/app/react/viewers/document 后，其 HTML 落在 /src/app/ 前缀下，
+          // 会被下面的通用「其余页」分支截走——而那分支补的是 API+EXTENSION 与 collect 清洗，
+          // 与它迁移前经 Vite 原生 HTML 管线拿到的注入面不同（transformIndexHtml 的
+          // injectViewerConfig 注入 API+THUMBNAIL）。此处显式复刻原注入面，再手工补 refresh
+          // 前置（中间件直出会绕过 plugin-react 的 index.html 钩子）。
+          if (url === '/src/app/react/viewers/document/index.html') {
+            const file = path.join(workspaceRoot, url);
+            if (fs.existsSync(file)) {
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(injectDevPreamble(injectViewerConfig(fs.readFileSync(file, 'utf8'))));
+              return;
+            }
           }
           if (url.startsWith('/src/app/') && url.endsWith('.html')) {
             // R1：viewer/其余页的 React 入口已写入源 HTML，这里只补 API 地址与 refresh 前置脚本。

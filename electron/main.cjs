@@ -2396,7 +2396,7 @@ app.whenReady().then(async () => {
               const iframe = container.querySelector('iframe');
               if (!iframe) throw new Error('viewer iframe missing');
               const viewerUrl = String(iframe.src);
-              if (!viewerUrl.includes('/frontend/document-viewer/index.html')) {
+              if (!viewerUrl.includes('/src/app/react/viewers/document/index.html')) {
                 throw new Error('unexpected viewer url: ' + viewerUrl);
               }
 

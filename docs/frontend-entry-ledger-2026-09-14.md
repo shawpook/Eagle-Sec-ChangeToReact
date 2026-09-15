@@ -28,7 +28,7 @@
 | 8 | GIF 查看器 | `/src/app/gif-viewer/index.html` | 同路径 | `react/viewers/gif/entry.tsx` | 查看器子窗 | `window.SuperGif`（`./gif-player.js`）| 已构建 |
 | 9 | 文本编辑 | `/src/app/text-editor/text-editor.html` | 同路径 | `react/viewers/text-editor/entry.tsx` | 查看器子窗 | 原生 contenteditable | 已构建（同路径冲突已消除）|
 | 10 | 字体查看器 | `/src/app/font-viewer/font-viewer.html` | 同路径 | `react/viewers/font/entry.tsx` | 查看器子窗 | MediumEditor | 已构建 |
-| 11 | 文档查看器 | `/frontend/document-viewer/index.html` | 同路径（18 个 TS/TSX）| — | iframe 子窗（`core/documentViewer.ts:58`）| 自研渲染 | 已构建 |
+| 11 | 文档查看器 | `/src/app/react/viewers/document/index.html` | 同路径（18 个 TS/TSX）| — | iframe 子窗（`core/documentViewer.ts:60`）| 自研渲染 | 已构建 |
 | 12 | PDF 查看器 | `/src/app/pdf-viewer/web/viewer.html` | 同路径 | 无（PDF.js）| 查看器子窗 | PDF.js | 已交付（引擎页原样复制）|
 | 13 | 3D 查看器 | `/src/app/model-viewer/website/{index,embed}.html` | 同路径 | 无（O3DV）| 主+嵌入入口 | O3DV | 已交付（引擎页原样复制）|
 | 14 | 注册 / 设备管理 | `/src/app/{registration,manage-device}.html` | `frontend/public/replaced/*.html` | 无 | 顶层窗口 | — | 中间件直出，未进产物（有意）|
@@ -92,3 +92,10 @@ npm run test:production     # 产物入口/资源检查 + Electron 正式启动�
 npm run start:prod          # 本地静态服务 + 后端 + Electron（真实使用）
 node tests/typecheck.mjs
 ```
+
+> **R5 迁移记录（文档查看器）**：原 `frontend/document-viewer/` 已迁入 `src/app/react/viewers/document/`
+> （与其余六个查看器同址），源 HTML/TS/样式随迁；同步改造四处引用：`core/documentViewer.ts:60` 的 URL 构造、
+> `frontend/vite.preview.config.mjs`（rollupOptions 入口 + 开发中间件为该路径复刻 `injectViewerConfig` 注入面）、
+> `electron/main.cjs` 的 iframe URL 断言、`tests/dist-entry-check.mjs` 的入口页清单；
+> `tsconfig.json` 的独立 include 条目随之下线（新址已在 `src/app/react/**` 覆盖内）。
+

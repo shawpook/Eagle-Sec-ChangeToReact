@@ -4,9 +4,9 @@
  * R0–R2 期存量为 492 条诊断，故当时以「基线 + 防倒退」形式接入；R3 已将检查范围内
  * 诊断清零（492 → 0），因此门禁升级为「出现任何一条即失败」。
  *
- * 同时断言**检查范围**（scope guard）：`include` 必须覆盖主应用与
- * `frontend/document-viewer`，`exclude` 不得把 `frontend` 整体排除——防止后续
- * 通过缩小范围来「清零」。
+ * 同时断言**检查范围**（scope guard）：`include` 必须覆盖 `src/app/react`（R5 起文档查看器
+ * 亦在其内：frontend/document-viewer → src/app/react/viewers/document），`exclude` 不得排除
+ * `frontend` 或 `src/app/react/viewers/document`——防止后续通过缩小范围来「清零」。
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -19,15 +19,21 @@ const tsconfigPath = path.join(projectRoot, 'tsconfig.json');
 const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
 const include = (tsconfig.include || []).map(String);
 const exclude = (tsconfig.exclude || []).map(String);
-const REQUIRED_INCLUDE = ['src/app/react/**/*.ts', 'src/app/react/**/*.tsx', 'frontend/document-viewer/src/**/*.ts'];
+const REQUIRED_INCLUDE = ['src/app/react/**/*.ts', 'src/app/react/**/*.tsx'];
 const missing = REQUIRED_INCLUDE.filter((entry) => !include.includes(entry));
 if (missing.length > 0) {
   console.error('TYPECHECK_SCOPE_ERROR: tsconfig.include 缺少必需范围（不得缩小检查面）：');
   for (const entry of missing) console.error(`  - ${entry}`);
   process.exit(1);
 }
-if (exclude.some((entry) => entry === 'frontend' || entry === 'frontend/')) {
-  console.error('TYPECHECK_SCOPE_ERROR: tsconfig.exclude 不得整体排除 frontend（document-viewer 必须在检查范围内）');
+// R5：文档查看器由 frontend/document-viewer 迁入 src/app/react/viewers/document —— 原独立
+// include 条目（frontend/document-viewer/src/**）已并入 src/app/react/** 两个 glob，故 REQ 清单
+// 随之收敛；「不得把它排除在检查面外」的意图保留并**加强**：同时禁止排除 frontend 与新的
+// viewers/document 路径。
+const FORBIDDEN_EXCLUDE = ['frontend', 'frontend/', 'src/app/react/viewers/document', 'src/app/react/viewers/document/'];
+const badExclude = exclude.find((entry) => FORBIDDEN_EXCLUDE.includes(entry));
+if (badExclude) {
+  console.error(`TYPECHECK_SCOPE_ERROR: tsconfig.exclude 不得排除 ${badExclude}（文档查看器必须在检查范围内）`);
   process.exit(1);
 }
 
@@ -100,6 +106,6 @@ if (result.status !== 0) {
 }
 
 console.log(
-  `TYPECHECK_OK: 0 诊断（范围 = src/app/react + frontend/document-viewer）；`
+  `TYPECHECK_OK: 0 诊断（范围 = src/app/react，含 viewers/document 文档查看器）；`
   + `@ts-nocheck 台账 ${NOCHECK_LEDGER.length} 个文件（待撤销 ${NOCHECK_LEDGER.filter((f) => !f.includes('/shim/')).length}）`,
 );

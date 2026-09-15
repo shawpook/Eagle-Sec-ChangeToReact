@@ -5,6 +5,7 @@ import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
 import { getMigratedScopeField } from '../../core/scopeFieldBridge';
+import { reportUnmigratedAction } from '../../core/internalDispatch';
 import { getSortable, makeSortable } from '../interactions/sortable';
 import { openFileListContextMenu } from '../../services/miscMenuService';
 
@@ -45,7 +46,9 @@ function scopeFn(fn: string | ((...a: any[]) => any), ...args: any[]) {
   return (e?: any) => {
     // E4：字符串名按注册表解析（原 `scope[fn]` 动态取挂载的等价物）。
     const target = typeof fn === 'function' ? fn : getMigratedScopeField(fn)?.read();
-    if (typeof target !== 'function') return;
+    // F09（m1-f08f09-actions）：命中缺失时**不静默**上报（本文件 14 处名字多为未移植项，
+    // 且部分存在实参契约错位，需单独一轮迁移；上报使「未移植」不再伪装成「已实现」）。
+    if (typeof target !== 'function') { if (typeof fn === 'string') reportUnmigratedAction(fn, 'ListRegion.scopeFn'); return; }
     const ev = e && e.nativeEvent ? e.nativeEvent : e;
     target(...(args.length ? args : [ev]));
   };

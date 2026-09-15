@@ -29,6 +29,12 @@ export const EXTERNAL_SUPPLY_NAMES = [
   'activateFont', 'deactivateFont', 'isFontActivate', 'escHandler',
   // 主 UI 驱动脚本（electron/main.cjs）经 scope 调用
   'addImagesToFolder', 'copyAsPath', 'getRawPath', 'getRawUrl', 'select', 'startDrag',
+  // F08（m1-f08f09-actions）：字体查看器改造名 + 评级快捷键族——子窗按 `0`–`5` 与改名提交后
+  // 经 `parentCall('…')` 调用，修前既不在本契约、也不在 driverApi 白名单、更没有 scope 面挂载，
+  // 子窗的 `typeof === 'function'` 守卫恒假 → 改名与评级全部静默无反应。
+  // 实现见 `core/crossWindowActions.ts`（转发既有业务，无第二套持久化路径）。
+  'imagesChange', 'removeStar',
+  'changeTo1Star', 'changeTo2Star', 'changeTo3Star', 'changeTo4Star', 'changeTo5Star',
 ] as const;
 
 export type ExternalSupplyName = (typeof EXTERNAL_SUPPLY_NAMES)[number];
@@ -120,9 +126,9 @@ export function hasExternalSupply(name: string): boolean {
  *
  * 动态 import 必须保留（静态 import 会改变 ESM 求值顺序、打断启动链），但必须**真正被
  * await**：本函数把它记忆化成唯一 Promise，重复调用只装载/注册一次（ESM 模块缓存之外的
- * 第二道幂等闸）；装载完成且 10/10 注册齐全才把 `__eagleSupplyState` 置 'ok'。
+ * 第二道幂等闸）；装载完成且 `EXTERNAL_SUPPLY_NAMES` 全量注册齐全才把 `__eagleSupplyState` 置 'ok'。
  *
- * 取值扩展（原只有 'ok' / 'err:*'）：'pending'（已发起）→ 'ok'（10/10 注册完成）
+ * 取值扩展（原只有 'ok' / 'err:*'）：'pending'（已发起）→ 'ok'（契约全量注册完成）
  * / 'err:<message>'（import 失败或注册不完整）。
  */
 let supplyLoad: Promise<void> | null = null;

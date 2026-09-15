@@ -11,13 +11,14 @@ import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { runInBodyScope } from '../../core/appCore';
+import { reportUnmigratedAction } from '../../core/internalDispatch';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { flipImage, rotateImage, saveCrop } from '../../services/imageOpsService';
 import { flipVideo, rotateVideo, toggleGifPlay } from '../../services/mediaService';
 import { maximize } from '../../core/miscDomain';
 import { openFileWithDefault } from '../../core/itemDomain';
 import { openItemContextMenu } from '../../services/itemMenuService';
-import { openRatioContextMenu } from '../../services/miscMenuService';
+import { openRatioContextMenu, openSidebarVisibleContextMenu } from '../../services/miscMenuService';
 
 import { machineryNextGifFrame, machineryPrevGifFrame } from '../../services/mediaService';
 
@@ -54,9 +55,11 @@ const callM = (fn: (...a: any[]) => any, ...preArgs: any[]) => (e?: any) =>
   runInBodyScope((s: any) => {
     if (typeof fn === 'function') fn(s, ...callArgs(preArgs, e));
   });
+// F09（m1-f08f09-actions）：保留字符串回落（仍有未移植名走这里），但命中缺失时**不静默**。
 const callF = (name: string, ...preArgs: any[]) => (e?: any) =>
   runInBodyScope((s: any) => {
     if (s && typeof s[name] === 'function') s[name](...callArgs(preArgs, e));
+    else reportUnmigratedAction(name, 'DetailToolbar.callF');
   });
 
 /* ---------------- webview-toolbar 指令（bundle:64319 + 模板逐字） ---------------- */
@@ -253,7 +256,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
         <div
           id="toggle-all-btn"
           className="ic-btn"
-          onContextMenu={callF('openSidebarMenu')}
+          onContextMenu={call(openSidebarVisibleContextMenu)}
           onClick={callM(machineryToggleAll)}
         >
           <img src={iconSrc(theme, 'ic_toggle-sidebar.svg')} />

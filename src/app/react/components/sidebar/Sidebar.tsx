@@ -12,17 +12,14 @@ import { useMiscRawState, writeDraggedQuickAccess, writeFolderKeyword } from '..
 
 import { machineryOpenQuickSearch } from '../../core/keymapActions';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
-import { machineryOpenRecent, machineryOpenTrash } from '../../core/libraryDomain';
-import { machineryOpenAllTags, machineryOpenUntagged } from '../../core/tagManagerDomain';
+import { openView, ViewOpenName } from '../../core/viewOpenActions';
+import { reportUnmigratedAction } from '../../core/internalDispatch';
 import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
 import { newFolder } from '../../services/folderCoreService';
-import { machineryOpenRandom, machineryOpenCommunity } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
 import { eagleBus } from '../../global/bus';
 import { dom } from '../../utils/domLite';
-import { machineryOpenAll } from '../../services/folderCoreService';
-import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { toggleSourceMode, handleSourceAdd } from '../../core/sourceMode';
@@ -51,23 +48,31 @@ const num = (value: number | undefined): string => {
   return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
+// F09（m1-f08f09-actions）：本组字符串派发**保留**（目标名多为未移植项，删除会丢失迁移线索），
+// 但命中缺失时不再静默 —— 见 core/internalDispatch.ts 的上报面。
 const call = (fn: string, ...args: any[]) => (e: any) =>
   runInBodyScope((scope) => {
     const target = typeof scope[fn] === 'function' ? scope[fn] : undefined;
-    if (!target) return;
+    if (!target) { reportUnmigratedAction(fn, 'Sidebar.call'); return; }
     target(...(args.length ? args : [e]));
   });
 
 const callWithNode = (fn: string) => (e: any) => {
   const id = (e.currentTarget as HTMLElement)?.closest('[data-sidebar-node-id]')?.getAttribute('data-sidebar-node-id') || '';
   const live = findLiveNode(id);
-  runInBodyScope((scope) => scope[fn] && scope[fn](e, live));
+  runInBodyScope((scope) => {
+    if (typeof scope[fn] === 'function') scope[fn](e, live);
+    else reportUnmigratedAction(fn, 'Sidebar.callWithNode');
+  });
 };
 
 const stopAndCall = (fn: string, ...args: any[]) => (e: any) => {
   e.stopPropagation();
   e.preventDefault();
-  runInBodyScope((scope) => scope[fn] && scope[fn](...args));
+  runInBodyScope((scope) => {
+    if (typeof scope[fn] === 'function') scope[fn](...args);
+    else reportUnmigratedAction(fn, 'Sidebar.stopAndCall');
+  });
 };
 
 const maskIcon = (name: string) => `assets/images/base/mask-icons/${name}`;
@@ -582,11 +587,7 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
         <div
           className={`item depth-0${viewMode === activeView ? ' active active-item' : ''}`}
           style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
-          onClick={(e) => runInBodyScope((s) => {
-            const direct = SIMPLE_OPEN_DIRECT[meta.open];
-            if (direct) direct(s);
-            else s[meta.open] && s[meta.open]();
-          })}
+          onClick={() => runInBodyScope(() => openView(meta.open as ViewOpenName))}
           onContextMenu={(e) => runInBodyScope(() => openSidebarVisibleContextMenu(e))}
           onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
         >
@@ -625,17 +626,9 @@ const SIMPLE_META: Record<string, { open: string; mask: string; labelKey: string
  *  实机 QA（2026-09-13）：scope 面上从未挂载 openRandom/openRecent/openTrash/openUntagged/
  *  openCommunity/openAllTags（旧版仅登记在已退役的字符串路由表里）——
  *  `s[meta.open]` 恒 undefined → 侧栏平铺项除「全部/未分类」外点击全部静默无反应。
- *  全部补为直调（与 keymap 既有 import 同源）。 */
-const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {
-  openAll: (s) => machineryOpenAll(undefined, undefined),
-  openUnfiled: (s) => machineryOpenUnfiled(undefined),
-  openRandom: (s) => machineryOpenRandom(undefined, undefined),
-  openRecent: (s) => machineryOpenRecent(undefined),
-  openTrash: (s) => machineryOpenTrash(undefined),
-  openUntagged: (s) => machineryOpenUntagged(undefined),
-  openCommunity: (s) => machineryOpenCommunity(undefined),
-  openAllTags: (s) => machineryOpenAllTags(undefined),
-};
+ *  全部补为直调（与 keymap 既有 import 同源）。
+ *  F09（m1-f08f09-actions）：实现已上提到 `core/viewOpenActions.ts` 的**单一具名定义点**
+ *  （Toolbar 的页签同样消费它），本处不再自持一份表，也不再回落 `s[meta.open]` 字符串下标。 */
 
 /* ============ 侧栏头部（index.html 81-133） ============ */
 
@@ -708,7 +701,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy=""
           tippy-placement="bottom"
           tippy-content={`${t('context.order.toggle>all')}<key>Tab</key>`}
-          onContextMenu={(e) => runInBodyScope((s) => s.openSidebarMenu(e))}
+          onContextMenu={(e) => runInBodyScope(() => openSidebarVisibleContextMenu(e))}
           onClick={(e) => runInBodyScope(() => machineryToggleAll(e))}
         >
           <img src={iconSrc(theme, 'ic_toggle-sidebar.svg')} />

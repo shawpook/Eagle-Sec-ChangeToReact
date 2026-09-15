@@ -4,7 +4,7 @@ import { useToolbarState, ToolbarSnapshot } from '../../store/toolbarState';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
-import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
+import { zoomIn as gridZoomIn, zoomOut as gridZoomOut, machineryOnListSizeChange } from '../../services/gridService';
 import { syncBodyFromScope, writeCurrentFocus, writeIsMaximize } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
@@ -12,9 +12,11 @@ import { syncToolbarFromScope } from '../../store/toolbarState';
 import { runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
 import { makeSortable } from '../interactions/sortable';
 import { maximize } from '../../core/miscDomain';
-import { resetFilter, search, searchFocus } from '../../core/filterDomain';
-import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
+import { resetFilter, search, searchFocus, machineryFilterContent, machineryToggleFilter } from '../../core/filterDomain';
+import { openApplicationContextMenu, openOrderMenu, openSidebarVisibleContextMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
+import { reportUnmigratedAction } from '../../core/internalDispatch';
+import { openView } from '../../core/viewOpenActions';
 
 import { machineryOpenActionsPanel } from '../../core/keymapActions';
 
@@ -22,13 +24,14 @@ import { machineryRefreshRandom } from '../../core/libraryDomain';
 import { machineryChangeSidebarIndex, machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOnImageSizeHeightChanged } from '../../core/itemDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
-import { machineryOpenPluginPanel } from '../../core/miscDomain';
+import { machineryOpenPluginPanel, machineryOpenSearchScopeMenu } from '../../core/miscDomain';
 import { machineryNextHistory, machineryPrevHistory } from '../../core/navHistory';
 import { machineryToggleAll } from '../../services/gridService';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
 
 import { useLayoutState } from '../../store/layoutState';
+import { useAppState } from '../../store/appState';
 import { writeKeyword } from '../../store/listState';
 /**
  * 阶段3a：工具栏接管。
@@ -47,7 +50,11 @@ const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(th
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
-    if (typeof target !== 'function') return;
+    // F09：字符串派发命中未迁移动作时**不静默**（见 core/internalDispatch.ts）。
+    if (typeof target !== 'function') {
+      if (typeof fn === 'string') reportUnmigratedAction(fn, 'Toolbar.call');
+      return;
+    }
     const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
     // scoped(fn)：见 appCore.SCOPED_HANDLER——machinery 函数需以 scope 为首参。
     if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
@@ -59,7 +66,10 @@ const callSeq = (...fns: Array<[string | ((...a: any[]) => any), any?]>) => (e: 
   runInBodyScope((scope) => {
     for (const [fn, arg] of fns) {
       const target = typeof fn === 'function' ? fn : scope[fn];
-      if (typeof target !== 'function') continue;
+      if (typeof target !== 'function') {
+        if (typeof fn === 'string') reportUnmigratedAction(fn, 'Toolbar.callSeq');
+        continue;
+      }
       const args = arg !== undefined ? [arg] : [e];
       if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
       else target(...args);
@@ -96,7 +106,10 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
   };
   const restore = maximize;
   const close = () => currentWindow()?.close?.();
-  const toggleAlwaysOnTop = () => runInBodyScope((s) => s.toggleAlwaysOnTop());
+  // F09（m1-f08f09-actions）：原 `runInBodyScope((s) => s.toggleAlwaysOnTop())` —— scope 面上
+  // 从未挂载该名字（实现是 store 方法），无守卫直调 → TypeError 被 runInBodyScope 吞掉打 console.error，
+  // 「窗口置顶」按钮恒死。改为直调 store 既有实现（@/store/appState 注释即 RootController 同名函数）。
+  const toggleAlwaysOnTop = () => useAppState.getState().toggleAlwaysOnTop();
   const stop = (e: any) => { e.stopPropagation(); e.preventDefault(); };
   const pinTip = `${t('titlebar.alwayTop.on')}${shortcuts(shortcutsWrapper(keybinds['view.alwaysOnTop'] || ''))}`;
   const unpinTip = `${t('titlebar.alwayTop.off')}${shortcuts(shortcutsWrapper(keybinds['view.alwaysOnTop'] || ''))}`;
@@ -170,7 +183,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
         tippy=""
         tippy-placement="bottom"
         tippy-content={t('Context.SearchScope.Label')}
-        onClick={call('openSearchScopeMenu')}
+        onClick={call(machineryOpenSearchScopeMenu)}
       >
         <img src={iconSrc(snapshot.theme, 'ic-toolbar-arrow-down.svg')} />
       </div>
@@ -290,7 +303,7 @@ export function Toolbar() {
             <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
           </div>
         ) : null}
-        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call('openSidebarMenu')}>
+        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call(openSidebarVisibleContextMenu)}>
           <img src={iconSrc(snapshot.theme, 'ic_toggle-sidebar.svg')} />
         </div>
         <div
@@ -315,13 +328,13 @@ export function Toolbar() {
         </div>
 
         <ul>
-          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [machineryOpenAll])}>{t('general.pages.all')}</li>
-          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [machineryOpenUnfiled])}>{t('general.pages.unfiled')}</li>
-          <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUntagged'])}>{t('general.pages.untagged')}</li>
-          <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openRecent'])}>{t('general.pages.recent')}</li>
+          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [machineryOpenAll])}>{t('general.pages.all')}</li>
+          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [machineryOpenUnfiled])}>{t('general.pages.unfiled')}</li>
+          <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [() => openView('openUntagged')])}>{t('general.pages.untagged')}</li>
+          <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [() => openView('openRecent')])}>{t('general.pages.recent')}</li>
 
           {viewMode === 'alltags' || snapshot.hasCurrentTag ? (
-            <li ng-click="openAllTags()" onClick={call('openAllTags')}>
+            <li ng-click="openAllTags()" onClick={call(() => openView('openAllTags'))}>
               {snapshot.selectedTagsCount === 0 ? (
                 <span>{t('general.pages.allTags')} ({num0(snapshot.tagsCount)})</span>
               ) : (
@@ -331,7 +344,7 @@ export function Toolbar() {
           ) : null}
 
           <li style={viewMode === 'random' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'])}>{t('general.pages.random')}</li>
-          <li style={viewMode === 'trash' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openTrash'])}>{t('general.pages.trash')}</li>
+          <li style={viewMode === 'trash' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [() => openView('openTrash')])}>{t('general.pages.trash')}</li>
           <li style={!viewMode && snapshot.selectedFoldersCount > 0 ? undefined : { display: 'none' }}>{t('toolbar.breadcumbs.selected')} {snapshot.selectedFoldersCount} {t('toolbar.breadcumbs.folders')}</li>
           <li style={!viewMode && snapshot.selectedSmartFoldersCount > 0 ? undefined : { display: 'none' }}>{t('toolbar.breadcumbs.selected')} {snapshot.selectedSmartFoldersCount} {t('toolbar.breadcumbs.smartFolders')}</li>
 
@@ -401,7 +414,7 @@ export function Toolbar() {
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                call('onListSizeChange')();
+                call(machineryOnListSizeChange)();
               }}
             />
           </div>
@@ -491,7 +504,7 @@ export function Toolbar() {
           tippy-content={`${t('toolbar.filterHint')}${shortcuts(shortcutsWrapper(snapshot.keybinds['find.filter.toggle'] || ''))}`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="toggleFilter()"
-          onClick={call('toggleFilter')}
+          onClick={call(machineryToggleFilter)}
         >
           <div className="badge" style={snapshot.filterBadge > 0 ? undefined : { display: 'none' }}>{snapshot.filterBadge > 0 ? snapshot.filterBadge : ''}</div>
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-filter.svg')} />
@@ -523,7 +536,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={`${t('toolbar.randomRefhreshBtn')}<key>R</key>`}
           ng-click="refreshRandom()"
-          onClick={call('refreshRandom')}
+          onClick={call(machineryRefreshRandom)}
         >
           <img src={iconSrc(snapshot.theme, 'ic_refresh.svg')} />
         </div>
@@ -531,7 +544,7 @@ export function Toolbar() {
           className={`ic-btn filter-btn no-padding${snapshot.filterIsOpen ? ' active' : ''}`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="toggleFilter()"
-          onClick={call('toggleFilter')}
+          onClick={call(machineryToggleFilter)}
         >
           <div className="badge" style={snapshot.filterBadge ? undefined : { display: 'none' }}>{snapshot.filterBadge || ''}</div>
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-filter.svg')} />

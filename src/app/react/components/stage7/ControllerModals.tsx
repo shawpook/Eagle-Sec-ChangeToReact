@@ -12,6 +12,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { runInBodyScope } from '../../core/appCore';
+import { openSidebarVisibleContextMenu } from '../../services/miscMenuService';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
@@ -477,10 +478,11 @@ export function WebsitePanel() {
     runInBodyScope(() => machineryToggleAll(event));
   };
 
+  // F09（m1-f08f09-actions）：原为 `scope['openSidebarMenu']` 字符串派发 —— 该名字全树无实现且
+  // scope 面从未挂载，`typeof` 守卫恒假 → 右键「切换侧栏」静默无反应。此处与 Sidebar/Toolbar
+  // 的同一按钮对齐，直调既有具名实现 `openSidebarVisibleContextMenu`（miscMenuService）。
   const openSidebarMenu = (event: any) => {
-    runInBodyScope((s: any) => {
-      if (typeof s.openSidebarMenu === 'function') s.openSidebarMenu(event);
-    });
+    runInBodyScope(() => openSidebarVisibleContextMenu(event));
   };
 
   if (!host) return null;

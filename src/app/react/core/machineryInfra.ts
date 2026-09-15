@@ -17,12 +17,13 @@ import { addClass, removeClass } from '../utils/domQuery';
 import { getDriverApi } from './driverApi';
 import { callExternal } from './externalSupply';
 import { machineryCalcuteFilterResult, machineryColorFilter, machineryContentFilter, machineryExistInSmartFilter, machineryFilterContent, machineryFilterData, machineryGrayColorFilter } from './filterDomain';
-import { machineryCalculateImageBinding, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryReload, machinerySortRawData, machineryUpdateItemsView } from './itemDomain';
+import { machineryCalculateImageBinding, machineryCopyImages, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryReload, machinerySortRawData, machineryUpdateItemsView } from './itemDomain';
 import { buildRecentFileManager, machineryGetRecentFolders, machinerySaveFolder, machinerySaveFolderDebounce, machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryChangeFolderName, machineryChangeSmartFolderName } from '../services/folderCoreService';
+import { scrollToSelectedItem } from '../services/batchOpsService';
 import { machineryBoxListSizeChange, machineryOnListSizeChange } from '../services/gridService';
 import { machineryChangeSortIncrease, machineryCreateLibrary, machineryImportLibrary, machineryOpenLibrary, machineryRefresh, machineryShowListAnnotation, machineryShowListExtension, machineryShowListExtensionLabel, machineryShowListMetas, machineryShowListName, machinerySwitchLayoutOtpions, machineryOpenSearchScopeMenu, machineryToggleShowOriginalImageWhenLarge, machineryToggleSidebar } from './miscDomain';
-import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
+import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryQuicklook, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio, writeLibraryHistory, writeQuickAccess, writeSidebarList, writeIsExpandFolder, writeIsExpandSmartFolder, writeIsExpandQuickAccess, writeIsHideMainNav, writeContainTags, writeHistorySearchKeywords, writePage, writeDuplicateQueue, writeFiltereds, writeFinishGenerateQueue, writeFinishQueue, writeIsSearchScopeAnnotation, writeIsSearchScopeExt, writeIsSearchScopeFolderDesc, writeIsSearchScopeFolderName, writeIsSearchScopeName, writeIsSearchScopeNote, writeIsSearchScopeTag, writeIsSearchScopeUrl, writeLen, writeListLayoutSettings, writeListMetaType, writeOrderBy, writeOrderByName, writePaletteQueueDelay, writePaletteQueuePaused, writeRegenerateThumbnailQueue, writeShowAnnotation, writeShowFileExtension, writeShowFileExtensionLabel, writeShowMetas, writeShowName, writeShowOriginalImageWhenLarge, writeSortIncrease, writeTagsSuggestion, writeUnlockPassword, writeUploadQueue } from '../store/miscRawState';
@@ -249,6 +250,34 @@ export function applyDataMachineryScope(): void {
   // D-1 A-2 误判修正：addImagesToFolder 已在 externalSupplyRegistrar 注册，却漏了 scope 面挂载，
   // main.cjs:2057 直调 scope.addImagesToFolder 即 TypeError（m1 实测）。
   s.addImagesToFolder = (...args: any[]) => callExternal('addImagesToFolder', ...args);
+
+  // F08（m1-f08f09-actions）：字体查看器跨窗动作的补齐。修前这 9 个名字分两类缺陷：
+  //  · `isFontActivate` / `startDrag` —— 在 `driverApi` 白名单里、也已在 externalSupply
+  //    注册，却**漏了本 scope 面挂载**（同 :249 记录的 addImagesToFolder 同款误判）。
+  //  · `imagesChange` / `removeStar` / `changeTo1Star`…`changeTo5Star` —— 子窗按 `0`–`5`
+  //    与改名提交后 `parentCall('…')` 调用，修前**三处全缺**（不在契约、不在白名单、未挂载），
+  //    子窗的 `typeof === 'function'` 守卫恒假 → 改名与评级静默无反应。
+  // 一律沿用本块既有范式：惰性包装 + `callExternal`（供给真值在 externalSupplyRegistrar，
+  // 实现在 core/crossWindowActions.ts —— 转发既有业务，无第二套持久化路径）。
+  // 惰性包装的意义：调用点求值的是本包装，供给未注册时由 callExternal 抛
+  // `ExternalSupplyNotReadyError`（可观测），而不是 `undefined(...)` 的静默 TypeError。
+  s.isFontActivate = (...args: any[]) => callExternal('isFontActivate', ...args);
+  s.startDrag = (...args: any[]) => callExternal('startDrag', ...args);
+  s.imagesChange = (...args: any[]) => callExternal('imagesChange', ...args);
+  s.removeStar = (...args: any[]) => callExternal('removeStar', ...args);
+  s.changeTo1Star = (...args: any[]) => callExternal('changeTo1Star', ...args);
+  s.changeTo2Star = (...args: any[]) => callExternal('changeTo2Star', ...args);
+  s.changeTo3Star = (...args: any[]) => callExternal('changeTo3Star', ...args);
+  s.changeTo4Star = (...args: any[]) => callExternal('changeTo4Star', ...args);
+  s.changeTo5Star = (...args: any[]) => callExternal('changeTo5Star', ...args);
+
+  // F08 白名单/供给一致性收口：这 4 个名字此前**只在 driverApi 白名单里**，scope 面既无挂载、
+  // 契约也不含 —— 与上一类不同，它们的实现**全在本 ESM 图内**（非跨窗），故直调 import，
+  // 不引入新的供给契约，也不制造第二份实现。消除调研报告 §A-3 的「白名单有名字、读出来是 undefined」漂移。
+  s.rebindRefresh = (...args: any[]) => (machineryRebindRefresh as any)(...args);
+  s.quicklook = (...args: any[]) => (machineryQuicklook as any)(...args);
+  s.copyImages = (...args: any[]) => (machineryCopyImages as any)(...args);
+  s.scrollToSelectedItem = (...args: any[]) => (scrollToSelectedItem as any)(...args);
 
   // b1-9av：启动期键盘绑定。原链 = update-menu/update-preferences IPC → initMousetrap
   // （bundle 22399/22408），该两通道 React 世界无发送方无桥（PROGRESS 曾登记"暂留"）——

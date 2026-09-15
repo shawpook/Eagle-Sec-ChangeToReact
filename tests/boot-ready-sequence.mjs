@@ -197,9 +197,9 @@ function registrarKeys(source = read(REGISTRAR_PATH)) {
   return keys;
 }
 
-test('externalSupply：契约名单 10 项，未注册的契约内调用抛可观测错误而非 undefined', () => {
+test('externalSupply：契约名单全项（F08 后 17 项），未注册的契约内调用抛可观测错误而非 undefined', () => {
   const h = createHarness();
-  assert.equal(h.names.length, 10);
+  assert.equal(h.names.length, 17);
   assert.deepEqual(plain(h.supply.missingExternalSupplyNames()), h.names);
   assert.deepEqual(h.registered(), []);
   assert.equal(typeof h.env.__eagleExternalSupply, 'object', 'window.__eagleExternalSupply 诊断口保留');
@@ -210,7 +210,7 @@ test('externalSupply：契约名单 10 项，未注册的契约内调用抛可�
   assert.throws(() => h.supply.callExternal('activateFont', { id: 'a' }), (error) => {
     assert.equal(error.name, 'ExternalSupplyNotReadyError');
     assert.equal(error.supplyName, 'activateFont');
-    assert.equal(error.missing.length, 10);
+    assert.equal(error.missing.length, 17);
     assert.match(error.message, /跨窗供给未就绪：activateFont 尚未注册/);
     assert.match(error.message, /__eagleSupplyState=/, '错误信息带启动状态，便于定位');
     return true;
@@ -262,7 +262,7 @@ test('externalSupply：import 失败与注册不完整都记为 err 并 reject',
     partial.supply.registerExternalSupply({ activateFont: () => 'only-one' });
   }), /跨窗供给注册不完整，缺少：/);
   assert.match(partial.env.__eagleSupplyState, /^err:跨窗供给注册不完整/);
-  assert.equal(partial.supply.missingExternalSupplyNames().length, 9, '缺失清单可观测');
+  assert.equal(partial.supply.missingExternalSupplyNames().length, 16, '缺失清单可观测（契约 17 项，只注册了 1 项）');
 });
 
 test('F10-a：人为延迟供给注册期间，跨窗动作显式失败并留痕，注册完成后同一入口正常返回', async () => {
@@ -299,7 +299,7 @@ test('F10-a：人为延迟供给注册期间，跨窗动作显式失败并留痕
   assert.equal(h.env.__eagleBootState, 'ready');
   assert.equal(h.env.__eagleBootReady, true);
   assert.equal(h.env.__eagleSupplyState, 'ok');
-  assert.equal(h.registered().length, 10);
+  assert.equal(h.registered().length, 17);
   assert.equal(h.api.activateFont({ id: 'a' }), 'activateFont-result', '就绪后挂载包装正常派发');
   assert.equal(h.supply.callExternal('getRawUrl', {}), 'getRawUrl-result');
   assert.equal(h.env.__eagleSupplyFailures.length, 3, '就绪后不再新增失败');
@@ -357,7 +357,7 @@ test('F10-b：装配顺序 driverApi → 门 → 挂载 → 六域接管 → 供
     // 窗口内的跨窗调用可观测（F10-a），故「先注册后接管」的字面顺序被本次取证推翻。
     assert.equal(observation.registered, 0, `${observation.step} 执行时供给尚未注册`);
   }
-  assert.equal(h.registered().length, 10, '就绪时供给必须 10/10 注册');
+  assert.equal(h.registered().length, 17, '就绪时供给必须契约全量（17/17）注册');
   assert.equal(h.env.__eagleBootState, 'ready');
   assert.deepEqual(h.env.__eagleSupplyFailures, undefined, '正常装配全程无未就绪失败');
 });
@@ -439,7 +439,7 @@ test('F10-b：装载失败与注册不完整都中止在供给阶段（不宣告
     return true;
   });
   const silentDiagnostics = silent.diagnostics();
-  assert.equal(silentDiagnostics.missing.supply.length, 10, '缺失清单必须落进诊断');
+  assert.equal(silentDiagnostics.missing.supply.length, 17, '缺失清单必须落进诊断');
   // order 里的 'supply' 表示「供给阶段完成」：未完成即未登记（两种情况用 missing.supply 区分）
   assert.deepEqual(silentDiagnostics.order, [
     'driverApi', 'gate',

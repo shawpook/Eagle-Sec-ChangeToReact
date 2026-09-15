@@ -44,12 +44,13 @@ import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { reportUnmigratedAction } from '../../core/internalDispatch';
 
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
 import { getRawUrl } from '../../core/itemDomain';
 
-import { machineryQuickOpenFolder } from '../../core/libraryDomain';
+import { machineryOpenTrialModal, machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel } from '../../core/selectionViewDomain';
 import { machineryChangeStar } from '../../services/imageOpsService';
 import { machineryAutoScroll } from '../../services/gridService';
@@ -72,7 +73,8 @@ const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(th
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
-    if (typeof target !== 'function') return;
+    // F09（m1-f08f09-actions）：字符串派发命中未迁移动作时**不静默**。
+    if (typeof target !== 'function') { if (typeof fn === 'string') reportUnmigratedAction(fn, 'Inspector.call'); return; }
     const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
     // scoped(fn)：见 appCore.SCOPED_HANDLER——machinery 函数需以 scope 为首参。
     if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
@@ -1400,7 +1402,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
       {/* 底部幫助按鈕、試用到期提示 */}
       <div className="help-area">
         {snapshot.trialRemain > 0 && snapshot.trialRemain <= 31 && (
-          <div className="trial-remain" onClick={() => call('openTrialModal', snapshot.trialRemain)()}>
+          <div className="trial-remain" onClick={() => call(machineryOpenTrialModal, snapshot.trialRemain)()}>
             {t('titlebar.remian')} {snapshot.trialRemain} {t('titlebar.day')}
           </div>
         )}

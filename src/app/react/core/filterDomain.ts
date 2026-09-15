@@ -80,6 +80,26 @@ function removeScopeListener(evt: string): number {
   return removed;
 }
 
+/**
+ * F09（m1-f08f09-actions）：筛选面板开合 —— 从 `takeoverFilterDomain` 内的匿名闭包提取为具名函数。
+ *
+ * 提取动机：Toolbar 的筛选按钮此前经 `call('toggleFilter')` 字符串派发到 scope 面；F09 要求
+ * 应用内可 import 的一律直 import 具名 action。函数体**逐字未改**（含 `updateContainerHieght`
+ * 的 bundle 原码 typo），只是把定义点从闭包挪到模块级 —— 仍只此一份实现，
+ * scope 面挂载（`writeScopeField('toggleFilter', …)`）与驱动脚本旧路径行为不变。
+ */
+export function machineryToggleFilter(): void {
+  const w = window as any;
+  w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
+  syncFilterFromScope();
+  if (!w.eagle.filter.isOpen) {
+    document.querySelectorAll("[filter-item].open").forEach((el) => el.classList.remove("open"));
+  }
+  machineryUpdateContainerHieght(true);
+  if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Filter: OFF"); }
+}
+
 export function takeoverFilterDomain(): void {
   if (done) return;
   done = true;
@@ -136,16 +156,7 @@ export function takeoverFilterDomain(): void {
   //    缺席时 call() 静默 no-op → 按钮 active 不翻转、FilterItems2 消费的 filterIsOpen 恒 false。
   //    updateContainerHieght 为 controllerFns 移植件（bundle 原码 typo 逐字保留））──
   {
-    writeScopeField('toggleFilter', function () {
-      w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
-      syncFilterFromScope();
-      if (!w.eagle.filter.isOpen) {
-        document.querySelectorAll("[filter-item].open").forEach((el) => el.classList.remove("open"));
-      }
-      machineryUpdateContainerHieght(true);
-      if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }
-      else { w.electronLog && w.electronLog.info("[app] Filter: OFF"); }
-    });
+    writeScopeField('toggleFilter', machineryToggleFilter);
   }
 
   // ── eagle.filter watch 族 12 个（b1-9bi：scopeShim 轮询 watcher → filterService 订阅）──

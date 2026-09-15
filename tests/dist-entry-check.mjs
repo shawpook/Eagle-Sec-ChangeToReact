@@ -1,4 +1,6 @@
 /** M0：只读产物闭包门禁。缺失一律失败，不回退源码、不豁免旧路由。
+ * 唯一的降级通道是 policy.knownMissing（tests/frontend-gate-manifest.mjs 的
+ * KNOWN_MISSING_ASSETS）：逐条登记、要求非空理由/消费者/退出条件，且条目失效会被反向校验。
  * node tests/dist-entry-check.mjs [--root=<隔离产物根>]
  * import checkDist() 不执行 CLI；可注入只读文件系统做内存负向测试。
  */
@@ -106,6 +108,23 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
   const isFile = (rel) => { try { return io.statSync(path.join(root, rel)).isFile(); } catch { return false; } };
   const exists = (rel) => { try { io.statSync(path.join(root, rel)); return true; } catch { return false; } };
   const read = (rel) => io.readFileSync(path.join(root, rel), 'utf8');
+
+  // 已知缺失登记表：逐条精确登记（reason/consumer/exit 均非空），用于「刻意可选依赖」与
+  // 「无现代消费者的 vendor 遗留分支」。它不是普遍豁免——未登记路径一律照旧 FAIL，
+  // 且已存在 / 未被命中的条目会被反向校验出来（见函数末尾）。
+  const knownMissing = new Map();
+  const knownMissingHit = new Set();
+  const registry = policy.knownMissing ?? [];
+  if (!Array.isArray(registry)) fail('已知缺失登记表：必须是数组');
+  for (const [index, entry] of (Array.isArray(registry) ? registry : []).entries()) {
+    const label = `已知缺失登记表[${index}]`;
+    const missing = typeof entry?.missing === 'string' ? entry.missing.trim().replace(/^\/+/, '') : '';
+    if (!missing) { fail(`${label}：缺少 missing 路径`); continue; }
+    const blank = ['reason', 'consumer', 'exit'].filter((field) => typeof entry?.[field] !== 'string' || !entry[field].trim());
+    if (blank.length) { fail(`${label}（${missing}）：reason/consumer/exit 必须非空，缺 ${blank.join('/')}`); continue; }
+    if (knownMissing.has(missing)) { fail(`${label}：重复登记 ${missing}`); continue; }
+    knownMissing.set(missing, entry);
+  }
   const localPath = (ref, from) => {
     ref = ref.trim();
     if (!ref || ref.startsWith('#')) return null;
@@ -157,7 +176,14 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
     for (const style of html.styles) scanCss(style, document, document);
   }
   function visit(rel, document = rel, via = '必需资源') {
-    if (!isFile(rel)) { fail(`${via}：产物缺失 ${rel}`); return; }
+    if (!isFile(rel)) {
+      const registered = knownMissing.get(rel);
+      if (registered) {
+        knownMissingHit.add(rel);
+        notes.add(`已知缺失（已逐条登记并降级为范围说明）：${via} -> ${rel}；退出条件 ${registered.exit}`);
+      } else fail(`${via}：产物缺失 ${rel}`);
+      return;
+    }
     files.add(rel);
     const key = `${rel}\0${document}`;
     if (visited.has(key)) return;
@@ -225,6 +251,12 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
   }
   if (!manifestFound) notes.add('未生成 Vite manifest：使用 HTML/JS/CSS 引用闭包及显式动态清单，不能证明构建图完整');
   for (const rel of policy.forbidden) if (exists(rel)) fail(`开发数据仍在产物中：${rel}`);
+  // 登记表反向校验：条目一旦不再成立（文件已存在）或不再被任何引用命中，都必须暴露出来，
+  // 否则本表会退化成长期垃圾清单。已存在 = FAIL（必须删条目）；未被命中 = 范围说明（提示复核）。
+  for (const [rel, entry] of knownMissing) {
+    if (exists(rel)) fail(`已知缺失登记表已失效：${rel} 在产物中已存在，必须删除该条目（登记消费者：${entry.consumer}）`);
+    else if (!knownMissingHit.has(rel)) notes.add(`已知缺失登记表条目本轮未被任何引用命中，请复核：${rel}（登记消费者：${entry.consumer}）`);
+  }
   return { ok: failures.size === 0, failures: [...failures], notes: [...notes], checkedFiles: [...files].sort() };
 }
 

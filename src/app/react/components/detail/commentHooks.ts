@@ -1109,7 +1109,9 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
           worker = null;
         }
 
-        worker = new Worker('js/workers/tifWorker.js');
+        // M0：站点根绝对路径；原 'js/workers/tifWorker.js' 相对文档 URL 解析，
+        // 在采集窗层级下会指向不存在的子目录。字面量不抽公共常量，见 bitmapViewer.ts 同处说明。
+        worker = new Worker('/src/app/js/workers/tifWorker.js');
         worker.postMessage({ url });
 
         worker.onmessage = (e) => {

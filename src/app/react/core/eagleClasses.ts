@@ -760,7 +760,9 @@ class DuplicateChecker {
             const addedItemMap: any = {};
 
             for (let i = 0; i < numWorkers; i++) {
-                workers[i] = new Worker('js/workers/calHammingDistance.js');
+                // M0：站点根绝对路径；原 'js/workers/calHammingDistance.js' 相对文档 URL 解析，
+                // 在采集窗层级下会指向不存在的子目录。字面量不抽公共常量，见 bitmapViewer.ts 同处说明。
+                workers[i] = new Worker('/src/app/js/workers/calHammingDistance.js');
 
                 const partItems = cloneItems.slice(i * cloneItems.length / numWorkers, (i + 1) * cloneItems.length / numWorkers);
                 workers[i].postMessage({all: cloneItems, part: partItems, fingerprintMap, fingerprintWeighted: options.fingerprintWeighted});

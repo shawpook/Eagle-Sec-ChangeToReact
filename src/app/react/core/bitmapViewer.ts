@@ -2,7 +2,8 @@
  * b1-9bl：/vendor/eagle-smooth-zoom.js 剥壳归位——BitmapViewer 全类逐字搬迁
  * （vendor 29-826；数学/DOM/Worker 行为锁定，见 PROGRESS「S4-bl 考据定案」）。
  * 过渡期保留面：$ 为 window.$（jQuery DOM 微操作，P4 统一退役）；$bodyScope 走
- * window（bundleGlobals 供给）；bitmapWorker 路径不变（js/workers/bitmapWorker.js）。
+ * window（bundleGlobals 供给）；bitmapWorker 协议/消息不变，仅路径由文档相对的
+ * js/workers/bitmapWorker.js 改为站点根绝对的 /src/app/js/workers/bitmapWorker.js（M0）。
  * vendor 脚本随本批自 index.html 摘除；压缩版（js/vendors/jquery.smoothZoom.min.js）
  * 留 bl-B 预览窗切换时一并退役。
  */
@@ -217,7 +218,12 @@ export class BitmapViewer {
 			this.#preloadBitmapWorker = null;
 		}
 
-		this.#preloadBitmapWorker = new Worker('js/workers/bitmapWorker.js');
+		// M0：站点根绝对路径。原写法 'js/workers/bitmapWorker.js' 相对文档 URL 解析，
+		// 采集窗（/src/app/collect-window/index.html）下会落到不存在的
+		// /src/app/collect-window/js/workers/，worker 静默加载失败。
+		// 逐字面量保留（不抽公共常量）：产物闭包门禁只能解析 inline 字面量对应的 Worker URL，
+		// 抽成 const 后 minifier 会提升为变量，门禁将看不到这条引用。
+		this.#preloadBitmapWorker = new Worker('/src/app/js/workers/bitmapWorker.js');
 		this.#setupWorkerNativeHeic(this.#preloadBitmapWorker);  // ✅ 設置原生 HEIC 支持
 		this.#preloadBitmapWorker.postMessage({ url, item: {...item, url: url}, tileSize: this.#tileSize });
 
@@ -308,7 +314,7 @@ export class BitmapViewer {
 				this.#createBitmapWorker = null;
 			}
 
-			this.#createBitmapWorker = new Worker('js/workers/bitmapWorker.js');
+			this.#createBitmapWorker = new Worker('/src/app/js/workers/bitmapWorker.js');
 			this.#setupWorkerNativeHeic(this.#createBitmapWorker);  // ✅ 設置原生 HEIC 支持
 			this.#createBitmapWorker.postMessage({ url, item, tileSize: this.#tileSize });
 

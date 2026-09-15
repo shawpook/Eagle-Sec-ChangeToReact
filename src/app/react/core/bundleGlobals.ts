@@ -22,6 +22,7 @@ import { useMiscRawState, writeShowSlowNotify } from '../store/miscRawState';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
 import { installKeymap } from './keymap';
+import { installShortcutManager } from './shortcutManager';
 import { installDialog } from './dialog';
 import { installTippy } from './tippyLite';
 import { installAudioPlugin } from './audioPlugin';
@@ -2119,6 +2120,11 @@ export function installBundleGlobals(): void {
 
   // b1-9bu-A：hover-preview 家族同步安装（原 c16b 注入块退役；Z 键监听段随 install 回填）
   installHoverPreview();
+
+  // R5：shortcut-manager 经典脚本退役（296 行纯应用代码逐字移植 → core/shortcutManager.ts；
+  // 三窗标签同批摘除，preview/preferences 经各自 entry 另行 install）。置于 installKeymap 之前：
+  // keymap/detailHooks 读 window.ShortcutManager.electronToMousetrap 做键位映射。
+  installShortcutManager();
 
   // b1-9bv-A：mousetrap v1.6.3 自研替换（vendor 脚本标签同批摘除；preview 窗经
   // preview-window/entry.tsx 另行 install）

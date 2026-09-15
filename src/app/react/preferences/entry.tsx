@@ -2,6 +2,17 @@ import '../core/shimsLegacy';
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
 import PreferencesShell from './shell';
+import { installTippy } from '../core/tippyLite';
+import { installShortcutManager } from '../core/shortcutManager';
+
+// R5：本 bundle 不走 installBundleGlobals（那是主窗装配面），在模块求值期自行补装。
+// preferences.html 原引用的 js/vendors/tippy.js 已随 b1-9bx-A 退役批从 disk 删除，但脚本标签
+// 漏摘——window.tippy 恒为 undefined，主题气泡（panels.tsx 的 tippy 等价效果）静默失效。
+// 此处按 preview-window/entry.tsx 同一先例补装自研 tippyLite（构造 + destroy 面等价）。
+installTippy();
+
+// R5：shortcut-manager 经典脚本同批摘除（控制器 init 与 ShortcutInput 消费 window 单例）。
+installShortcutManager();
 
 /**
  * 阶段8：偏好窗口 React 入口（preferences.html / PreferenceApp 绞杀者）。

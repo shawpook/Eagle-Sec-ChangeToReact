@@ -56,7 +56,8 @@
     <script src="js/vendors/videojs/lang/zh_CN.js"></script>
     <script src="js/vendors/videojs/lang/ko_KR.js"></script>
     <script src="js/vendors/videojs/lang/ja_JP.js"></script>
-    <script src="js/services/shortcut-manager.js"></script>
+    <!-- R5：shortcut-manager 经典脚本摘除——window.ShortcutManager 由 preview-window/entry.tsx
+         的 installShortcutManager()（react/core/shortcutManager.ts）模块求值期供给。 -->
 </head>
 
 <body id="preview-window" class=" hide-toolbar">

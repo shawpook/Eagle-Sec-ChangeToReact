@@ -1489,6 +1489,12 @@ export function PreferencesPanels() {
   }, [container, snap]);
 
   // tippy 等价（js/modules/tippy.js：animation scale / arrow false / allowHTML / placement）
+  //
+  // R5 缺陷修复：被 tippy 绑定的 DOM 是**面板局部**的（general 的 .themes-picker、autoImport 的
+  // 路径项），而 React 在切换面板时会卸载/重建这些节点。原依赖只有 container 与 autoImport.path，
+  // 切走再切回 general 时节点已换新，效果却不重跑——实例仍挂在已脱离文档的旧节点上（气泡不再
+  // 出现，且 7 个 popper 泄漏在 body）。Angular 原版 tippy 指令随元素编译/链接重建，无此问题。
+  // 故把 snap.panel 并入依赖：面板一变即销毁旧实例、为新面板的节点重建。
   useEffect(() => {
     const root = container;
     if (!root) return;
@@ -1508,9 +1514,10 @@ export function PreferencesPanels() {
     });
     return () => instances.forEach((instance) => instance.destroy());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [container, snap.preferences && snap.preferences.autoImport && snap.preferences.autoImport.path]);
+  }, [container, snap.panel, snap.preferences && snap.preferences.autoImport && snap.preferences.autoImport.path]);
 
-  // updateKeybinds 的 $('.shortcut-input').data('search-active', isSearching) 等价（原样写 jQuery data）
+  // updateKeybinds 的 $('.shortcut-input').data('search-active', isSearching) 等价
+  // （等价物为自研 utils/domQuery 的 qa/dataSet，本窗不依赖 jQuery）
   useEffect(() => {
     ngSafe(() => {
       qa('.shortcut-input').forEach((el) => {

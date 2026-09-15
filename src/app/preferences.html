@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/preferences.css">
-    <script src="js/vendors/tippy.js"></script>
-    <script src="js/services/shortcut-manager.js"></script>
 </head>
 
 <body>
@@ -15,9 +13,12 @@
          angular.min.js/preferences.js/wMousetrap/tippy模块/shortcut-input 脚本删除）。
          窗口整体由 React 承载：react/preferences/shell.tsx（sidebar/header/content/footer/
          密码弹窗 + controller.ts 控制器数据面），入口由 vite 注入。
-         保留脚本：jQuery（search-active 标记）/tippy 厂家库（window.tippy）/
-         shortcut-manager（window.ShortcutManager 单例，ShortcutInput 消费）。
-         b1-9bc：lodash 移除（页面与已加载脚本零 _ 消费；主窗调用点已原生化）。 -->
+         保留脚本：（无——全部经典脚本已退役）。
+         b1-9bc：lodash 移除（页面与已加载脚本零 _ 消费；主窗调用点已原生化）。
+         R5：tippy 厂家库标签摘除——磁盘文件已随 b1-9bx-A 退役，window.tippy 由
+         react/preferences/entry.tsx 的 installTippy()（自研 tippyLite）供给；
+         shortcut-manager 经典脚本同批摘除，window.ShortcutManager 由同一入口的
+         installShortcutManager()（react/core/shortcutManager.ts）供给。 -->
     <div id="eagle-preferences-react-host"></div>
 <script type="module" src="/src/app/react/preferences/entry.tsx"></script>
 </body>

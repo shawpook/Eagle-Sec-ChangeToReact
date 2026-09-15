@@ -234,6 +234,125 @@ try {
       && document.body.getAttribute('theme') === 'blue';
   })()`);
 
+  // ── 气泡（tippy 供给面行为契约：hover 出现 / 离开隐藏，内容=tippy-content）──
+  // R5 纪律：断言**行为等价**而非实现细节——vendor tippy 与自研 tippyLite 均应通过，
+  // 替换前后各跑一次即构成「零行为变化」证据。
+  await assertExprOn(prefPage, 'pf8e2-tippy-provided', `(() => typeof window.tippy === 'function')()`);
+  // R5 替换证据：磁盘已无 vendors/tippy.js（b1-9bx-A），标签漏摘曾使上面三项恒 FAIL；
+  // 现由 entry 的 installTippy() 供给——#eagle-tippy-css 是 tippyLite 的运行时安装标记。
+  await assertExprOn(prefPage, 'pf8e2-tippy-vendor-tag-gone', `(() => {
+    return !document.querySelector('script[src*="vendors/tippy"]')
+      && !!document.getElementById('eagle-tippy-css');
+  })()`);
+  await evalOn(prefPage, `(() => {
+    const el = document.querySelector('${PANELS} .themes-picker .theme[tippy]');
+    window.__tippyTarget = el;
+    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+    return true;
+  })()`);
+  await assertExprOn(prefPage, 'pf8e2-tippy-show', `(() => {
+    const el = window.__tippyTarget;
+    const box = document.querySelector('body > [data-tippy-root] .tippy-box');
+    const content = box && box.querySelector('.tippy-content');
+    if (!el || !box || !content) return false;
+    return box.getAttribute('data-state') === 'visible'
+      && box.getAttribute('data-placement') === 'top'
+      && content.innerHTML.length > 0
+      && content.innerHTML === el.getAttribute('tippy-content');
+  })()`);
+  // R5 缺陷回归锚：面板切走再切回后，实例必须绑在**当前**节点上且无 popper 泄漏
+  // （修复前该断言与 pf8e2-tippy-show 同因失败：实例挂在已卸载节点、roots 只增不减）。
+  await assertExprOn(prefPage, 'pf8e2-tippy-bound-live', `(() => {
+    const targets = [...document.querySelectorAll('${PANELS} [tippy][tippy-content]')];
+    const roots = document.querySelectorAll('body > [data-tippy-root]');
+    return targets.length > 0
+      && roots.length === targets.length
+      && targets.every((el) => !!el._tippy);
+  })()`);
+  await evalOn(prefPage, `(() => {
+    window.__tippyTarget.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+    return true;
+  })()`);
+  await assertExprOn(prefPage, 'pf8e2-tippy-hide', `(() => {
+    const box = document.querySelector('body > [data-tippy-root] .tippy-box');
+    return !!box && box.getAttribute('data-state') === 'hidden';
+  })()`);
+
+  // ── 快捷键面板：管理器 API 面 + 编辑写回 + 冲突不写回（ShortcutManager 移植锚）──
+  await evalOn(prefPage, `(() => {
+    document.querySelectorAll('.sidebar-items .sidebar-item')[5].click();
+    return true;
+  })()`);
+  await assertExprOn(prefPage, 'pf8e2-shortcuts-panel', `(() => {
+    const scope = window.__eagleControllerScope;
+    return scope.currentPanel.name === 'shortcuts'
+      && document.querySelectorAll('${PANELS} .shortcut-input').length > 0;
+  })()`);
+  await assertExprOn(prefPage, 'pf8e2-shortcut-manager-api', `(() => {
+    const m = window.ShortcutManager;
+    if (!m) return false;
+    return m.electronToMousetrap('Ctrl + A') === 'ctrl+a'
+      && m.electronToMousetrap('Command + Shift + Z') === 'mod+shift+z'
+      && m.validateShortcut('Ctrl + K').valid === true
+      && m.validateShortcut('Bogus + K').valid === false
+      && m.validateShortcut('Ctrl + F12').valid === true
+      && m.formatForDisplay('Ctrl + K') === 'Ctrl + K'
+      && Array.isArray(m.getConflicts('Ctrl + K', 'x'));
+  })()`);
+
+  const dispatchShortcutKey = `(() => {
+    const input = document.querySelector('${PANELS} .shortcut-input');
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k', code: 'KeyK', ctrlKey: true, bubbles: true, cancelable: true,
+    }));
+    window.__shortcutInput = input;
+    return true;
+  })()`;
+
+  // 无冲突分支：写回 preferences.shortcuts.keybinds 并格式化输入框
+  await evalOn(prefPage, `(() => {
+    const m = window.ShortcutManager;
+    window.__origGetConflicts = m.getConflicts;
+    m.getConflicts = () => [];
+    window.__keybindsBefore = JSON.stringify(window.__eagleControllerScope.preferences.shortcuts.keybinds);
+    return true;
+  })()`);
+  await evalOn(prefPage, dispatchShortcutKey);
+  await assertExprOn(prefPage, 'pf8e2-shortcut-writeback', `(() => {
+    const keybinds = window.__eagleControllerScope.preferences.shortcuts.keybinds;
+    const before = JSON.parse(window.__keybindsBefore);
+    const changed = Object.keys(keybinds).filter((k) => keybinds[k] !== before[k]);
+    const input = window.__shortcutInput;
+    return changed.length === 1
+      && keybinds[changed[0]] === 'Ctrl + K'
+      && input.value === 'Ctrl + K'
+      && input.classList.contains('shortcut-valid');
+  })()`);
+
+  // 冲突分支：保持原值、加冲突样式与提示、不写回
+  await evalOn(prefPage, `(() => {
+    window.ShortcutManager.getConflicts = () => ['edit.remove'];
+    window.__keybindsBefore = JSON.stringify(window.__eagleControllerScope.preferences.shortcuts.keybinds);
+    return true;
+  })()`);
+  await evalOn(prefPage, dispatchShortcutKey);
+  await assertExprOn(prefPage, 'pf8e2-shortcut-conflict-held', `(() => {
+    const keybinds = window.__eagleControllerScope.preferences.shortcuts.keybinds;
+    const before = JSON.parse(window.__keybindsBefore);
+    const changed = Object.keys(keybinds).filter((k) => keybinds[k] !== before[k]);
+    const input = window.__shortcutInput;
+    const conflictTip = input.closest('.shortcut-input-container').querySelector('.shortcut-conflict-tip');
+    return changed.length === 0
+      && input.classList.contains('shortcut-conflict')
+      && conflictTip.style.display !== 'none'
+      && conflictTip.textContent.length > 0;
+  })()`);
+  await evalOn(prefPage, `(() => {
+    window.ShortcutManager.getConflicts = window.__origGetConflicts;
+    return true;
+  })()`);
+
   await delay(500);
   try {
     const screenshot = await Promise.race([

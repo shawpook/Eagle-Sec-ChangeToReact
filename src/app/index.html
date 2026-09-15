@@ -242,7 +242,8 @@
     <!-- b1-9bl：smoothZoom vendor（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）退役——
          引擎逐字归位 react/core/smoothZoomEngine.ts + bitmapViewer.ts（$、#detail-container
          消费契约不变）。b1-9al 提取版 /vendor/eagle-smooth-zoom.js 同批摘除。 -->
-    <script src="js/services/shortcut-manager.js"></script>
+    <!-- R5：shortcut-manager 经典脚本摘除——296 行纯应用代码逐字移植 react/core/shortcutManager.ts，
+         window.ShortcutManager 由 installBundleGlobals() 供给（keymap/detailHooks 消费面不变）。 -->
     <!-- b1-9bj：colorpicker vendor（js+css）退役——自研 components/filter/ColorPicker.tsx -->
     <script>
         eagle.urlEnlargerRemote.load();

@@ -8943,3 +8943,93 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   3. 再做 ShortcutManager 的 TS 化移植（对照主窗 `core/keymap.ts` 替代 mousetrap 的先例），
      用①的快捷键编辑用例验证。
   4. 三项齐备后再撤该窗的 `scopedOut` 豁免（与预览窗同一条纪律：替换完成才撤豁免）。
+
+---
+
+## R5 实施：偏好设置窗口（tippy + ShortcutManager 退役，含 1 处真实缺陷修复）
+
+**批边界**：偏好窗两件 classic script 退役 + 该窗闭环测试扩锚。改动文件：`src/app/preferences.html`、
+`src/app/index.html`、`src/app/preview-window.html`、`src/app/react/preferences/{entry.tsx,panels.tsx}`、
+`src/app/react/preview-window/entry.tsx`、`src/app/react/core/bundleGlobals.ts`、
+新增 `src/app/react/core/shortcutManager.ts`、删除 `src/app/js/services/shortcut-manager.js`、
+`tests/react-stage8e2-smoke.mjs`。
+
+### 0. 前置侦察更正
+
+上一批记录的「`tests/` 下没有任何偏好窗口测试」**不准确**——`tests/react-stage8e2-smoke.mjs`
+即偏好窗闭环（CDP 连第二 target，断言壳渲染/面板切换/搜索过滤/主题联动/密码弹窗/apply 数据面/Esc
+关窗）。故无需新建测试，直接在该文件**扩锚**：补「气泡出现/隐藏」与「快捷键编辑写回/冲突不写回 +
+管理器 API 面」两组断言，作为两项替换的验证锚。
+
+### 1. 真实缺陷①：偏好窗主题气泡**恒失效**（标签漏摘）
+
+- **现象**：新增的 `pf8e2-tippy-provided` 断言在**改动前**即 FAIL——`typeof window.tippy` 为
+  `undefined`。
+- **根因**：`js/vendors/tippy.js` 已随 b1-9bx-A 退役批从磁盘删除，但 `preferences.html:9` 的
+  `<script src="js/vendors/tippy.js">` **漏摘**（该批只处理了主窗 index.html 与预览窗）。结果
+  `window.tippy` 恒 undefined，`panels.tsx:1491` 的 tippy 等价效果首行 `if (!tippy) return` 静默
+  早退——general 面板 7 个主题色块与 autoImport 路径项的悬浮提示全部没有。
+- **修复**：按预览窗先例，在 `preferences/entry.tsx` 模块求值期 `installTippy()`（自研
+  `core/tippyLite.ts`），并摘除该死标签。新增断言 `pf8e2-tippy-vendor-tag-gone` 同时钉住
+  「无 vendor 标签」与「`#eagle-tippy-css` 安装标记在位」。
+
+### 2. 真实缺陷②：切走再切回面板后气泡失效 + popper 泄漏
+
+- **现象**：修①后 `pf8e2-tippy-provided`/`vendor-tag-gone` PASS，但 `pf8e2-tippy-show` 仍 FAIL。
+  页内诊断输出：`roots:7`（7 个 popper 在 body）、`hasInstance:false`（当前节点没有 `_tippy`）。
+- **根因**：`panels.tsx` 的 tippy 效果依赖数组只有 `[container, autoImport.path]`，而被 tippy 绑定的
+  DOM 是**面板局部**的（general 的 `.themes-picker`）。React 在切换面板时卸载/重建这些节点，效果却
+  不重跑：实例仍挂在**已脱离文档的旧节点**上（新节点无监听器 → 气泡不再出现），旧 popper 也不回收
+  （只增不减）。测试序列「general→control→search→control→general」正好命中。Angular 原版 tippy
+  **指令**随元素编译/链接重建，无此问题——属 React 移植引入的行为回归。
+- **修复**：依赖数组并入 `snap.panel`——面板一变即销毁旧实例、为新面板节点重建。新增断言
+  `pf8e2-tippy-bound-live` 钉住不变量：`body > [data-tippy-root]` 数量 === 当前面板
+  `[tippy][tippy-content]` 数量，且每个节点都有 `_tippy`（既查失效也查泄漏）。
+
+### 3. ShortcutManager：经典脚本 → TS 模块（296 行逐字移植）
+
+- **新增** `core/shortcutManager.ts`：`ShortcutManager` 类 + `installShortcutManager()`（幂等写
+  `window.ShortcutManager`）。契约逐字保留：`init` 的 `CmdOrCtrl`→平台特定迁移与日志、
+  `normalizeShortcut` 替换顺序、`getConflicts` 的「同名排除 + 平台标识过滤 + 冲突群组相等」三重
+  条件、`validateShortcut` 四类主键正则与修饰键白名单、`formatForDisplay` 原值返回。
+  仅两处非语义差异：不再保留 `module.exports`（CommonJS 兼容面，本仓零消费）；`init` 迁移加
+  `typeof value === 'string'` 守卫（原码对该脏数据路径会抛错，现降级跳过）。
+- **接线**：三窗原各引一次经典脚本，现各自由模块求值期供给——主窗 `installBundleGlobals()` 内
+  置于 `installKeymap()` **之前**（keymap/detailHooks 读 `electronToMousetrap` 做键位映射）、
+  预览窗与偏好窗各自 `entry.tsx`。三处标签同批摘除，`src/app/js/services/shortcut-manager.js` 删除。
+- **验证锚**：`pf8e2-shortcut-manager-api`（`electronToMousetrap('Ctrl + A')==='ctrl+a'`、
+  `'Command + Shift + Z'==='mod+shift+z'`、`validateShortcut` 合法/非法/功能键、
+  `formatForDisplay`、`getConflicts` 返回数组）、`pf8e2-shortcut-writeback`（keydown →
+  `preferences.shortcuts.keybinds` 恰一项写为 `Ctrl + K` + 输入框格式化 + `shortcut-valid`）、
+  `pf8e2-shortcut-conflict-held`（注入冲突 → 不写回 + `shortcut-conflict` + 提示文案非空）。
+  冲突分支用 stub `getConflicts` 隔离，保证确定性（真实冲突检测由 API 面断言覆盖）。
+
+### 4. 验证命令与结果
+
+- `node tests/react-stage8e2-smoke.mjs` — **28/28 PASS**（新增 7 项：tippy-provided、vendor-tag-gone、
+  tippy-show、tippy-bound-live、tippy-hide、shortcut-manager-api、shortcut-writeback、
+  shortcut-conflict-held——其中 tippy-show 与 bound-live 修复前 FAIL，构成缺陷回归锚）。
+- `node tests/react-stage8{a,b,c,d,e}-smoke.mjs` — 全 OK（同窗其余行为无回归）。
+- `node tests/react-stage-smoke.mjs` / `d3-boot-render-closed-loop.mjs` / `preview-delivery-closed-loop.mjs`
+  — OK（主窗 bundleGlobals 与预览窗 entry 的接线面）。
+- `node tests/typecheck.mjs` — `TYPECHECK_OK: 0 诊断`（新模块无 `@ts-nocheck`，直接纳入门禁）。
+- `node tests/shim-module-boundaries.mjs` / `react-rewrite-sentinel.mjs` — OK。
+
+### 5. 本批收尾：撤该窗 `scopedOut` 豁免（R5 计划项 4）
+
+- 上一批「需先建偏好窗测试、再撤豁免」的前置条件本批已满足（测试为 `react-stage8e2-smoke` 扩锚）。
+- **先核实再撤**：`grep` 该目录下 6 条 C-6 模式（`.$evalAsync/…/$on`）仅命中
+  `controller.ts:658` 一行**注释**（哨兵按行跳过注释），即该窗源码**已无** scope 面调用。
+- 据此从 `tests/react-rewrite-sentinel.mjs` 的 `scopedOut` 中移除 `[\\/]preferences[\\/]`，
+  该窗自此同样受 C-6 约束；`SENTINEL_OK`（新面零命中）。豁免面只剩 viewers / global scopeShim /
+  preview-window / collect-window 四处。
+- **纠正上一批的错误判断**：该窗**没有** jQuery 依赖——`panels.tsx` 的 `qa/dataSet/ngSafe` 全部来自
+  自研 `utils/domQuery`（`$` 在此目录零命中）；`preferences.html` 的 head 里也早已无 jQuery 标签
+  （旧注释「保留 jQuery（search-active 标记）」是 b1-9bc 遗留的过期说明，本批已随脚本区注释一并更正）。
+
+### 6. 后续（R5 剩余）
+
+- 保留的 `panels.tsx:1513` 注释仍称「jQuery data」——语义等价物已是自研 `dataSet`，属注释陈旧，
+  待该窗注释清理批统一订正（非代码依赖）。
+- 下一目标：采集窗口去 jQuery/jQuery UI/SweetAlert（`selectPanelEngine.ts:4`、`tagPanelEngine.ts:5`、
+  `contextMenu.tsx:8`、`folderPanel.tsx:447`），完成后按同一纪律撤 `collect-window` 豁免。

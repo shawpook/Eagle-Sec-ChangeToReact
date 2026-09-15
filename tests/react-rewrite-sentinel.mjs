@@ -134,7 +134,10 @@ for (const tag of retiredVendorTags) {
 // C-4 把 $watch/$watchCollection 改为各域自建轮询。此后主窗口不得再出现任何
 // `X.$xxx()` 形态的调用（三窗口/子窗口例外：其 controllerScope 是各自的普通对象或
 // 主窗口 scope 的跨窗口引用，见 PROGRESS b1-9bz-C-3/C-5 节）。
-const scopedOut = (file) => /[\\/]viewers[\\/]|[\\/]global[\\/]scopeShim\.ts$|[\\/]preview-window[\\/]|[\\/]collect-window[\\/]|[\\/]preferences[\\/]/.test(file);
+// R5：preferences 窗豁免已撤——该窗 controllerScope 为普通对象、无 Angular digest 面，
+// 且 tippy/ShortcutManager 两处 classic script 已退役（见 PROGRESS R5 偏好窗批）。豁免面收窄后
+// 该窗同样受 C-6 约束，防新增 scope 面调用。
+const scopedOut = (file) => /[\\/]viewers[\\/]|[\\/]global[\\/]scopeShim\.ts$|[\\/]preview-window[\\/]|[\\/]collect-window[\\/]/.test(file);
 const cForbidden = [
   ['scope 面 $evalAsync', /\.\$evalAsync\s*\(/],
   ['scope 面 $apply', /\.\$apply\s*\(/],

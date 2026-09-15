@@ -43,6 +43,9 @@ function unsubscribe(channel, callback) {
   if (disposers) Array.from(disposers).pop()();
 }
 
+// 只拆本桥自己的 wrapper：既不能误伤宿主或第三方直接注册在 ipcRenderer 上的监听，
+// 也不能走 ipcRenderer.removeAllListeners（它按 channel 无差别清空，会连外部监听一起删）。
+// 对外部监听而言本桥就应当不存在，因此未登记过的 channel 是彻底的空操作。
 function removeAllSubscriptions(channel) {
   const channels = channel === undefined ? Array.from(subscriptions.keys()) : [channel];
   for (const name of channels) {
@@ -52,8 +55,6 @@ function removeAllSubscriptions(channel) {
       for (const dispose of Array.from(disposers)) dispose();
     }
   }
-  if (channel === undefined) ipcRenderer.removeAllListeners();
-  else ipcRenderer.removeAllListeners(channel);
 }
 
 const api = {
@@ -115,7 +116,7 @@ const api = {
     copyPath: (id) => ipcRenderer.invoke('item:copy-path', { id }),
     copyImage: (id) => ipcRenderer.invoke('item:copy-image', { id }),
     dragStart: (ids) => ipcRenderer.invoke('item:drag-start', { ids: Array.isArray(ids) ? ids : [ids] }),
-    onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),
+    onOperationResult: (callback) => subscribe('item:operation-result', callback),
   },
   duplicates: {
     scan: (params) => ipcRenderer.invoke('duplicates:scan', params),
@@ -131,7 +132,7 @@ const api = {
   resolvePath: (target) => ipcRenderer.invoke('library:resolve', target),
   nativeThumbnail: (target, options) => ipcRenderer.invoke('thumbnail:native', target, options),
   // b1-9aa：后台窗通道族完成通知（duplicate-file/set-custom-thumbnail 落盘后 main 回发）
-  onRebindRefresh: (callback) => ipcRenderer.on('rebind-refresh', () => callback()),
+  onRebindRefresh: (callback) => subscribe('rebind-refresh', callback, false, false),
   thumbnailUrl: (target) => `${thumbnailBaseUrl}/file/${encodeURIComponent(String(target || ''))}`,
   thumbnail: {
     setCustom: (params) => ipcRenderer.invoke('item:set-custom-thumbnail', params),
@@ -150,9 +151,9 @@ const api = {
   importPaths: (paths) => ipcRenderer.invoke('item:importPaths', paths),
   import: {
     files: (params) => ipcRenderer.invoke('item:import-files', params),
-    onFileProgress: (callback) => ipcRenderer.on('import-file-progress', (_event, job) => callback(job)),
+    onFileProgress: (callback) => subscribe('import-file-progress', callback),
     folders: (params) => ipcRenderer.invoke('item:import-folders', params),
-    onFolderProgress: (callback) => ipcRenderer.on('import-folder-progress', (_event, job) => callback(job)),
+    onFolderProgress: (callback) => subscribe('import-folder-progress', callback),
     url: (params) => ipcRenderer.invoke('item:import-url', params),
     urls: (params) => ipcRenderer.invoke('item:import-urls', params),
   },
@@ -169,9 +170,9 @@ const api = {
     eaglepack: (params) => ipcRenderer.invoke('export:eaglepack', params),
     cancel: (jobId) => ipcRenderer.invoke('export:cancel', jobId),
     reveal: (jobId) => ipcRenderer.invoke('export:reveal', { jobId }),
-    onProgress: (callback) => ipcRenderer.on('export:progress', (_event, progress) => callback(progress)),
-    onComplete: (callback) => ipcRenderer.on('export:complete', (_event, result) => callback(result)),
-    onError: (callback) => ipcRenderer.on('export:error', (_event, result) => callback(result)),
+    onProgress: (callback) => subscribe('export:progress', callback),
+    onComplete: (callback) => subscribe('export:complete', callback),
+    onError: (callback) => subscribe('export:error', callback),
   },
   window: {
     minimize: () => ipcRenderer.invoke('window:action', 'minimize'),

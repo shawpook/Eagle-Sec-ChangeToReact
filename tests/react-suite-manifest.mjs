@@ -28,6 +28,10 @@ export const REACT_SUITE = [
   // R0：连续网格几何单元测试（纯 Node + typescript 内存转译，无 Electron、秒级）。
   // 覆盖四布局 10,000 条的总高度/坐标/可见窗口与锚点还原。
   'tests/continuous-grid-layout.mjs',
+  // F10：跨窗供给的启动就绪序列（纯 Node + typescript 内存转译，无 Electron、秒级）。
+  // 覆盖未就绪期跨窗调用的可观测失败、装配顺序与「挂载/接管同处同步前缀」不变量、
+  // 重复 startBoot/重复装载的幂等，以及 main.tsx 的静态接线（动态 import 保留但真正 await）。
+  'tests/boot-ready-sequence.mjs',
   // R2：shim 模块跨模块标识符完整性（纯 Node + typescript CompilerHost，无 Electron、秒级）。
   // 拆分 core/shim/* 后，「标识符留在别的模块、此处未 import」是运行期 ReferenceError 的主因，
   // 且 @ts-nocheck 与打包器都不报——本项以剥离 nocheck 的类型检查精确拦截。
@@ -114,6 +118,7 @@ export const TEST_CLASSES = {
   'tests/react-utils-native.mjs': 'static',
   'tests/react-ipc-bridge-routing.mjs': 'static',
   'tests/continuous-grid-layout.mjs': 'static',
+  'tests/boot-ready-sequence.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */
@@ -162,6 +167,7 @@ export const REQUIRED_TESTS = [
   'tests/shim-module-boundaries.mjs',
   'tests/scope-field-convergence.mjs',
   'tests/continuous-grid-layout.mjs',
+  'tests/boot-ready-sequence.mjs',
   'tests/continuous-grid-scroll.mjs',
   'tests/d3-selection-closed-loop.mjs',
   'tests/d3-focus-closed-loop.mjs',

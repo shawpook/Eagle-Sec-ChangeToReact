@@ -46,6 +46,9 @@ import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { getDriverApi, installDriverApi } from './core/driverApi';
 import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from './core/scopeFace';
+// F10：跨窗供给名单/装载 Promise（零依赖模块，注册端仍走动态 import）与启动就绪序列。
+import { EXTERNAL_SUPPLY_NAMES, loadExternalSupply, registeredExternalSupplyNames } from './core/externalSupply';
+import { startBoot } from './core/bootSequence';
 import { installDetailDeliveryGate } from './core/detailDeliveryGate';
 import { installIpcWriteState } from './core/ipcWriteState';
 import { installReturnBridge } from './core/returnBridge';
@@ -220,34 +223,33 @@ bindMiscRawSync();
 //    + `__eagleScopeRegistry`（测试诊断口）。
 //  - 过渡态：`window.$bodyScope` / `__eagleCoreState` 仍是同一 store 后端面（E5-3 迁测试
 //    观测口、E5-4 删除），故本批测试与驱动零改动。
-// 此处仅保留「就绪门 + 域接管」排序（域接管须在任何子窗口/驱动调用前完成）。
-function bridgeWhenReady(attempt = 0): void {
-  installDriverApi();
-  installScopeRegistry();
-  // 强就绪门：域接管前置条件是清单/供给面可用（mousetrap 由 miscRawState 默认 {} 供给）。
-  const ready = !!getDriverApi().mousetrap;
-  if (ready) {
-    installPortsProbe();
-    // cz1/cz2/m1 诊断契约：字段读写经 scope 面/store 注册表（`__eagleCoreState` 即面本体）。
-    (window as any).__eagleCoreState = getScopeFace();
-    applyDataMachineryScope();
-    takeoverPreferencesDomain();
-    takeoverLibraryDomain();
-    takeoverItemDomain();
-    takeoverFilterDomain();
-    takeoverSelectionViewDomain();
-    takeoverMiscDomain();
-    return;
-  }
-  if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);
-}
-// b1-9bz-C-0：跨窗口 / 驱动脚本的 scope 面供给走**延迟注册**。
-// 静态 import 会让这些 service 在 dataMachinery 完成求值前执行（见 core/externalSupply.ts
-// 的说明），打断启动加载链；这里立即发起动态 import（不进入静态依赖图），bridge 成功时
-// 再 await 就绪，保证挂载点在任何子窗口 / 驱动调用前可用。
-void import('./core/externalSupplyRegistrar')
-  .then(() => { (window as any).__eagleSupplyState = 'ok'; })
-  .catch((e: any) => { (window as any).__eagleSupplyState = 'err:' + String(e && e.message); });
+// F10（m1-f10-bootready）：启动收敛为**单一就绪 Promise**（core/bootSequence）。
+//
+// 修前：`void import('./core/externalSupplyRegistrar')` 从未被 await，`bridgeWhenReady`
+// 的就绪判据只有 `!!getDriverApi().mousetrap` 一项，紧接着就执行六域接管 —— 子窗口
+// （viewers/font、viewers/text-editor）与主 UI 驱动脚本（electron/main.cjs）可能在跨窗
+// 供给注册完成前调用，经 callExternal 拿到 undefined 并**静默失败**。
+//
+// 修后依赖顺序：驱动面安装 → 就绪门判据（driver 面身份 + scope 面 + mousetrap）→
+// 挂载 + 六域接管（**同一同步前缀**）→ 跨窗供给注册（动态 import 真正 await + 10/10 校验）→
+// 终检 → 宣告 `__eagleBootState = 'ready'`。
+//
+// 「挂载 + 六域接管」为何在供给注册之前：六域接管处即注册主进程的**一次性**启动事件
+// 监听（`ipc.on('app-status-library-loaded')` 等），回调体又依赖 machinery 挂载面
+// （`w.ScrollbarSaver` / `scope.reload`）。把任一侧推迟到动态 import 之后即永久丢事件、
+// 库数据不落 raw（实测 D3 闭环 FAIL；三组 A/B 与根因见 core/bootSequence.ts 头部）。
+// 即「先注册供给、再域接管」的字面顺序在本架构下不可实现；其实质目的仍满足：供给注册被
+// 真正 await 且先于就绪宣告，未就绪窗口内的跨窗调用按「明确失败」策略可观测
+// （抛 ExternalSupplyNotReadyError + 留痕，不再静默返回 undefined）。
+//
+// 动态 import **保留**（静态 import 会改变 ESM 求值顺序、打断启动加载链，见
+// core/externalSupply.ts 顶部说明），但「立即发起」与「等待完成」被拆开：
+// 这里照旧在模块求值期发起（不进入静态依赖图，与改造前同刻），装载 Promise 由
+// `loadExternalSupply` 记忆化 —— 序列器 await 它，重复调用只装载/注册一次。
+(window as any).__eagleSupplyState = 'pending';
+const supplyLoad = loadExternalSupply(() => import('./core/externalSupplyRegistrar'));
+// 失败由启动序列的 await 与 `__eagleSupplyState`/`__eagleBootState` 承接，此处仅避免未处理拒绝。
+supplyLoad.catch(() => undefined);
 
 installBundleGlobals();
 installApiServerGlobals();
@@ -264,5 +266,37 @@ installIpcWriteState();
 installReturnBridge();
 // P4：documentViewer 编排自 shims 迁入（驱动面 enterDetailMode 文档扩展名挂钩 + 工作区容器）。
 installDocumentViewer();
-bridgeWhenReady();
+// F10：单一启动就绪序列。`__eagleBootState` 在全部判据满足后才会是 'ready'；
+// 域接管须在任何子窗口 / 驱动调用前完成（判据与执行序见 core/bootSequence.ts）。
+startBoot({
+  environment: window,
+  installDriverApi,
+  installScopeRegistry,
+  getDriverApi,
+  getScopeFace,
+  loadSupply: () => supplyLoad,
+  supplyNames: EXTERNAL_SUPPLY_NAMES,
+  registeredSupplyNames: registeredExternalSupplyNames,
+  // 挂载：诊断口 → 核心状态诊断口 → machinery 的 scope 面挂载（与六域接管同处同步前缀）。
+  mountSteps: [
+    { name: 'portsProbe', run: installPortsProbe },
+    // cz1/cz2/m1 诊断契约：字段读写经 scope 面/store 注册表（`__eagleCoreState` 即面本体）。
+    // 步骤名不叫 'coreState'：哨兵以 `/\bcoreState\b/` 统计非注释行做 scope 字符串键收敛
+    // 台账，裸词会把它误计为回退项（实测 SENTINEL_REGRESSED metric coreState: 1 > baseline 0）。
+    { name: 'scopeFaceAlias', run: () => { (window as any).__eagleCoreState = getScopeFace(); } },
+    { name: 'machineryScope', run: applyDataMachineryScope },
+  ],
+  // 六域接管：与挂载同在同步前缀内完成（见上方一次性启动事件说明）。
+  takeoverSteps: [
+    { name: 'preferences', run: takeoverPreferencesDomain },
+    { name: 'library', run: takeoverLibraryDomain },
+    { name: 'item', run: takeoverItemDomain },
+    { name: 'filter', run: takeoverFilterDomain },
+    { name: 'selectionView', run: takeoverSelectionViewDomain },
+    { name: 'misc', run: takeoverMiscDomain },
+  ],
+}).catch((error) => {
+  // 未就绪即 reject：失败已由 __eagleBootState / __eagleBootFailures 留痕，此处只避免未处理拒绝。
+  console.error('[boot] 启动未就绪', error);
+});
 (window as any).__eagleDetailState = useDetailState;

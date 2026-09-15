@@ -6,6 +6,10 @@
 		<title></title>
 		<link rel="stylesheet" href="../css/base.css">
 		<link rel="stylesheet" href="../css/jquery-ui.min.css">
+		<!-- R5：sweetalert2.min.css 保留 = .swal2-* 类名契约样式（主窗 index.html:10 同款）。
+		     vendor 退役前该样式由 sweetalert2.all.min.js 自注入；退役后必须显式引入——
+		     core/dialog.ts 的 closeModal 依赖 .swal2-hide 动画的 animationend 才移除容器。 -->
+		<link rel="stylesheet" href="../js/vendors/sweetalert2/sweetalert2.min.css">
 		<link rel="stylesheet" href="css/collect-window.css" />
 	</head>
 	<body>
@@ -36,7 +40,8 @@
 		<!-- 外部套件 -->
 		<script src="js/vendors/jquery-1.8.0.min.js"></script>
 		<script src="js/vendors/jquery-ui.min.js"></script>
-		<script src="js/vendors/sweetalert2.all.min.js"></script>
+		<!-- R5：sweetalert2.all.min.js 退役——window.swal 由 entry 的 installDialog()
+		     （自研 react/core/dialog.ts，.swal2-* 类名逐字复刻）供给。 -->
 		<script src="js/vendors/chinese_convert.js"></script>
 		<script src="js/vendors/pinyinlite.js"></script>
 		<script src="js/vendors/tiny-pinyin.js"></script>

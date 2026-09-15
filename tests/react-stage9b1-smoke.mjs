@@ -359,6 +359,60 @@ try {
     return items.some((el) => el.textContent.indexOf('Bulk-60') > -1);
   })()`);
 
+  // ── 9b-3（R5）：资料夹「新建子资料夹」确认框 = swal 消费面 ──
+  // createFolder（folderPanel.tsx:446）用 swal({input:'text', showCancelButton, …})，
+  // 是本窗唯一 SweetAlert 调用点。断言契约（vendor sweetalert2 与自研 installDialog 均应通过）：
+  // 弹窗 .swal2-* 结构 + 文本输入 + 确认/取消按钮；取消 → 关闭且不建资料夹、焦点回搜索框。
+  // swal 供给面 = 自研 installDialog（v6 静态面无 getConfirmButton/clickCancel，可据此指纹区分
+  // vendor 与自研实现）；且 vendors 标签已摘。
+  await assertExprOn(pw, 'pw4e-swal-surface', `(() => {
+    const s = window.swal;
+    return typeof s === 'function'
+      && typeof s.getConfirmButton === 'function'
+      && typeof s.clickCancel === 'function'
+      && typeof s.isVisible === 'function'
+      && !document.querySelector('script[src*="sweetalert2"]');
+  })()`);
+  await evalOn(pw, `(() => {
+    const rows = Array.from(document.querySelectorAll('.select-panel-item .list-item.has-icon'));
+    const target = rows.find((r) => !r.closest('.select-panel-item').querySelector('.history-badge'));
+    if (!target) return 'no-row';
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4e-folder-contextmenu', `(() => {
+    const menu = document.querySelector('.context-menu.open');
+    return !!menu && menu.querySelectorAll('.context-menu-item').length >= 2;
+  })()`);
+  const folderCountBefore = await evalOn(pw, `window.__eagleCollectFolderPanel.listData.items.filter((i) => i.type === 'folder').length`);
+  await evalOn(pw, `(() => {
+    window.__eagleCollectFolderPanel.createFolder('', function () {});
+    return true;
+  })()`);
+  await delay(300);
+  await assertExprOn(pw, 'pw4e-swal-open', `(() => {
+    const container = document.querySelector('.swal2-container');
+    const modal = container && container.querySelector('.swal2-modal');
+    const input = container && container.querySelector('input.swal2-input');
+    return !!container && !!modal && modal.classList.contains('alert-box')
+      && !!input && input.placeholder.length > 0
+      && !!container.querySelector('.swal2-confirm') && !!container.querySelector('.swal2-cancel');
+  })()`);
+  await evalOn(pw, `(() => {
+    const btn = document.querySelector('.swal2-container .swal2-cancel');
+    btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+    btn.click();
+    return true;
+  })()`);
+  await delay(300);
+  await assertExprOn(pw, 'pw4e-swal-cancel-close', `(() => {
+    const visible = window.swal.isVisible ? window.swal.isVisible() : !!document.querySelector('.swal2-container');
+    const folderCount = window.__eagleCollectFolderPanel.listData.items.filter((i) => i.type === 'folder').length;
+    const focused = document.activeElement && document.activeElement.id === 'folder-select-panel-search-input';
+    return visible === false && folderCount === ${folderCountBefore} && focused;
+  })()`);
+
   await delay(600);
   try {
     const screenshot = await Promise.race([

@@ -9033,3 +9033,76 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   待该窗注释清理批统一订正（非代码依赖）。
 - 下一目标：采集窗口去 jQuery/jQuery UI/SweetAlert（`selectPanelEngine.ts:4`、`tagPanelEngine.ts:5`、
   `contextMenu.tsx:8`、`folderPanel.tsx:447`），完成后按同一纪律撤 `collect-window` 豁免。
+
+---
+
+## R5 实施：采集窗口（SweetAlert2 退役 + 一处「CSS 随 vendor 退役」的真实缺陷）
+
+**批边界**：采集窗唯一 SweetAlert 消费点换用自研 `installDialog()`，vendor 脚本摘除 + 契约样式显式引入。
+改动文件：`src/app/collect-window/index.html`、`src/app/react/collect-window/entry.tsx`、
+`tests/react-stage9b1-smoke.mjs`。
+
+### 1. 现状盘点（先查证再改）
+
+- 该窗 `index.html` 加载 20 个 classic script：`js/lib/api/*`（window.eagle 数据面）、
+  jQuery 1.8 + jQuery UI、sweetalert2.all.min.js、chinese_convert/pinyinlite/tiny-pinyin、
+  `js/models/collect-item.js`。**SweetAlert 在 React 侧只有一处消费**：
+  `folderPanel.tsx:447` 的 `createFolder`（`swal({input:'text', showCancelButton, focusConfirm…})`），
+  触发路径 = 资料夹项右键菜单 →「新增子文件夹 / 新增同层级文件夹」。
+- `js/lib/api/swal-dialog.js`（另一个 classic script）定义 `SwalDialog` 类但**全仓零消费**——
+  记为 R6 死脚本候选（本批不动）。
+- 逐文件核对 script 存在性，另发现两处与 swal 无关的**既有**问题（本批不动，留待对应批次）：
+  ① `js/lib/api/url-enlarger.js` 在采集窗目录**不存在**（404；主窗同名文件在 `src/app/js/lib/api/`）；
+  ② head 的 `../css/jquery-ui.min.css` 指向不存在的 `src/app/css/jquery-ui.min.css`，而
+  `collect-window/css/jquery-ui.min.css` 本地副本存在却未被引用。二者均属 jQuery 相关，
+  与 jQuery UI 退役批合并处置（避免在本批引入视觉变化、扰动 screenshot 基线）。
+
+### 2. 真实缺陷：vendor 退役把 `.swal2-*` 契约样式一起带走了
+
+- 换用 `installDialog()` 并摘除 `sweetalert2.all.min.js` 后，`pw4e-swal-open` 通过，
+  但取消按钮点击后弹窗**不消失**：`swal.isVisible()` 恒 true、`.swal2-container` 仍在 DOM。
+- 根因：自研 `core/dialog.ts` 的 `closeModal` 走「加 `.swal2-hide` 类 → 等 `animationend`
+  → 移除容器」；而该动画由 sweetalert2 的 CSS 定义。采集窗此前**没有** `.swal2-*` 样式表标签
+  （样式一直是 `sweetalert2.all.min.js` 自注入的，`all` 版 = JS+CSS 合一），vendor 一退役
+  `animationend` 永不触发 → 容器永不移除。主窗 `index.html:10` 正因如此长期保留
+  `sweetalert2.min.css` 的 `<link>`（dialog.ts 头部注释即写明「css 不退役=类名契约」）。
+- 修复：采集窗 head 补 `<link rel="stylesheet" href="../js/vendors/sweetalert2/sweetalert2.min.css">`
+  （主窗同款），随即 `pw4e-swal-cancel-close` 转 PASS。
+- **教训入档**：`xxx.all.min.js` 形态的 vendor 把 CSS 一并带走，退役其标签时**必须同时显式引入
+  CSS**，否则「静默半失效」（JS 面正常、动画/关闭路径失效）。这与偏好窗 tippy 标签漏摘
+  同属「退役批只改了部分窗口」的边界泄漏。
+
+### 3. 验证锚（扩 `tests/react-stage9b1-smoke.mjs`，新增 pw4e 组 4 项）
+
+- `pw4e-swal-surface`：`window.swal` 为**自研**实现（用 `getConfirmButton`/`clickCancel`
+  指纹区分——v6 静态面无此二者）+ `sweetalert2` 脚本标签已摘。
+- `pw4e-folder-contextmenu` / `pw4e-swal-open`：右键菜单 → 新增子文件夹 → `.swal2-container`
+  > `.swal2-modal.alert-box` + `input.swal2-input`（占位符非空）+ confirm/cancel 双按钮。
+- `pw4e-swal-cancel-close`：取消 → `swal.isVisible()===false`、资料夹数不变、焦点回
+  `#folder-select-panel-search-input`（createFolder 拒绝回调语义）。
+- 驱动方式：直接调 `window.__eagleCollectFolderPanel.createFolder('', cb)`（该窗唯一 swal 调用点），
+  避开右键菜单内部实现的偶然性；菜单本身另有 pw4b 组覆盖。
+- 记录一条 vendor 差异（非缺陷）：vendor v6 对**合成** `click()`/mousedown+mouseup+click 均不关闭
+  （真人点击为 trusted 事件，不受影响），自研实现在合成点击下正常关闭——故本组断言只能在替换后成立，
+  属「替换优于 vendor 的可测性」而非行为回归。
+
+### 4. 验证命令与结果
+
+- `node tests/react-stage9b1-smoke.mjs` — **STAGE9B1 SMOKE OK**（32 项，含新增 pw4e 4 项）。
+- `node tests/react-stage9a2-smoke.mjs` / `react-stage9a3-smoke.mjs` / `collect-save-closed-loop.mjs` — OK。
+- `node tests/typecheck.mjs` — 0 诊断；`node tests/react-rewrite-sentinel.mjs` — SENTINEL_OK。
+- `node tests/run-attached-nonsuite.mjs`（附着实测，非套件）— `screenshot-regression` 17 页中
+  **collect / preferences / main 全 PASS**（本批改动面零回归），4 项 FAIL = workbench / gif / model / plugin，
+  **均为本批未触碰的页面**（其中 workbench 是 `frontend/public/workbench.html` 独立静态页，
+  不引用 React 应用包，可确证与本批无关）；`workbench-interactions` 同页失败。
+  记为**既有失败集**，留给 R7「核验历史低频失败并记录复现证据」。
+- 附注：`react-stage9b1-smoke` 的 `Page.captureScreenshot` 超时（WARN，测试容忍）经验证为**既有**
+  现象——用 `git show HEAD:` 取出改动前测试文件单独运行同样超时，非本批引入。
+
+### 5. 尚未做（采集窗剩余）
+
+- jQuery / jQuery UI 退役（`selectPanelEngine.ts:4` 定位、`tagPanelEngine.ts:5` render/draggable/
+  resizable、`contextMenu.tsx:8` sortable），届时一并处置上述两处 jQuery 相关既有问题
+  （url-enlarger 404、jquery-ui.css 路径错），并核验 `.select-panel-item` 几何与 screenshot baseline。
+- `js/lib/api/*` + `js/models/collect-item.js` → TS 模块（数据面，风险最高，放最后）。
+- 采集窗 `scopedOut` 豁免：待上述替换完成后再撤（同纪律）。

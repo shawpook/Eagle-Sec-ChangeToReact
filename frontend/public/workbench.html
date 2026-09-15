@@ -394,7 +394,11 @@
   </div>
 
   <script>
-    const API = 'http://127.0.0.1:41695';
+    // R7：与其余交付页一致，优先使用运行期注入的 API 基址（dev 中间件/生产注入），
+    // 兜底才是 Eagle 默认端口。此前硬编码 41695，导致任何非默认端口的栈
+    // （隔离回归、多实例开发）下本页拿不到数据——screenshot-regression 的 workbench
+    // 断言因此在隔离栈恒红，且失败原因与页面行为无关。
+    const API = (window.__EAGLE_API_BASE_URL || 'http://127.0.0.1:41695').replace(/\/$/, '');
     let currentItems = [];
     let smartFolderId = '';
     let selectedItem = null;

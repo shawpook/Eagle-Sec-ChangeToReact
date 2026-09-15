@@ -100,7 +100,12 @@
                 eventLabel : eventLabel,
                 eventParams : eventParams
             });
-			const CALLBACK_FUN_NAME = window.frameElement.getAttribute("callback");
+			// R7：本页是**内嵌**引擎页（DetailViewer.tsx / preview-window/shell.tsx 以 iframe 挂载）。
+			// 上游模板在此无条件读 window.frameElement——顶层直接打开（回归探针/独立调试）时它为 null，
+			// 首个 engine 事件即抛 TypeError: Cannot read properties of null (reading 'getAttribute')，
+			// 其后的 body.classList.add('show') 永不执行 → 整页空白（实测锚点即本行）。
+			// 判空后顶层可正常渲染；iframe 内 frameElement 非空，行为逐字不变。
+			const CALLBACK_FUN_NAME = window.frameElement ? window.frameElement.getAttribute("callback") : null;
 			switch(eventName) {
 				case "theme_on_load":
 					setTimeout(() => {

@@ -7,6 +7,9 @@ const projectRoot = path.resolve(here, '..');
 const screenshotDir = path.join(projectRoot, 'screenshots');
 const debugPort = process.env.EAGLE_DEBUG_PORT || 9226;
 const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5176';
+// R7：插件示例服务页由**后端**提供，此前本测试硬编码 41695——附着式隔离栈用随机端口时
+// 该 URL 恒死，plugin 断言于是与页面行为无关地恒红（默认端口下同一断言 PASS，已取对照证据）。
+const apiBase = (process.env.EAGLE_API_URL || 'http://127.0.0.1:41695').replace(/\/$/, '');
 
 fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -62,13 +65,20 @@ const pages = [
   ['collect', `${origin}/src/app/collect-window/index.html`, 6000, () => document.querySelectorAll('.select-panel-item').length >= 5],
   ['exif', `${origin}/src/app/exif-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png')}&width=1536&height=960&orientation=1`, 5000, () => document.querySelector('img')?.getAttribute('src').includes('Welcome Library.png')],
   ['font', `${origin}/src/app/font-viewer/font-viewer.html`, 5000, () => document.body.innerText.includes('Moonlight')],
-  ['gif', `${origin}/src/app/gif-viewer/index.html?path=${encodeURIComponent('/mock-assets/sample.gif')}&render=normal`, 5000, () => !!document.querySelector('img[src*="sample.gif"]')],
+  // R7：`gif` 不再在此断言。理由：该查看器是 **iframe 子窗**，粘合层经 `parent.require`
+  // 取 Node 侧 `my_modules/url`（`viewers/gif/entry.tsx:32-37`）并回调父窗驱动面
+  // （`gifViewer.onFinished/onProgress`）；纯浏览器顶层直连没有 Node 通道，本页在架构上
+  // 就无法在此场景被驱动——**不是页面缺陷**，断言本身不成立（故记为 SKIP 而非 PASS/FAIL）。
+  // 真实上下文的覆盖在 `tests/react-stage-smoke.mjs` 的 b1-9ah（Electron 主窗内挂真实 iframe，
+  // 走 vite 中间件链 + 真实 SuperGif 引擎 + onFinished 回程）；R7 已核对该项在套件内为绿。
+  ['gif', `${origin}/src/app/gif-viewer/index.html?path=${encodeURIComponent('/mock-assets/sample.gif')}&render=normal`, 0, null,
+    'iframe 子窗需父窗 Node 通道（parent.require），顶层直连不适用；真实上下文见 react-stage-smoke b1-9ah'],
   ['raw', `${origin}/src/app/raw-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/')}&ext=png&name=${encodeURIComponent('Welcome Library')}&width=1536&height=960&orientation=1`, 5000, () => !!document.querySelector('img[src*="thumbnail"]')],
   ['text-editor', `${origin}/src/app/text-editor/text-editor.html?theme=dark&language=zh_CN`, 5000, () => document.body.innerText.includes('Eagle Reverse text editor sample')],
   ['native', `${origin}/src/app/native-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/')}&name=${encodeURIComponent('Welcome Library.png')}&id=MOCK0001&ext=png&width=1536&height=960`, 5000, () => document.body.classList.contains('ready')],
   ['model', `${origin}/src/app/model-viewer/website/index.html#model=/mock-assets/box.glb`, 8000, () => document.querySelector('#main_file_name')?.textContent === 'box.glb'],
   ['pdf', `${origin}/src/app/pdf-viewer/web/viewer.html?path=${encodeURIComponent('/mock-assets/sample.pdf')}`, 8000, () => !!document.querySelector('.pdfViewer .page')],
-  ['plugin', 'http://127.0.0.1:41695/plugins/eagle-reverse-example-service/index.html', 3000, () => document.body.innerText.includes('Eagle Reverse Example Service') && typeof window.eagle !== 'undefined'],
+  ['plugin', `${apiBase}/plugins/eagle-reverse-example-service/index.html`, 3000, () => document.body.innerText.includes('Eagle Reverse Example Service') && typeof window.eagle !== 'undefined'],
   ['video', `${origin}/media-viewer/video.html?path=${encodeURIComponent('/mock-assets/sample.webp')}`, 3000, () => !!document.querySelector('video')?.src],
   ['audio', `${origin}/media-viewer/audio.html?path=${encodeURIComponent('/mock-assets/sample.wav')}`, 5000, () => {
     const canvas = document.querySelector('canvas');
@@ -81,7 +91,14 @@ const pages = [
 ];
 
 const results = [];
-for (const [name, url, wait, verify] of pages) {
+for (const entry of pages) {
+  const [name, url, wait, verify, skipReason] = entry;
+  if (typeof verify !== 'function') {
+    // R7：显式 SKIP —— 不截图、不计入通过，理由随行打印（「不把无法执行写成通过」）。
+    results.push({ name, skipped: true, reason: skipReason });
+    console.log(`SKIP ${name} — ${skipReason}`);
+    continue;
+  }
   await page.send('Page.navigate', { url });
   await new Promise((resolve) => setTimeout(resolve, wait));
   const evalResult = await page.send('Runtime.evaluate', {
@@ -96,9 +113,12 @@ for (const [name, url, wait, verify] of pages) {
 }
 
 page.ws.close();
-const failed = results.filter((entry) => !entry.ok);
+const skipped = results.filter((entry) => entry.skipped);
+const failed = results.filter((entry) => entry.ok === false);
 if (failed.length > 0) {
-  console.error(`screenshot regression failed: ${failed.length}/${results.length}`);
+  console.error(`screenshot regression failed: ${failed.length}/${results.length - skipped.length}`
+    + (skipped.length ? `（另有 ${skipped.length} 项 SKIP：${skipped.map((s) => s.name).join(', ')}）` : ''));
   process.exit(1);
 }
-console.log(`screenshot regression passed: ${results.length}/${results.length}`);
+console.log(`screenshot regression passed: ${results.length - skipped.length}/${results.length - skipped.length}`
+  + (skipped.length ? `（SKIP ${skipped.map((s) => s.name).join(', ')}）` : ''));

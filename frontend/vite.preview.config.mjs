@@ -182,6 +182,18 @@ export default defineConfig({
               return;
             }
           }
+          // R7：public 目录下的静态页（workbench.html 等）默认由 Vite 原样直出，
+          // 拿不到注入的 API 基址，页面只能硬编码默认端口——一旦栈换端口，页面连同
+          // 其回归断言一起与真实行为脱钩。此处为 public HTML 补上同一份注入面
+          // （与生产相比只多这一步；生产里这些页面按 41695 兜底，与后端默认端口一致）。
+          if (url.endsWith('.html')) {
+            const file = path.resolve(frontendPublic, url.replace(/^\//, ''));
+            if (file.startsWith(path.resolve(frontendPublic)) && fs.existsSync(file) && fs.statSync(file).isFile()) {
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(injectPreviewScripts(fs.readFileSync(file, 'utf8')));
+              return;
+            }
+          }
           next();
         });
       },

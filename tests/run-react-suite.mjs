@@ -3,10 +3,15 @@
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
  * R0 起并入连续网格几何与滚动/自动定位两项；R2 并入 shim 模块边界检查；R3 并入类型门禁、R4 并入 scope 字段收敛台账（见数组内注释）。
+ *
+ * R7 起**清单移入 `tests/react-suite-manifest.mjs`**（与统一验收入口 `frontend-acceptance.mjs`
+ * 共用同一事实来源）：本文件只负责执行（顺序 + 隔离清理 + 失败重跑一次），
+ * 清单与分类不得在此再抄一份。
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { REACT_SUITE as tests } from './react-suite-manifest.mjs';
 
 // 每项前清理本仓残留 Electron（防「父进程被杀 → 子进程孤儿 → 后续 spawn 失败」级联假失败）。
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,93 +24,18 @@ function killLeftoverElectron() {
   } catch (err) { /* 清理失败不阻塞 */ }
 }
 
-const tests = [
-  'tests/react-rewrite-sentinel.mjs',
-  'tests/react-utils-native.mjs',
-  // P1-b：IPC 接缝（core/channelBridge）单路由不变量 —— 纯原生直通频道走 preload 通用 ipc、
-  // 其余走 shims 总线，事件面前转。无 Electron、秒级。
-  'tests/react-ipc-bridge-routing.mjs',
-  // R0：连续网格几何单元测试（纯 Node + typescript 内存转译，无 Electron、秒级）。
-  // 覆盖四布局 10,000 条的总高度/坐标/可见窗口与锚点还原。
-  'tests/continuous-grid-layout.mjs',
-  // R2：shim 模块跨模块标识符完整性（纯 Node + typescript CompilerHost，无 Electron、秒级）。
-  // 拆分 core/shim/* 后，「标识符留在别的模块、此处未 import」是运行期 ReferenceError 的主因，
-  // 且 @ts-nocheck 与打包器都不报——本项以剥离 nocheck 的类型检查精确拦截。
-  'tests/shim-module-boundaries.mjs',
-  // R3：类型门禁（零容忍）——`src/app/react` + `frontend/document-viewer` 全范围 0 诊断。
-  'tests/typecheck.mjs',
-  // R4：scope 字段「零字符串键」收敛台账（纯 Node、秒级；已收敛域不得回退为字符串键）。
-  'tests/scope-field-convergence.mjs',
-  'tests/react-stage-smoke.mjs',
-  'tests/react-stage5-smoke.mjs',
-  'tests/react-stage6-smoke.mjs',
-  'tests/react-stage7a-smoke.mjs',
-  'tests/react-stage7b-smoke.mjs',
-  'tests/react-stage7c-smoke.mjs',
-  'tests/react-stage7c2-smoke.mjs',
-  'tests/react-stage7d1a-smoke.mjs',
-  'tests/react-stage7d1b-smoke.mjs',
-  'tests/react-stage7d1c1-smoke.mjs',
-  'tests/react-stage7d1c2-smoke.mjs',
-  'tests/react-stage7d2-smoke.mjs',
-  'tests/react-stage7d3a-smoke.mjs',
-  'tests/react-stage7d3b-smoke.mjs',
-  'tests/react-stage7d4-smoke.mjs',
-  'tests/react-stage7d5a-smoke.mjs',
-  'tests/react-stage7d5b-smoke.mjs',
-  'tests/react-stage7d6a-smoke.mjs',
-  'tests/react-stage7d6b-smoke.mjs',
-  'tests/react-stage7d6c-smoke.mjs',
-  'tests/react-stage8a-smoke.mjs',
-  'tests/react-stage8b-smoke.mjs',
-  'tests/react-stage8c-smoke.mjs',
-  'tests/react-stage8d-smoke.mjs',
-  'tests/react-stage8e-smoke.mjs',
-  'tests/react-stage8e2-smoke.mjs',
-  'tests/react-stage9a2-smoke.mjs',
-  'tests/react-stage9a3-smoke.mjs',
-  'tests/react-stage9b1-smoke.mjs',
-  'tests/react-stage11a1-smoke.mjs',
-  'tests/react-stage11a2-smoke.mjs',
-  'tests/react-stage11a3-smoke.mjs',
-  'tests/react-stage11a49-smoke.mjs',
-  'tests/react-stage11b0-smoke.mjs',
-  'tests/react-stage1c2-smoke.mjs',
-  'tests/react-stage1c3-smoke.mjs',
-  'tests/react-stage1cz1-smoke.mjs',
-  'tests/react-stage1cz2-smoke.mjs',
-  'tests/react-stage1cz3-smoke.mjs',
-  'tests/react-stage1m1-unified-smoke.mjs',
-  'tests/main-ui-workflow-closed-loop.mjs',
-  'tests/source-mode-ui-closed-loop.mjs',
-  'tests/library-switch-ui-closed-loop.mjs',
-  'tests/drag-start-closed-loop.mjs',
-  'tests/react-s2-sidebar-dnd-closed-loop.mjs',
-  'tests/preview-delivery-closed-loop.mjs',
-  'tests/channel-wiring-closed-loop.mjs',
-  'tests/menu-popup-closed-loop.mjs',
-  'tests/txt-update-closed-loop.mjs',
-  'tests/empty-trash-closed-loop.mjs',
-  'tests/native-preview-closed-loop.mjs',
-  'tests/ui-interactions-closed-loop.mjs',
-  'tests/residue-closed-loop.mjs',
-  // R0：连续网格滚动/自动定位闭环（600 条隔离库 + 全栈）。守护“全列表单一高度、
-  // 滚轮与滑块方向一致、停住不回跳、图片加载不改变坐标、AutoScroll 频道到离屏选中项”。
-  'tests/continuous-grid-scroll.mjs',
-  // ── b1-9bz-D-3：10 项 React 状态→渲染闭环（store/scope 驱动 + 实测 DOM 断言）──
-  'tests/d3-boot-render-closed-loop.mjs',
-  'tests/d3-viewmode-closed-loop.mjs',
-  'tests/d3-search-empty-closed-loop.mjs',
-  'tests/d3-alltags-view-closed-loop.mjs',
-  'tests/d3-detail-mode-closed-loop.mjs',
-  'tests/d3-theme-closed-loop.mjs',
-  'tests/d3-loading-closed-loop.mjs',
-  'tests/d3-selection-closed-loop.mjs',
-  'tests/d3-focus-closed-loop.mjs',
-  'tests/d3-store-roundtrip-closed-loop.mjs',
-];
-
 const failed = [];
+const retried = [];
+// 失败信息可能只走 stderr（console.error），stdout/stderr 都要看。
+// R7：过滤后为空时**回落到原始尾部**——continuous-grid-scroll 的首败就是这样：
+// 输出里没有 FAIL/Error: 形态的行，过滤结果为空，等于首败没留下任何线索。
+const failureTail = (r, lines = 8) => {
+  const all = ((r.stdout || '') + '\n' + (r.stderr || '')).split('\n');
+  const filtered = all.filter(l => /FAIL|SMOKE ERROR|OK$|Error:|WATCHDOG/.test(l)).slice(-lines);
+  if (filtered.length > 0) return filtered.join('\n');
+  const raw = all.filter(l => l.trim().length > 0).slice(-lines);
+  return raw.length > 0 ? `（无匹配行，原始尾部）\n${raw.join('\n')}` : '（无任何输出）';
+};
 for (const t of tests) {
   killLeftoverElectron();
   process.stdout.write(`RUN ${t} ... `);
@@ -116,19 +46,26 @@ for (const t of tests) {
   }
   // b1-9bz-D-4：长套件下偶发环境级假失败（孤儿 Electron/文件锁/负载）——失败重跑一次。
   // 真回归会连败两次，仍计入 failed。
+  // R7：**首败也打印断言尾部**——R6 全量运行时 react-s2-sidebar-dnd 首败但重跑即过，
+  // 因当时只在「二连败」分支打印，首败的具体断言名没有留下（事后无法归因）。
+  // 现在首败即留证（重跑仍会覆盖：两个尾部都打印），不改任何断言、不放宽判据。
   console.log(`FAIL (exit=${r.status}) → RETRY`);
+  console.log(`  [first-failure] ${failureTail(r, 5)}`);
   killLeftoverElectron();
   const r2 = spawnSync(process.execPath, [t], { encoding: 'utf8', timeout: 300000 });
   if (r2.status === 0) {
+    retried.push(t);
     console.log(`OK (retry)`);
     continue;
   }
-  r = r2;
-  // 失败信息可能只走 stderr（console.error），stdout/stderr 都要看
-  const tail = ((r.stdout || '') + '\n' + (r.stderr || ''))
-    .split('\n').filter(l => /FAIL|SMOKE ERROR|OK$|Error:/.test(l)).slice(-8).join('\n');
-  console.log(tail);
+  console.log(`  [retry-failure] ${failureTail(r2, 5)}`);
   failed.push(t);
 }
-console.log(failed.length === 0 ? 'REACT SUITE ALL GREEN' : `REACT SUITE FAILED: ${failed.length}: ${failed.join(', ')}`);
+const okCount = tests.length - failed.length - retried.length;
+console.log(
+  `REACT SUITE ${failed.length === 0 ? 'ALL GREEN' : `FAILED: ${failed.length}: ${failed.join(', ')}`}`
+  + ` （${tests.length} 项：OK ${okCount} + retry-OK ${retried.length}`
+  + `${failed.length ? ` + FAIL ${failed.length}` : ''}）`,
+);
+if (retried.length > 0) console.log(`注意：以下项首跑失败、重跑通过（低频/环境相关，证据见上）：${retried.join(', ')}`);
 process.exit(failed.length === 0 ? 0 : 1);

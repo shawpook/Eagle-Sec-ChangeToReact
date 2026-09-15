@@ -175,8 +175,15 @@ try {
     await delay(350);
     assert.equal((await snapshot()).resets, 0, 'end navigation does not reload');
     await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', ...wheelPoint, deltaX: 0, deltaY: -420 });
-    await delay(400);
-    const reversed = await snapshot();
+    // R7：原为「等固定 400ms → 断言位移 > 100px」。负载下偶发假失败（R7 隔离复跑 4 次中 1 次失败；
+    // 失败时 GRID STATE 显示尾部仍有 17 个 box 在懒加载队列、图片 complete 但 width=0 尚未解码；
+    // 套件内亦出现一次首跑失败、重跑即过）。**判据不变**（尾部向上滚轮必须反向移动 > 100px），
+    // 只把固定等待换成**有上限的轮询**（同仓先例：sidebar-dnd 的 dragend 清理由固定 150ms 改为轮询上限 5s）。
+    // 超时仍以同一条断言失败——「永不反向」的真缺陷不会被放过。
+    const reversed = await waitFor(async () => {
+      const state = await snapshot();
+      return state.top < state.height - state.viewport - 100 ? state : null;
+    }, 'wheel reverses at list end', 2000).catch(async () => snapshot());
     assert.ok(reversed.top < reversed.height - reversed.viewport - 100, 'wheel reverses immediately at list end');
     assert.equal(reversed.height, initial.height, 'thumbnail mounts do not change total height');
     console.log('PASS last item and reverse wheel');

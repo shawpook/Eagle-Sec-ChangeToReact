@@ -3525,7 +3525,10 @@ app.whenReady().then(async () => {
   if (pluginSmokeMode) {
     const pluginWin = createWindow({
       show: false,
-      url: 'http://localhost:41695/plugins/eagle-reverse-example-service/index.html',
+      // R7：与 apiBase（第 9 行，EAGLE_API_URL 可覆盖）保持一致——此前硬编码 41695，
+      // 一旦 EAGLE_API_PORT/EAGLE_API_URL 换端口，插件窗会指向死地址
+      // （screenshot-regression 的 plugin 断言在隔离栈恒红即此因）。
+      url: `${apiBase}/plugins/eagle-reverse-example-service/index.html`,
       width: 640,
       height: 480,
     });

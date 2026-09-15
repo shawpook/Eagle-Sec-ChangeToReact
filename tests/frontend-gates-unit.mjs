@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { checkDist, parseHtml } from './dist-entry-check.mjs';
 import { auditNoCheck, NOCHECK_LEDGER, scanTypeDirectives } from './typecheck.mjs';
 import { runAcceptanceStages, summarizeAcceptance } from './frontend-acceptance.mjs';
@@ -168,10 +169,14 @@ test('递归 CSS 语法破损不可静默通过', (t) => {
 
 test('CLI --root 指向隔离目录，缺失必需入口退出 1', (t) => {
   const root = fixture(t, {}, ['src/app/index.html']);
-  const result = spawnSync(process.execPath, [new URL('./dist-entry-check.mjs', import.meta.url).pathname.replace(/^\/(?=[A-Za-z]:)/, ''), `--root=${root}`], {
+  // 脚本路径必须经 fileURLToPath 还原：.pathname 会把空格与非 ASCII 目录名百分号编码，
+  // 子进程将因 MODULE_NOT_FOUND 退出而与门禁判定无关。
+  const cli = fileURLToPath(new URL('./dist-entry-check.mjs', import.meta.url));
+  const result = spawnSync(process.execPath, [cli, `--root=${root}`], {
     encoding: 'utf8', timeout: 30000,
   });
   assert.equal(result.error, undefined);
+  assert.doesNotMatch(result.stderr, /MODULE_NOT_FOUND/, `CLI 未真正执行：${result.stderr}`);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /FAIL .*产物缺失 src\/app\/index\.html/);
   assert.match(result.stdout, /DIST_ENTRY_CHECK_FAILED/);

@@ -5,7 +5,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title></title>
 		<link rel="stylesheet" href="../css/base.css">
-		<link rel="stylesheet" href="../css/jquery-ui.min.css">
+		<!-- R5：../css/jquery-ui.min.css 链接退役——jQuery UI 全窗零消费（D-2f 已自研替换），
+		     且该路径本就不存在（404），本地副本 collect-window/css/jquery-ui.min.css 亦无引用。 -->
 		<!-- R5：sweetalert2.min.css 保留 = .swal2-* 类名契约样式（主窗 index.html:10 同款）。
 		     vendor 退役前该样式由 sweetalert2.all.min.js 自注入；退役后必须显式引入——
 		     core/dialog.ts 的 closeModal 依赖 .swal2-hide 动画的 animationend 才移除容器。 -->
@@ -16,7 +17,8 @@
 		<!-- 阶段9b-1：collect-window React 化——Angular（CollectApp/CollectController/四个面板指令/
 		     modules）已由 src/app/react/collect-window/* 承接；body 只剩 React 宿主。
 		     保留：js/lib/api/*（window.eagle 数据面，fetch 经 shims 重写 41595→测试后端）、
-		     vendors（jquery/swal/chinese_convert/pinyinlite/tiny-pinyin，面板引擎与 save 依赖）、
+		     vendors（chinese_convert/pinyinlite/tiny-pinyin，面板引擎与 save 依赖；R5 起
+		     jquery/jquery-ui/sweetalert2 已全部退役）、
 		     models/collect-item.js（plain JS 全局类）。 -->
 		<div id="eagle-collect-react-host"></div>
 
@@ -38,8 +40,9 @@
 		<script src="js/lib/api/swal-dialog.js"></script>
 
 		<!-- 外部套件 -->
-		<script src="js/vendors/jquery-1.8.0.min.js"></script>
-		<script src="js/vendors/jquery-ui.min.js"></script>
+		<!-- R5：jquery-1.8.0.min.js + jquery-ui.min.js 退役——本窗 React 代码零 jQuery 消费
+		     （D-2f 已把 jQuery UI sortable/draggable/resizable 换自研），classic 侧仅剩
+		     env.js 的 isDOMReady 与 swal-dialog.js 的 iframe 操作，均已改 Native。 -->
 		<!-- R5：sweetalert2.all.min.js 退役——window.swal 由 entry 的 installDialog()
 		     （自研 react/core/dialog.ts，.swal2-* 类名逐字复刻）供给。 -->
 		<script src="js/vendors/chinese_convert.js"></script>

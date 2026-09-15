@@ -9106,3 +9106,64 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   （url-enlarger 404、jquery-ui.css 路径错），并核验 `.select-panel-item` 几何与 screenshot baseline。
 - `js/lib/api/*` + `js/models/collect-item.js` → TS 模块（数据面，风险最高，放最后）。
 - 采集窗 `scopedOut` 豁免：待上述替换完成后再撤（同纪律）。
+
+---
+
+## R5 实施：采集窗口（jQuery 1.8 + jQuery UI 退役）
+
+**批边界**：采集窗最后两个 jQuery 相关 classic script 与 jQuery UI 的 script/css 引用全部退役，
+含 2 处 classic 脚本的 Native 化改写。改动文件：`src/app/collect-window/index.html`、
+`js/lib/api/env.js`、`js/lib/api/swal-dialog.js`、`tests/react-stage9b1-smoke.mjs`；
+删除 `js/vendors/jquery-1.8.0.min.js`、`js/vendors/jquery-ui.min.js`、`css/jquery-ui.min.css`、
+`js/vendors/sweetalert2.all.min.js`（上一批已摘标签，本批清文件）。
+
+### 1. 先查证：本窗还有谁在用 jQuery
+
+- React 侧（`src/app/react/collect-window/*`）**零** `$` 消费——`sortable`/`draggable`/`resizable`
+  等 jQuery UI 交互在 D-2f 批已换自研（`contextMenu.tsx:393`、`tagPanel.tsx:28` 留有注释），
+  故 jQuery UI 的 JS+CSS 均已成死重量。
+- classic 侧仅 2 处真实消费（逐文件核对，排除 vendors 自身）：
+  1. `js/lib/api/env.js:296` `$(document).ready(...)`（在 `isDOMReady()` 内，而 `isDOMReady`
+     全仓**零调用方**）；
+  2. `js/lib/api/swal-dialog.js` 的 3 处：`$("#open-eagle-iframe").remove()`、
+     `$(iframe).css({h,w,opacity})`、`$("body").append(iframe)`（在 `showEagleNotOpenedDialog`
+     的 onConfirm 内；`eagle.dialog` 的调用方只有 `env.js` 的 `isReady()`，而 `isReady` 同样零调用方）。
+- 主窗与预览窗此前已各自 git rm jQuery/jQuery UI（`index.html:203/208`、`preview-window.html:45`），
+  采集窗是**最后一个**仍引用的窗口（PROGRESS 7112/7226 早已登记为待办）。
+
+### 2. 改写（Native 等价，逐条对照语义）
+
+- `env.js` `isDOMReady`：`$(document).ready(cb)` → 原生 `readyState === 'loading' ? 一次
+  DOMContentLoaded 监听 : 立即 resolve`（`.ready()` 的语义就是「DOM 就绪后执行」）。
+- `swal-dialog.js` onConfirm：`$("#open-eagle-iframe").remove()` → `getElementById().remove()`；
+  `$("body").append(iframe)` → `document.body.appendChild(iframe)`；
+  `$(iframe).css({h:0,w:0,opacity:0})` → **只设 `iframe.style.opacity = "0"`**。
+  最后一项有考据：`h`/`w` **不是**合法 CSS 属性，jQuery 的 `.css()` 对未识别的键静默忽略
+  （jQuery 只做驼峰转换后写 `style`，不存在 `style.h`）——所以原代码里那两行本就不生效，
+  Native 化若照抄 `width/height = 0` 反而**引入**行为变化（iframe 会被压成 0×0）。
+  以「还原实际生效语义」为准，故只设 opacity。
+
+### 3. 验证锚（`tests/react-stage9b1-smoke.mjs` 追加 1 项）
+
+- `pw4e-jquery-retired`：`window.jQuery`/`window.$` 均 undefined + 无 `script[src*=jquery]`
+  + 无 `link[href*=jquery-ui]` + 资料夹面板仍 `.open`（证明退役未伤及面板渲染）。
+- 与 pw4a/pw4b/pw4c/pw4d 组（init 序列、资料夹面板、右键菜单、星等/标题/保存、标签面板、
+  vs-repeat 切片与滚底）共同构成「退役后整窗行为不变」的证据。
+
+### 4. 验证命令与结果
+
+- `node tests/react-stage9b1-smoke.mjs` — **STAGE9B1 SMOKE OK**（33 项，含新增 pw4e-jquery-retired）。
+- `node tests/react-stage9a2-smoke.mjs` / `react-stage9a3-smoke.mjs` / `collect-save-closed-loop.mjs` — OK。
+- `node tests/typecheck.mjs` — 0 诊断；`node tests/react-rewrite-sentinel.mjs` — SENTINEL_OK。
+- `node tests/run-attached-nonsuite.mjs` — screenshot-regression 的 **collect 页仍 PASS**（视觉零变化，
+  jQuery UI CSS 本就是 404、jQuery JS 无可见副作用），既有 4 项 FAIL 不变（workbench/gif/model/plugin，
+  均非本批触碰面）。
+
+### 5. 采集窗后续（仍未做）
+
+- `pinyinlite` / `chineseConvert` 确认**在用**（`folderPanel.tsx:259-277`、`tagPanelEngine.ts:566-593`
+  的资料夹/标签拼音搜索）→ 两个 vendor 保留。`tiny-pinyin.js` 在本窗**零消费**，
+  记为死脚本候选（留 R6 统一处置，避免本批引入未验证改动）。
+- `js/lib/api/*`（window.eagle 数据面，10 个文件）+ `js/models/collect-item.js` → TS 模块：
+  仍是本窗最大剩余项（风险最高：save 链路、fetch 重写、i18n）。
+- `scopedOut` 豁免：采集窗仍保留（尚有 classic 数据面与全局 `eagle`/`CollectItem`），待 API 迁移后撤。

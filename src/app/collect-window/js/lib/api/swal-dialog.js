@@ -177,23 +177,23 @@ class SwalDialog {
 			confirmButtonText: eagle.i18n.words["dialog.not-opened-confirm"],
 			cancelButtonText: eagle.i18n.words["dialog.not-opened-cancel"],
 			onConfirm: () => {
-				$("#open-eagle-iframe").remove();
+				const stale = document.getElementById("open-eagle-iframe");
+				if (stale) stale.remove();
 
 				let iframe = document.createElement("iframe");
 				iframe.id = "open-eagle-iframe";
 				iframe.src = "eagle://open";
 				iframe.name = "frame";
 
-				$(iframe).css({
-					h: 0,
-					w: 0,
-					opacity: 0,
-				});
+				// R5：原 $(iframe).css({h:0,w:0,opacity:0})——h/w 不是合法 CSS 属性，jQuery 的
+				// .css() 会静默忽略，实际只有 opacity 生效；Native 等价即只设 opacity。
+				iframe.style.opacity = "0";
 
-				$("body").append(iframe);
+				document.body.appendChild(iframe);
 
 				setTimeout(() => {
-					window.jQuery("#open-eagle-iframe").remove();
+					const el = document.getElementById("open-eagle-iframe");
+					if (el) el.remove();
 				}, 2000);
 			},
 		});

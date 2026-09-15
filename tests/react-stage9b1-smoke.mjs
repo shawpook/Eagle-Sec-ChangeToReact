@@ -413,6 +413,16 @@ try {
     return visible === false && folderCount === ${folderCountBefore} && focused;
   })()`);
 
+  // ── 9b-3（R5）：jQuery / jQuery UI 退役面 ──
+  // 本窗 React 代码零 jQuery 消费（D-2f 已把 sortable/draggable/resizable 换自研）；
+  // classic 侧 env.js 的 isDOMReady 与 swal-dialog.js 的 iframe 操作已改 Native。
+  await assertExprOn(pw, 'pw4e-jquery-retired', `(() => {
+    return typeof window.jQuery === 'undefined' && typeof window.$ === 'undefined'
+      && !document.querySelector('script[src*="jquery"]')
+      && !document.querySelector('link[href*="jquery-ui"]')
+      && !!document.querySelector('.folder-select-panel.open');
+  })()`);
+
   await delay(600);
   try {
     const screenshot = await Promise.race([

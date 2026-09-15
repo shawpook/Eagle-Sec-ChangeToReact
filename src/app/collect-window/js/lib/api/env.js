@@ -293,9 +293,12 @@ class Environment {
 
 	async isDOMReady() {
 		return new Promise((resolve, reject) => {
-			$(document).ready(() => {
+			// R5：原 $(document).ready(...) 的等价 Native 实现（采集窗 jQuery 退役）
+			if (document.readyState === "loading") {
+				document.addEventListener("DOMContentLoaded", () => resolve(), { once: true });
+			} else {
 				resolve();
-			});
+			}
 		});
 	}
 

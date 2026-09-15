@@ -40,6 +40,10 @@ export const REACT_SUITE = [
   'tests/typecheck.mjs',
   // R4：scope 字段「零字符串键」收敛台账（纯 Node、秒级；已收敛域不得回退为字符串键）。
   'tests/scope-field-convergence.mjs',
+  // F06：旋转/翻转写回（纯 Node + typescript 内存转译，无 Electron、秒级）。
+  // 覆盖能力未接线时明确失败（旧行为是静默假成功 + 把 TypeError 记成「加载模块失败」）、
+  // 宽高经唯一元数据通道写入一次并以回执校验落库、预览窗与主窗共用同一写回实现。
+  'tests/image-ops-writeback.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',
@@ -119,6 +123,7 @@ export const TEST_CLASSES = {
   'tests/react-ipc-bridge-routing.mjs': 'static',
   'tests/continuous-grid-layout.mjs': 'static',
   'tests/boot-ready-sequence.mjs': 'static',
+  'tests/image-ops-writeback.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */

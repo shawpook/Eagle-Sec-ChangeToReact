@@ -4,6 +4,9 @@ import { getResizable, makeResizable } from '../components/interactions/resizabl
 import { q, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 import { dom } from '../utils/domLite';
 import { isNumeric } from '../utils/lang';
+// F06：旋转/翻转写回的唯一实现（与主窗 services/imageOpsService.ts 共用同一函数）。
+import { commitImageTransform } from '../services/imageTransformWriteback';
+import type { ImageFlipType, ImageTransformHooks, ImageTransformItem } from '../services/imageTransformWriteback';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -832,8 +835,6 @@ scope.rotateVideo = function (event: any) {
 scope.rotateImage = function (event: any, image: any, writeToFile = false) {
   const rotatedImage = image;
   if (!rotatedImage) return;
-  const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
-  [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
 
   let degree = dataGet(q('#detail-image'), 'degree') || 0;
   let rotationDegree;
@@ -842,17 +843,32 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
     if (!event.shiftKey) {
       degree = degree - 90;
       rotationDegree = -90;
-      detailZoom()?.rotate( { angle: -90, item: rotatedImage });
     } else {
       degree = degree + 90;
       rotationDegree = 90;
-      detailZoom()?.rotate( { angle: 90, item: rotatedImage });
     }
   } else {
     degree = degree - 90;
     rotationDegree = -90;
-    detailZoom()?.rotate( { angle: -90, item: rotatedImage });
   }
+
+  // F06：与主窗 services/imageOpsService.ts 共用同一写回实现（原先此处各复制一份，
+  // 措辞与宽高交换时机均分叉）。受理判定在**视觉变换之前**：write 模式下能力未接线时
+  // 直接以真实原因拒绝，界面不会出现「看着转了、文件一字节未动」的假成功。
+  const acceptance = commitImageTransform({
+    kind: 'rotate',
+    item: rotatedImage,
+    rawPath: FileUrlHelper.getRawPath(rotatedImage) || '',
+    degree: degree,
+    writeToFile: writeToFile,
+    mode: scope.preferences?.habits?.imageRotateMode,
+    request: req,
+    appRootPath: String(req('app-root-path')),
+    hooks: imageTransformHooks(),
+  });
+  if (!acceptance.accepted) return;
+
+  detailZoom()?.rotate({ angle: rotationDegree, item: rotatedImage });
 
   const detailImageEl = q('#detail-image');
   dataSet(detailImageEl, 'degree', degree);
@@ -860,37 +876,6 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
     transform: `rotate(${degree}deg) scaleX(1) scaleY(1)`,
     transition: 'transform 100ms ease-in-out',
   });
-
-  const shouldWriteToFile = writeToFile && scope.preferences?.habits?.imageRotateMode === 'write';
-  if (shouldWriteToFile && rotatedImage) {
-    const rawPath = FileUrlHelper.getRawPath(rotatedImage);
-    if (!rawPath) {
-      console.warn('Cannot get raw path for image:', rotatedImage);
-      return;
-    }
-    try {
-      const rotateImageUtil = req(String(req('app-root-path')) + '/app/js/utils/rotateImage.js');
-      rotateImageUtil(rawPath, rotationDegree)
-        .then((result: any) => {
-          console.log(`Image rotated (${rotationDegree}°) and saved: ${rawPath}`);
-          if (result && result.width && result.height) {
-            rotatedImage.width = result.width;
-            rotatedImage.height = result.height;
-          }
-          delete rotatedImage.orientation;
-          ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-        })
-        .catch((err: any) => {
-          console.error(`Failed to save rotated image: ${err.message}`);
-          rotatedImage.width = originalWidth;
-          rotatedImage.height = originalHeight;
-        });
-    } catch (requireErr: any) {
-      console.error(`Failed to load rotateImage module: ${requireErr.message}`);
-      rotatedImage.width = originalWidth;
-      rotatedImage.height = originalHeight;
-    }
-  }
 };
 
 scope.flipImage = function (event: any, image: any, writeToFile = false) {
@@ -910,40 +895,59 @@ scope.flipImage = function (event: any, image: any, writeToFile = false) {
     scaleX = -1;
   }
 
-  detailZoom()?.flip( scaleX, scaleY);
-
-  const shouldWriteToFile = writeToFile && scope.preferences?.habits?.imageRotateMode === 'write';
-  if (shouldWriteToFile && rotatedImage) {
-    let flipType: any;
-    if (scaleX === -1 && scaleY === -1) {
-      flipType = 'both';
-    } else if (scaleX === -1) {
-      flipType = 'horizontal';
-    } else if (scaleY === -1) {
-      flipType = 'vertical';
-    }
-
-    const rawPath = FileUrlHelper.getRawPath(rotatedImage);
-    if (!rawPath) {
-      console.warn('Cannot get raw path for image:', rotatedImage);
-      return;
-    }
-
-    try {
-      const flipImageUtil = req(String(req('app-root-path')) + '/app/js/utils/flipImage.js');
-      flipImageUtil(rawPath, flipType)
-        .then(() => {
-          console.log(`Image flipped (${flipType}) and saved: ${rawPath}`);
-          ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-        })
-        .catch((err: any) => {
-          console.error(`Failed to save flipped image: ${err.message}`);
-        });
-    } catch (requireErr: any) {
-      console.error(`Failed to load flipImage module: ${requireErr.message}`);
-    }
+  // 根據 scaleX 和 scaleY 決定翻轉類型（分支合并前先定值，避免"未定義即透传"）
+  let flipType: ImageFlipType = 'horizontal';
+  if (scaleX === -1 && scaleY === -1) {
+    flipType = 'both';
+  } else if (scaleX === -1) {
+    flipType = 'horizontal';
+  } else if (scaleY === -1) {
+    flipType = 'vertical';
   }
+
+  // F06：与主窗共用同一写回实现。翻转不改变尺寸，故不涉及宽高交换。
+  const acceptance = commitImageTransform({
+    kind: 'flip',
+    item: rotatedImage,
+    rawPath: FileUrlHelper.getRawPath(rotatedImage) || '',
+    flipType: flipType,
+    writeToFile: writeToFile,
+    mode: scope.preferences?.habits?.imageRotateMode,
+    request: req,
+    appRootPath: String(req('app-root-path')),
+    hooks: imageTransformHooks(),
+  });
+  if (!acceptance.accepted) return;
+
+  detailZoom()?.flip(scaleX, scaleY);
 };
+
+/* F06：预览窗侧的宿主副作用供给（主窗在 services/imageOpsService.ts 内给出等价的一份）。
+   只做连线，不含写回逻辑——逻辑全在 services/imageTransformWriteback.ts。
+   缩略图频道沿用预览窗既有的 ipcRenderer.send（不新增/不改动任何跨进程通道）；
+   预览窗无 swal，错误面用 remote.dialog 展示真实原因。 */
+function imageTransformHooks(): ImageTransformHooks {
+  return {
+    regenerateThumbnail: (item: ImageTransformItem) => {
+      try { ipcRenderer?.send?.('regenerate-thumbnail', [item]); } catch { /* IPC 失败不改变已完成的落盘结果 */ }
+    },
+    log: {
+      info: (message: string) => console.log(message),
+      warn: (message: string) => console.warn(message),
+      error: (message: string, detail?: unknown) => console.error(message, detail === undefined ? '' : detail),
+    },
+    showError: (_code: string, reason: string) => {
+      console.error(`[app] Image transform rejected: ${reason}`);
+      const dialog = remote?.dialog;
+      if (!dialog || typeof dialog.showMessageBox !== 'function') return;
+      try {
+        const options = { type: 'error' as const, title: 'Error', message: reason, buttons: ['OK'] };
+        if (currentWindow) void dialog.showMessageBox(currentWindow, options);
+        else void dialog.showMessageBox(options);
+      } catch { /* 弹窗不可用时 console 已记录真实原因 */ }
+    },
+  };
+}
 
 scope.flipVideo = function (event: any) {
   const video = q('.detail-wrap video');

@@ -28,6 +28,9 @@ import { syncDetailFromScope } from '../store/detailState';
 ;
 import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
+// F06：旋转/翻转写回的唯一实现（与预览窗 preview-window/controller.ts 共用同一函数）。
+import { commitImageTransform } from './imageTransformWriteback';
+import type { ImageTransformHooks, ImageTransformItem } from './imageTransformWriteback';
 import { updateInspectorChannel } from '../global/bus';
 import { q, dataGet, dataSet, setCssEl, cssGet, widthOf, heightOf } from '../utils/domQuery';
 
@@ -123,6 +126,8 @@ export function rotateImage(...args: any[]) {
             if (useBodyState.getState().isCropMode) return;
 
             if (__lv_lastRotateImage === __lv_image) {
+                // F06：落盘去抖已随写回收敛进 services/imageTransformWriteback.ts，
+                // 由该模块按 item 身份取消前一次排期；此处两个计时器为历史残留（恒 undefined）。
                 clearTimeout(__lv_rotateImageTimeout);
                 clearTimeout(__lv_rotateImageSaveTimeout);
             }
@@ -135,32 +140,43 @@ export function rotateImage(...args: any[]) {
             let rotatedImage = __lv_image || useSelectionState.getState().selected[0];
             if (!rotatedImage) return;
 
-            // 原码在 if 块内以 const 声明、块外的失败回滚路径引用 → ReferenceError；提到函数作用域。
-            let originalWidth: any;
-            let originalHeight: any;
-            if (usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
-                originalWidth = rotatedImage.width;
-                originalHeight = rotatedImage.height;
-                [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
-            }
-            
             var degree = dataGet(q("#detail-image"), "degree") || 0;
-            
+
             // 鼠标点击
+            var rotateAngle: number;
             if (event.type === "click") {
                 if (!event.shiftKey) {
                     degree = degree - 90;
-                    detailZoom()?.rotate( {angle: -90, item: rotatedImage});
+                    rotateAngle = -90;
                 }
                 else {
                     degree = degree + 90;
-                    detailZoom()?.rotate( {angle: 90, item: rotatedImage});
+                    rotateAngle = 90;
                 }
             }
             else {
                 degree = degree - 90;
-                detailZoom()?.rotate( {angle: -90, item: rotatedImage});
+                rotateAngle = -90;
             }
+
+            // F06：写回受理在**视觉变换之前**。写文件模式下若图像变换能力尚未接线
+            // （core/shim/moduleRegistry.ts:106-107 的空桩），此处即以明确原因拒绝并返回，
+            // 界面不会出现「看着转了、文件一字节未动」的静默假成功，也不留 isRotating 悬挂态。
+            // 宽高交换（仅 write 模式）与去抖落盘、成功收尾、宽高落库校验均收敛在此单一实现内，
+            // 与预览窗 preview-window/controller.ts 共用。
+            const acceptance = commitImageTransform({
+                kind: 'rotate',
+                item: rotatedImage,
+                rawPath: FileUrlHelper.getRawPath(rotatedImage) || '',
+                degree: degree,
+                mode: usePreferencesState.getState().preferences.habits.imageRotateMode,
+                request: _req,
+                appRootPath: appRoot?.path,
+                hooks: imageTransformHooks(),
+            });
+            if (!acceptance.accepted) return;
+
+            detailZoom()?.rotate( {angle: rotateAngle, item: rotatedImage});
 
             dataSet(q("#detail-image"), "degree", degree);
             setCssEl(q("#detail-image"), {
@@ -169,94 +185,6 @@ export function rotateImage(...args: any[]) {
             });
 
             __lv_lastRotateImage = rotatedImage;
-
-            writeIsRotating(true);
-            __lv_rotateImageSaveTimeout = setTimeout(async function () {
-
-                // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
-                if (degree % 360 != 0 && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
-                    var rawPath = FileUrlHelper.getRawPath(rotatedImage);
-                    if (!rawPath) {
-                        writeIsRotating(false);
-                        return;
-                    }
-
-                    try {
-                        fs.accessSync(rawPath, fs.W_OK)
-                    }
-                    catch (err: any) {
-                        writeIsRotating(false);
-                        rotatedImage.width = originalWidth;
-                        rotatedImage.height = originalHeight;
-                        setCssEl(q("#detail-image"), {
-                            "transform": `none`,
-                            "transition": "none"
-                        });
-
-                        swal({
-                            html: `
-                                <div class="alert">
-                                    <div class="alert-icon error"></div>
-                                    <h4 class="alert-title">Error</h4>
-                                    <p class="alert-desc">${err?.message}</p>
-                                </div>
-                            `,
-                            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-                            width: 400,
-                            customClass: "alert-box",
-                            confirmButtonColor: "#1373FB", // 1373FB
-                            cancelButtonColor: "#777777",
-                            confirmButtonText: i18n.__('general.ok'),
-                            cancelButtonText: i18n.__("general.cancel"),
-                        }).then(() => {});
-                        return;
-                    }
-
-                    // 使用統一的 rotateImage utils 處理所有格式
-                    try {
-                        const rotateImage = require(appRoot.path + '/app/js/utils/rotateImage.js');
-                        const __lv_result = await rotateImage(rawPath, degree, {
-                            onSuccess: function(newWidth: any, newHeight: any) {
-                                // 如果 utils 返回了新的尺寸，更新圖片尺寸
-                                if (newWidth && newHeight) {
-                                    rotatedImage.width = newWidth;
-                                    rotatedImage.height = newHeight;
-                                    machineryUpdateItemView(rotatedImage);
-                                    machineryRelayout();
-                                }
-                            }
-                        });
-                        
-                        // 旋轉成功
-                        writeIsRotating(false);
-                        delete rotatedImage.orientation;
-                        machineryUpdateItemView(rotatedImage);
-                        ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-                        
-                        try { 
-                            electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
-                        } catch (err: any) {};
-                        
-                    } catch (err: any) {
-                        // 旋轉失敗，恢復原狀
-                        writeIsRotating(false);
-                        rotatedImage.width = originalWidth;
-                        rotatedImage.height = originalHeight;
-                        setCssEl(q("#detail-image"), {
-                            "transform": `none`,
-                            "transition": "none"
-                        });
-                        
-                        console.error('Image rotation failed:', err);
-                        alert(err.message || "Image rotation failed.");
-                        
-                        electronLog && electronLog.error(err.stack || err);
-                    }
-                }
-                else {
-                    writeIsRotating(false);
-                }
-            }, 200);
         } as (...__args: any[]) => any).apply(null, args);
 }
 
@@ -301,30 +229,64 @@ export function flipImage(...args: any[]) {
                     flipType = 'vertical';
                 }
 
-                // 使用正確的方式獲取檔案路徑
-                var rawPath = FileUrlHelper.getRawPath(rotatedImage);
-                if (!rawPath) {
-                    console.warn('Cannot get raw path for image:', rotatedImage);
-                    return;
-                }
-
-                // 載入 flipImage 工具模組並執行翻轉
-                try {
-                    const flipImageUtil = require(appRoot.path + '/app/js/utils/flipImage.js');
-                    flipImageUtil(rawPath, flipType)
-                        .then(() => {
-                            console.log(`Image flipped (${flipType}) and saved: ${rawPath}`);
-                            // 重新生成縮圖
-                            ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-                        })
-                        .catch((err: any) => {
-                            console.error(`Failed to save flipped image: ${err.message}`);
-                        });
-                } catch (requireErr: any) {
-                    console.error(`Failed to load flipImage module: ${requireErr.message}`);
-                }
+                // F06：与预览窗共用同一写回实现（原先此处各自复制一份，措辞也各不相同）。
+                // 能力不可用时以真实原因明确拒绝——不再抛 TypeError 又被记成「加载模块失败」。
+                const acceptance = commitImageTransform({
+                    kind: 'flip',
+                    item: rotatedImage,
+                    rawPath: FileUrlHelper.getRawPath(rotatedImage) || '',
+                    flipType: flipType,
+                    writeToFile: writeToFile,
+                    mode: usePreferencesState.getState().preferences.habits.imageRotateMode,
+                    request: _req,
+                    appRootPath: appRoot?.path,
+                    hooks: imageTransformHooks(),
+                });
+                if (!acceptance.accepted) return;
             }
         } as (...__args: any[]) => any).apply(null, args);
+}
+
+/* F06：主窗侧的宿主副作用供给（预览窗在 controller.ts 内各自给出等价的一份）。
+   只做连线，不含任何写回逻辑——逻辑全在 services/imageTransformWriteback.ts。 */
+function imageTransformHooks(): ImageTransformHooks {
+    return {
+        updateItemView: (item: ImageTransformItem) => machineryUpdateItemView(item),
+        relayout: () => machineryRelayout(),
+        setIsRotating: (value: boolean) => writeIsRotating(value),
+        resetView: () => setCssEl(q("#detail-image"), { "transform": `none`, "transition": "none" }),
+        regenerateThumbnail: (item: ImageTransformItem) => ipcRenderer.send('regenerate-thumbnail', [item]),
+        imagesChange: (items: ImageTransformItem[]) => {
+            // 渲染层唯一元数据通道（与 changeImagesBackground 同式；缺失时抛错，
+            // 交由 imageTransformWriteback 落到缩略图任务兜底或显式报错）。
+            if (typeof ayncsImagesChange !== 'function') throw new Error('ayncsImagesChange 不可用');
+            ayncsImagesChange(items);
+        },
+        log: {
+            info: (message: string) => { try { electronLog && electronLog.info(message); } catch { /* 日志失败不影响主流程 */ } },
+            warn: (message: string) => { try { electronLog && electronLog.warn(message); } catch { /* 同上 */ } },
+            error: (message: string, detail?: unknown) => { try { electronLog && electronLog.error(message, detail === undefined ? '' : detail); } catch { /* 同上 */ } },
+        },
+        showError: (_code: string, reason: string) => {
+            console.error(`[app] Image transform rejected: ${reason}`);
+            swal({
+                html: `
+                    <div class="alert">
+                        <div class="alert-icon error"></div>
+                        <h4 class="alert-title">Error</h4>
+                        <p class="alert-desc">${reason}</p>
+                    </div>
+                `,
+                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+                width: 400,
+                customClass: "alert-box",
+                confirmButtonColor: "#1373FB", // 1373FB
+                cancelButtonColor: "#777777",
+                confirmButtonText: i18n.__('general.ok'),
+                cancelButtonText: i18n.__("general.cancel"),
+            }).then(() => {});
+        },
+    };
 }
 
 /* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，

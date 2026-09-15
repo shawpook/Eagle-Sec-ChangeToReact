@@ -9547,3 +9547,89 @@ R5 之前的状态下同样复现（3 次中 2 次、签名逐字相同），且
 文档查看器归位；哨兵 `scopedOut` 豁免全撤（C-6 全仓）；资源可达性守卫 + 全仓死引用清扫。
 其中修复**六处真实缺陷**（两窗 tippy 漏摘、采集窗 swal CSS 随 vendor 丢失、主题气泡面板切换后
 失效与 popper 泄漏、字体查看器气泡失效、3D 嵌入页引擎 404），全部由新增断言暴露并有负向验证。
+
+---
+
+## R6：旧代码、资产与文档收尾（2026-09-14）
+
+对应 `docs/frontend-batch-plan-R0-R7-2026-09-14.md` 的 R6 五个工作项。**收尾原则**：
+保留清单必须由「静态字符串 + 动态 require + 插件接口（`core/shim/moduleRegistry.ts` 路径表）
++ 测试 + 运行时资源请求（`new Worker`）」五路联合判定，不能凭「搜不到 import」删目录——
+本批实测 `src/app/js` 下有 12 个目录/文件是运行期 require/Worker 的真消费者，若整体删除会直接
+打断位图 worker、插件加载、拼音与文件工具链。
+
+### 1. 主界面残余应用侧脚本 → 具名 TS 模块（工作项 1）
+
+| 源（原 index.html 标签）| 落点 | 校验 |
+|---|---|---|
+| `js/lib/eagle-api.js`（60 行）| `core/eagleApi.ts::installEagleBase()` + 新装配点 `core/eagleBase.ts` | 逐字同源 |
+| `js/lib/api/url-enlarger.js`（1038 行）| `core/urlEnlarger.ts` + `installUrlEnlarger()` | **类体 1034 行剥类型标注后逐字一致** |
+| `js/services/lazy-load-manager.js`（738 行）| `core/lazyLoadManager.ts` + `installLazyLoadManager()` | **类体 730 行逐字一致** |
+
+- **时序契约**：新增 `core/eagleBase.ts` 并置于 `main.tsx` **第一条 import**。理由不是装饰性的——
+  `core/shim/demoSeed.ts:721` 的 duplicateChecker 保鲜在模块求值期即 `if (!window.eagle) return`，
+  原 `eagle-api.js` 独立脚本恰好在 React 模块之前求值；ESM 按源码顺序求值 import，次序即保证。
+- `libraryDomain` 改为 `import { LazyLoadManager }`，**删去 `w.LazyLoadManager` 存在性守卫**——
+  脚本摘除后该守卫会静默跳过实例化，`__eagleLibraryDomain.hasLazyLoadManager` 契约随之失效
+  （m1 smoke 会红）。
+- `window.LazyLoadManager` 兼容面由 `installLazyLoadManager()` 在 `installBundleGlobals()` 内供给。
+- 机械移植规则（脚本留在 `.tmp/r6/port-*.mjs`，可复跑）：`export class` 化、`new Promise<any>()`、
+  无注解参数补 `: any`、实例字段 `declare`（不产生运行期定义，保持「构造函数赋值即建字段」时序）、
+  `window.X` → `(window as any).X`（仅类型收窄）。**两处语义改动**：`resolve(url, null)`（两参误用）
+  → `resolve({ url, largeUrl: null })`；淘宝/天猫规则 `(_.webp)` → `(_\.webp)`（见下）。
+- **登记两处迁移前即存在的缺口，逐字保留未修**：`urlEnlarger.#isURLExists` 调 `eagle.urlTest`
+  （全仓无供给方）、`lazyLoadManager.loadExtIcon` 调裸全局 `FILE_ICON`（React 侧经
+  `req(appRoot+'/my_modules/file-icon')` 取，见 `Inspector.tsx:120`）。二者在迁移前同样无效，
+  按「逐字移植 + 如实登记」处理，不借机夹带行为变更。
+
+### 2/3. 旧 directives/controllers/modules 与零引用残留退役（工作项 2、3）
+
+- 删除 **186** 个：`js/directives/**`（129：64 html + 65 js）、`js/controllers/**`（4）、
+  `js/modules/**`（53，flatpickr l10n/plugins/css 与 angular-notify 的**副本**——页面引用的是
+  `src/app/css/modules/**`）。
+- 删除零引用残留 **36** 个：`js/lib/**`（8）、`js/utils/{captureHTML,icns2png,magick,qs}.js`、
+  `js/vendors/{lodash.js,html2canvas.min.js,Typr.js}`、`js/vendors/colorpicker/**`（28）、
+  `js/debug-reporter.js`、`src/app/thumbnail.html`（空壳页）、`js/scroll to top button 效能優化.md`。
+- `src/app/index.html` 摘除内联 `module` 兼容脚本（webpack UMD 时代产物；`window.module` 全仓零消费方，
+  两条语句在浏览器本就是 no-op）。
+- 保留清单与其消费者理由逐条落在 `docs/frontend-entry-ledger-2026-09-14.md` **§8**；其中
+  `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` 是「未接入构建链的候选功能」
+  （PROGRESS b1-9al 已登记为仅注释残留），删除属产品取舍，本批保留并备案。
+
+**连带发现并修复**：`vite.preview.config.mjs` 的 `allowSingleColorPalette` 与
+`sanitizeCollectTemplates` 现状均为 **no-op**（目标串一个只存在于已删的 `inspector.html`、
+一个全仓 0 命中），且只作用于 collect 分支——即「单色面板」修复**从未在 React 路径生效过**，
+React `Inspector.tsx` 一直用修复前判据（调色板数 ≤ 1 即隐藏）。本批把修复归位到现役组件，
+并删除两个中间件。同时发现 `tests/browser-capture-ui-closed-loop.mjs` 的对应守卫**早已恒红**
+（实测服务端返回含修复前判据、不含修复后判据），已改为 fetch 现役 `Inspector.tsx`，判据语义不变。
+
+### 4. @egjs/react-infinitegrid 移除（工作项 4）
+
+全仓零 import/require；`window.ig` 是主窗自建 v4 facade（`boxGridEngine`），由
+`m1-A8-eg-infinitegrid`（`typeof w.ig.getItems === 'function' && !w.eg`）守护，本批未触碰。
+`package.json` 删行 + `npm uninstall --package-lock-only` 同步 lockfile（-84 行，含传递依赖）。
+
+### 5. README 与文档索引（工作项 5）
+
+README「当前状态/启动/校验命令/目录」重写为 R6 实况（原描述仍停在 AngularJS + `app.bundle.js`
++ `frontend/public/shims.js` + 41595 旧端口），新增「文档索引」表；原 Phase 0/1/2 与后续能力清单
+整体下移到「历史记录（时间语境，勿据此判断现状）」。台账 §2/§3/§5/§6 同步 R6 状态并新增 §8 保留清单。
+
+### 验证
+
+- `node node_modules/typescript/bin/tsc --noEmit --pretty false -p tsconfig.json` — 0 诊断。
+- `node tests/typecheck.mjs` / `tests/react-rewrite-sentinel.mjs` / `tests/scope-field-convergence.mjs`
+  — OK（**哨兵基线未动**：移植进 `src/app/react` 的淘宝/天猫 URL 正则一度触发 `lodashBare` 误报，
+  选择在源码侧转义 `(_\.webp)`（更严，只匹配字面点）而不是抬基线）。
+- `node tests/dist-entry-check.mjs` — FAIL 0，WARN 2（两条均为「有意排除」的演示路由）。
+- 定向冒烟：`react-stage1c2-smoke`（eagle 基座/tree/urlEnlargerRemote）OK、
+  `react-stage1m1-unified-smoke`（含 `hasLazyLoadManager` 契约）OK、`react-stage11a1-smoke` OK、
+  `react-stage9b1-smoke`（采集窗）OK。
+- `npm run build` — exit 0（12.23s），产物资产交付 4 项。
+- `npm run test:production` — `DIST_ENTRY_CHECK_OK` + `PRODUCTION_SMOKE_OK`
+  （主窗口产物挂载 hasMainApp/hasRegistry/hasBoxContainer/hasDriver 全 true，唯一 moduleScript）。
+
+### R6 提交
+
+`e22c6548` 工作项 1 → `70b8c61e` 工作项 2/3（186 退役）→ `91c66350` 工作项 3（零引用残留 36 + 内联
+module 脚本）→ `13c81511` 工作项 4 → `66a955b3` 工作项 5（README + 台账）。

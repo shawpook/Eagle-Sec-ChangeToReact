@@ -2,15 +2,8 @@ const junk = require(appRoot + '/my_modules/junk');
 const EagleConfig = require(appRoot + '/config.js');
 const VIDEO_TYPES_GLOBAL = {}; EagleConfig.VIDEO_FORMATS.forEach(function(ext) { VIDEO_TYPES_GLOBAL[ext] = true; });
 
-try {
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-    fs.writeFileSync(
-        path.join(os.tmpdir(), 'eagle-reverse-marker.txt'),
-        'EAGLE-REVERSE-OK ' + appRoot.path + '\n'
-    );
-} catch (err) {}
+// M1-F04：此处原有「向 os.tmpdir() 写 eagle-reverse-marker.txt（EAGLE-REVERSE-OK + appRoot.path）」
+// 的标记块——全仓（含 tests/）无任何消费者的纯副作用，已整块删除。其余工具函数未动。
 
 const moveToCursorPosition = ($elem) => {
     const el = $elem && $elem.jquery ? $elem[0] : $elem;

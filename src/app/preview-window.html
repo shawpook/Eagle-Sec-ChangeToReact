@@ -9,35 +9,35 @@
     <link rel="stylesheet" href="css/preview-window-new.css">
     <link rel="stylesheet" href="css/preview-window.css">
 
-    <script>
-    // b1-9bz-E9（P5）：appRoot/i18n 内联 boot 摘除——shimsLegacy 等价供给。
-    </script>
+    <!-- ==========================================================================================
+         boot 归属（M1-F04）：本页**不再有内联 boot 脚本**。
+         原先此处的内联经典脚本（供给 window.path/fs/EagleConfig/electron/shell/clipboard/
+         ipcRenderer/remote/Menu/MenuItem/currentWindow/electronSettings）在解析期即因裸标识符
+         `appRoot` 未定义而整体中止——React 化后经典脚本期没有任何地方定义 appRoot，于是
+         EagleConfig 之后的所有全局**从未安装成功**（CDP 实证见 F04 报告）。该供给已迁入模块图：
+             src/app/react/preview-window/boot.ts → installPreviewBoot()
+         由 entry.tsx 在 ./controller **之前**显式 import（ESM 求值顺序 = 先安装、后求值），并在
+         createRoot() 之前用 assertPreviewBootInstalled() 做可验证的顺序断言。
+         ========================================================================================== -->
 
-    <!-- 阶段9a：preview-window.js（classic script）顶层 const 原本形成全局词法绑定，供页面级
-         代码解析裸标识符（global.js FileUrlHelper 的裸 path、getClipboardImage 的裸 clipboard 等）。
-         React 化后该文件不再加载，由本脚本以 window 属性等价提供（裸标识符解析兜底到全局对象，
-         classic/module 消费方皆可见）。 -->
-    <script>
-    window.path = require('path');
-    window.fs = require('fs');
-    // EagleConfig 同为 global.js 顶层 const（全局词法绑定，非 window 属性）——controller 的
-    // VIDEO/AUDIO/MODEL/FONT/URL_TYPES 表与 web-view 的 USER_AGENT 依赖它
-    window.EagleConfig = require(appRoot + '/config.js');
-    try { window.fse = require('fs-extra'); } catch (err) {}
-    window.electron = require('electron');
-    window.shell = window.electron.shell;
-    window.clipboard = window.electron.clipboard;
-    window.ipcRenderer = window.electron.ipcRenderer;
-    try {
-        window.remote = require('@electron/remote');
-        window.Menu = window.remote.Menu;
-        window.MenuItem = window.remote.MenuItem;
-        window.currentWindow = window.remote.getCurrentWindow();
-        window.USER_DATA_PATH = (window.remote.app && window.remote.app.getPath('userData')) || '';
-    } catch (err) {}
-    window.EAGLE_THUMBNAIL_TEMP_PATH = window.path.normalize((window.USER_DATA_PATH || '') + '/eagle-temp');
-    try { window.electronSettings = require(appRoot + '/my_modules/electron-settings'); } catch (err) {}
-    </script>
+    <!-- 经典脚本顺序契约（迁移后仍然成立，逐条声明，不依赖「恰好先加载」）：
+         ① js/global.js —— 模块图**不**依赖它：controller.ts 只在调用期取 window.getRawPath /
+            window.getThumbnailPath。它的加载期需求（第 1 行 require(appRoot + '/my_modules/junk')）
+            在经典脚本解析期无法满足——appRoot 现由 shim 在模块求值期才挂上 window，晚于本标签。
+            因此该文件仍在第 1 行中止，仅其（提升到 window 的）函数声明可用。此为本仓既有缺陷，
+            F04 不改动其加载时机；结论与证据见 F04 报告（修它超出本次允许改动面）。
+         ② js/devices.js —— 纯数据表，供给 window.devicesMetrics（controller 的 isMobileResolution
+            消费）。其内容与 react/core/bundleGlobals.ts 内的副本逐字节相同，但 script 登记表
+            （tests/frontend-gate-manifest.mjs）与 typecheck 的 auditScriptInventory 强耦合且归并行
+            M5-1 Worker，故本次不退役，保留为唯一加载点。
+         ③ js/vendors/videojs/video.js + lang/*.js —— 第三方引擎，必须解析期同步执行且早于下方模块
+            标签：controller.ts 模块求值期的 initVideoJsOverrides() IIFE 读 window.videojs
+            （缺席即静默 return，SeekBar 覆写永不生效），lang/*.js 用裸 videojs.addLanguage 注册
+            语言，故必须紧随 video.js 之后、按 en→zh_TW→zh_CN→ko_KR→ja_JP 顺序求值。
+         ④ 下方 type="module" 标签 —— 模块图入口。模块脚本天然晚于以上全部经典脚本求值，这是
+            「boot 已改由模块图自查」之后其余经典脚本仍可安全排在其前的唯一原因；若日后把消费
+            boot 全局的模块提前，必须同步调整 boot.ts 的安装时机。 -->
+
     <!-- b1-9bx-A：tippy.min.js 退役——自研 tippyLite（react/core/tippyLite.ts），
          preview bundle 不走 installBundleGlobals，由 preview-window/entry.tsx 模块求值期
          installTippy() 供给 window.tippy（shell 的 useTippy 消费面，契约见 PROGRESS P3-bx）。 -->

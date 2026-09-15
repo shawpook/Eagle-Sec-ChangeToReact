@@ -1,4 +1,10 @@
 import '../core/shimsLegacy';
+// M1-F04：boot 安装面必须排在 ./controller **之前**——controller 在模块求值期就读
+// req('path') / req('@electron/remote') / window.videojs。本 import 的模块主体在求值末尾调用
+// installPreviewBoot()，并自带 `import '../core/shimsLegacy'` 作为前置契约（载入器就是 shim 的
+// requireModule）。迁移前这套全局由 preview-window.html 的内联经典脚本供给，且因 appRoot 未定义
+// 而实际从未安装成功（详见 boot.ts 文件头与 F04 报告）。
+import { assertPreviewBootInstalled } from './boot';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
 import PreviewShell from './shell';
@@ -61,5 +67,7 @@ function PreviewEntryRoot() {
 
 const host = document.getElementById('eagle-preview-react-host');
 if (host) {
+  // M1-F04 顺序不变式：必需 boot 全局未到位就抛，不让半装状态流入 React 树/controller 调用期。
+  assertPreviewBootInstalled();
   createRoot(host).render(<PreviewEntryRoot />);
 }

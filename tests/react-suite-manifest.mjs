@@ -122,6 +122,9 @@ export const REACT_SUITE = [
   // 未登记模块/未登记 invoke 频道/无实现 shell·dialog·clipboard 不再「返回成功」、
   // demo 不写用户资源、8 服务单一装配点与依赖表、能力位 false 必带可查原因。
   'tests/runtime-services-contract.mjs',
+  // F04：预览窗 boot 契约（静态接线 + typescript 内存转译 + node:vm 跑真实 boot.ts，无 Electron、秒级）。
+  // 覆盖内联 boot 摘除、entry.tsx 先安装后求值的顺序不变式、只补缺不覆盖、必需面缺失即抛错。
+  'tests/preview-boot-contract.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -137,6 +140,7 @@ export const TEST_CLASSES = {
   'tests/image-ops-writeback.mjs': 'static',
   'tests/image-transform-dispatch.mjs': 'static',
   'tests/runtime-services-contract.mjs': 'static',
+  'tests/preview-boot-contract.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */

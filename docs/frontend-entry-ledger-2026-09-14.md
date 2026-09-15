@@ -32,9 +32,9 @@
 | 12 | PDF 查看器 | `/src/app/pdf-viewer/web/viewer.html` | 同路径 | 无（PDF.js）| 查看器子窗 | PDF.js | 已交付（引擎页原样复制）|
 | 13 | 3D 查看器 | `/src/app/model-viewer/website/{index,embed}.html` | 同路径 | 无（O3DV）| 主+嵌入入口 | O3DV | 已交付（引擎页原样复制）|
 | 14 | 注册 / 设备管理 | `/src/app/{registration,manage-device}.html` | `frontend/public/replaced/*.html` | 无 | 顶层窗口 | — | 中间件直出，未进产物（有意）|
-| 15 | thumbnail.html | `/src/app/thumbnail.html` | 同路径 | 无（空壳）| — | — | 全仓零引用 → R6 退役候选 |
+| 15 | thumbnail.html | `/src/app/thumbnail.html` | 同路径 | 无（空壳）| — | — | **R6 已退役**（全仓零引用；产物本就排除 `src/app/*.html`）|
 | 16 | 工具/静态页 | `/pages.html`、`/workbench.html`、`/roadmap.html`、`/media-viewer/*`、`/browser-extension/*`、`/vendor/*` | `frontend/public/*` | 无 | — | 随 public 复制；workbench 被 Electron 菜单引用（main.cjs:1705）|
-| 17 | 旧指令模板 | — | `src/app/js/directives/*.html`（64 个）| 无 | — | — | 非页面；未交付（R6 核对引用后清理）|
+| 17 | 旧指令模板 | — | `src/app/js/directives/*.html`（64 个）| 无 | — | — | **R6 已退役**（连同 controllers/modules 共 186 个文件，见 §8）|
 
 > 十个窗口入口（1–4、5–10）第一条 import 均为 `core/shimsLegacy.ts`。
 > **R2 已完成**：该文件由 3401 行单 IIFE 拆为 `core/shim/` 下 8 个模块
@@ -43,17 +43,19 @@
 > `docs/frontend-batch-plan-R0-R7-2026-09-14.md` 的 R2「实施结果」。
 > 十窗当前仍安装同一份全量契约；**按窗收窄安装面留待 R5**（判据 `resolveWindowClass()` 已就位）。
 
-## 3. 主界面仍加载的旧脚本（R6 迁移对象）
+## 3. 主界面旧脚本（R6 已全部迁移）
 
-`src/app/index.html` 去注释后仍有旧经典脚本（R1 已随 `src/app/js` 交付到产物，保证生产可运行）：
+`src/app/index.html` 现只剩一个脚本标签：`<script type="module" src="/src/app/react/main.tsx">`。
+原经典脚本与内联 boot 的落点：
 
-| 行 | 脚本 |
-|---|---|
-| 195 | `js/lib/eagle-api.js` |
-| 196 | `js/lib/api/url-enlarger.js` |
-| 241 | `js/services/lazy-load-manager.js`（图片加载生命周期，迁移须保护连续网格几何）|
-| 245 | `js/services/shortcut-manager.js` |
-| 247–249 | 内联 `eagle.urlEnlargerRemote.load()` |
+| 原位置 | 原内容 | R6 落点 |
+|---|---|---|
+| :197 | `js/lib/eagle-api.js`（eagle 基座 + `utils.tree` + `urlEnlargerRemote`）| `core/eagleApi.ts::installEagleBase()`，装配点 `core/eagleBase.ts`（main.tsx 首个 import）|
+| :198 | `js/lib/api/url-enlarger.js`（1038 行，`globalThis.URLEnlarger` + `eagle.urlEnlarger`）| `core/urlEnlarger.ts`（逐字移植，类体校验一致）+ `installUrlEnlarger()` |
+| :243 | `js/services/lazy-load-manager.js`（738 行，图片懒加载）| `core/lazyLoadManager.ts`（逐字移植）；`libraryDomain` 直接 import 该类 |
+| :245 | `js/services/shortcut-manager.js` | `core/shortcutManager.ts`（R5 完成）|
+| :247–249 | 内联 `eagle.urlEnlargerRemote.load()` | `core/eagleBase.ts` 内同名调用 |
+| 内联 | `module` 兼容脚本（webpack UMD 时代产物）| R6 删除：`window.module` 全仓零消费方，两条语句本就是 no-op |
 
 ## 4. 已消除的冲突
 
@@ -65,7 +67,7 @@
   - `src/config.js` 与 `src/i18n` 是关键补充：`appRoot` 为 `/src`，运行时 `require(appRoot + '/config.js')` 取 `EagleConfig`（含 `VIDEO_FORMATS`）。缺这两项时生产态在 `hoverPreview` 初始化处 `EagleConfig.VIDEO_FORMATS.map` 崩溃（R1 冒烟实测定位）。
 - 排除：`frontend/public/mock-library`、`mock-assets`（开发/演示数据）在 `closeBundle` 从产物删除。
 - 引擎页：`src/app` 内除 10 个 React 页 HTML 外的 `.html`（pdf-viewer、model-viewer、旧指令模板）按原样复制；PDF 与 3D 查看器无 React 入口，作为专用引擎页交付。
-- 已知既有源缺陷（源码与产物均缺，dev 同样 404；非 R1 引入，归 R5/R6）：`icon.svg`、`js/vendors/tippy.js`（preferences / font-viewer）、collect-window 的 `../css/jquery-ui.min.css`（实际在 `collect-window/css/`）与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html` 与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties`。由 `tests/dist-entry-check.mjs` 以 WARN 记录。
+- 已知既有源缺陷（源码与产物均缺，dev 同样 404；非 R1 引入）：`icon.svg`、`js/vendors/tippy.js`（preferences / font-viewer）、collect-window 的 `../css/jquery-ui.min.css`（实际在 `collect-window/css/`）与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html` 与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties`。**R5/R6 已全部消除**——`tests/dist-entry-check.mjs` 现仅剩 2 条 WARN，均为 `pages.html` 指向有意排除的演示路由（registration / manage-device）。
 
 ## 6. 入口处置清单
 
@@ -77,11 +79,11 @@
 | 十一个交付页面无产物 | 多页入口 + 资源交付 | R1 完成 |
 | `/src/config.js`、`/src/i18n` 未交付 | 纳入交付 | R1 完成 |
 | PDF / 3D 查看器入口与资源 | 引擎页原样交付 | R1 完成 |
-| `thumbnail.html` 零引用 | 退役或明确静态用途 | R6 |
-| `src/app/js/directives/*.html`（64）| 核对引用后清理/归档 | R6 |
-| 主界面旧脚本（§3）| 迁移为具名 TS 模块 | R6 |
-| 各窗口 controllerScope / watcher / 旧 UI 胶水 | 逐窗迁移 | R5 |
-| 既有源缺陷（§5）| 修引用或随迁移清理 | R5/R6 |
+| `thumbnail.html` 零引用 | 退役 | R6 完成 |
+| `src/app/js/directives/*.html`（64）| 核对引用后清理 | R6 完成（连同 controllers/modules 共 186 个） |
+| 主界面旧脚本（§3）| 迁移为具名 TS 模块 | R6 完成 |
+| 各窗口 controllerScope / watcher / 旧 UI 胶水 | 逐窗迁移 | R5 完成 |
+| 既有源缺陷（§5）| 修引用或随迁移清理 | R5/R6 完成（dist-entry-check 现仅剩 2 条「有意排除」WARN）|
 
 ## 7. 可复核命令
 
@@ -98,4 +100,31 @@ node tests/typecheck.mjs
 > `frontend/vite.preview.config.mjs`（rollupOptions 入口 + 开发中间件为该路径复刻 `injectViewerConfig` 注入面）、
 > `electron/main.cjs` 的 iframe URL 断言、`tests/dist-entry-check.mjs` 的入口页清单；
 > `tsconfig.json` 的独立 include 条目随之下线（新址已在 `src/app/react/**` 覆盖内）。
+
+## 8. R6 保留清单（`src/app/js` 逐目录）
+
+判据：**静态字符串 + 动态 `require` + 插件接口（`core/shim/moduleRegistry.ts` 路径表）+
+测试 + 运行时资源请求（`new Worker(...)`）** 五路联合核对；不能仅凭「搜索不到 import」删目录。
+
+| 路径 | 处置 | 消费者 / 理由 |
+|---|---|---|
+| `js/directives/**`、`js/controllers/**`、`js/modules/**` | **已删除**（186） | Angular 指令模板/控制器与 flatpickr·angular-notify 副本；无加载点 |
+| `js/lib/**` | **已删除**（8） | 主窗旧 API 全局（eagle-api 尾件 + `lib/api/{ai-*,combine-images,custom-export,filter,inspector}` + `utils/tree.js`），已由 `core/eagleClasses.ts`/`core/eagleApi.ts` 承接 |
+| `js/workers/**` | 保留 | `new Worker('js/workers/{bitmapWorker,calHammingDistance,tifWorker}.js')`（`core/bitmapViewer.ts`、`core/eagleClasses.ts`、`components/detail/commentHooks.ts`）；libheif.js/.wasm 由 bitmapWorker 加载 |
+| `js/plugin/**` | 保留 | `require(appRoot+'/app/js/plugin')`（`core/bundleGlobals.ts:1737`、`pluginModule` 供给）|
+| `js/plugins/eagle-note-plugin.js` | 保留 | `preview-window/controller.ts:58` 现役 require |
+| `js/api-server-v2.js` + `api-v2-playground{,-config}.js` | 保留 | `apiServerDomain.ts:1342` require；playground 经 `api-server-v2.js:117` require |
+| `js/utils/{unorm,remainingFilenameLength,getBestURL,is-accelerator,flipImage,rotateImage,downloadFile,ignoreMenuShortcuts,piexif}.js` | 保留 | 各 domain / `plugin/index.js` 现役 require（moduleRegistry 亦登记前六项）|
+| `js/utils/{captureHTML,icns2png,magick,qs}.js` | **已删除** | 全仓零 require |
+| `js/vendors/{tga,libtga,wavesurfer.min,videojs/**,sweetalert2/sweetalert2.min.css,bignumber}.js` | 保留 | `commentHooks.ts`/`detailHooks.ts`/`preview-window.html` 现役 require、标签或 CSS；bignumber 被生产 vendor `eagle-match-rules.js` 使用 |
+| `js/vendors/lodash.js`、`html2canvas.min.js`、`Typr.js`、`colorpicker/**` | **已删除** | 均已退役或零引用（lodash b1-9bc 摘标签、colorpicker b1-9bj 自研化）|
+| `js/debug-reporter.js`、`thumbnail.html`、`js/scroll to top button 效能優化.md` | **已删除** | 零引用 |
+| `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` | 保留待定 | 未接入构建链的候选功能（PROGRESS b1-9al 登记为「仅注释残留」）；删除属产品取舍，未在本批处理 |
+| `@egjs/react-infinitegrid`（package.json + lockfile）| **已移除** | 全仓零 import；`window.ig` 是主窗自建 v4 facade（`boxGridEngine`），与该包无关（由 `m1-A8-eg-infinitegrid` 断言 `typeof w.ig.getItems === 'function' && !w.eg` 守护）|
+
+另：R6 一并删除 `frontend/vite.preview.config.mjs` 的 `allowSingleColorPalette` /
+`sanitizeCollectTemplates`（两者目标串已不存在、且只作用于 collect 分支，实为 no-op），
+并把「单色面板」修复归位到现役 `components/inspector/Inspector.tsx`（此前只存在于 dev 中间件
+对 Angular 模板的改写里）；`tests/browser-capture-ui-closed-loop.mjs` 的对应守卫由已退役模板
+改为 fetch 现役 Inspector.tsx，判据语义不变。
 

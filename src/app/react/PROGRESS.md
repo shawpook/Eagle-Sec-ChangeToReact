@@ -9167,3 +9167,47 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - `js/lib/api/*`（window.eagle 数据面，10 个文件）+ `js/models/collect-item.js` → TS 模块：
   仍是本窗最大剩余项（风险最高：save 链路、fetch 重写、i18n）。
 - `scopedOut` 豁免：采集窗仍保留（尚有 classic 数据面与全局 `eagle`/`CollectItem`），待 API 迁移后撤。
+
+---
+
+## R5 收尾判据：哨兵 `scopedOut` 豁免**全部撤除**（C-6 升级为全仓约束）
+
+**改动**：`tests/react-rewrite-sentinel.mjs` —— 删除 `scopedOut` 函数与 C-6 循环里的
+`if (scopedOut(file)) continue;`。
+
+### 1. 逐目录核实（撤豁免前必须先证明不再需要它）
+
+对原豁免的五个面逐一核查 6 条 C-6 模式（`.$evalAsync/.$apply/.$watch/.$watchCollection/
+`.$broadcast/.$on`）的**活**命中：
+
+| 豁免面 | 活命中 | 结论 |
+|---|---|---|
+| `viewers/` | 0 | 可撤 |
+| `collect-window/` | 0（classic 侧只剩 `window.eagle` 数据面） | 可撤 |
+| `preview-window/` | 0（2 处 `scope.$on('$destroy')` 均为**注释**，哨兵按行跳过） | 可撤 |
+| `preferences/` | 0（上一批已撤） | 已撤 |
+| `global/scopeShim.ts` | — | 该**路径已不存在**（早随 E 批删除），原正则恒不匹配＝死规则 |
+
+即「例外清单」中没有任何一条还有存在理由：四条已无活命中，第五条指向不存在的文件。
+
+### 2. 负向验证（证明撤除后确实生效，而非恒真）
+
+在 `src/app/react/viewers/` 临时放入一行 `scope.$apply();` 后运行哨兵，得到：
+
+```
+SENTINEL_REGRESSED ["metric apply: 1 > baseline 0",
+ "C-6 禁项: scope 面 $apply @ src\app\react\viewers\__sentinel_probe.ts: … scope.$apply(); }"]
+```
+
+删除探针文件后 `SENTINEL_OK`。**两条独立通道都报警**（C-6 行级禁项 + `apply` 计数基线），
+说明撤豁免后的新覆盖面是真实生效的——这是本条改动的验收方式，也是「防倒退门禁不得恒真」的示范。
+
+### 3. 意义
+
+C-6 从「带五个例外的规则」变成「无例外、全仓生效」，是 R5「逐窗移除 scopedOut 豁免」的终点，
+也为 R6 退役旧控制器/指令提供了一道覆盖子窗口的保护网（子窗口新增 scope 面调用会立刻红）。
+
+### 4. 验证
+
+- `node tests/react-rewrite-sentinel.mjs` — `SENTINEL_OK`（含上述负向验证）。
+- 同批回归复核：`react-stage9b1/stage9a2/stage9a3/collect-save` 全 OK；`typecheck` 0 诊断。

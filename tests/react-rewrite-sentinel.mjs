@@ -129,15 +129,18 @@ for (const tag of retiredVendorTags) {
   if (indexHtml.includes(`src="js/vendors/${tag}"`)) failures.push(`retired vendor script present in index.html: ${tag}`);
 }
 
-// ── b1-9bz-C 永久禁项：主窗口 scope 面 digest / 事件调用清零 ──
+// ── b1-9bz-C 永久禁项：全仓 scope 面 digest / 事件调用清零 ──
 // C-2 把 $broadcast/$on 迁到 eagleBus，C-3 把 $evalAsync/$apply 改名为 scopeEvalAsync，
-// C-4 把 $watch/$watchCollection 改为各域自建轮询。此后主窗口不得再出现任何
-// `X.$xxx()` 形态的调用（三窗口/子窗口例外：其 controllerScope 是各自的普通对象或
-// 主窗口 scope 的跨窗口引用，见 PROGRESS b1-9bz-C-3/C-5 节）。
-// R5：preferences 窗豁免已撤——该窗 controllerScope 为普通对象、无 Angular digest 面，
-// 且 tippy/ShortcutManager 两处 classic script 已退役（见 PROGRESS R5 偏好窗批）。豁免面收窄后
-// 该窗同样受 C-6 约束，防新增 scope 面调用。
-const scopedOut = (file) => /[\\/]viewers[\\/]|[\\/]global[\\/]scopeShim\.ts$|[\\/]preview-window[\\/]|[\\/]collect-window[\\/]/.test(file);
+// C-4 把 $watch/$watchCollection 改为各域自建轮询。此后全仓不得再出现任何
+// `X.$xxx()` 形态的调用。
+// R5：**豁免面已全部撤除**（原 scopedOut：viewers / global/scopeShim.ts / preview-window /
+// collect-window / preferences）——逐目录核实后确认：
+//   · preferences：controllerScope 为普通对象，tippy/ShortcutManager 两处 classic script 已退役；
+//   · collect-window：classic 侧仅剩 window.eagle 数据面，React 侧零 scope 面调用；
+//   · preview-window：仅 2 处 `scope.$on('$destroy')` **注释**（哨兵按行跳过注释）；
+//   · viewers：零命中；
+//   · `global/scopeShim.ts` 该路径**已不存在**（早已随 E 批删除），原正则恒不匹配。
+// 即 C-6 自此对全仓生效——这一项由「例外清单」变成「无例外」，是 R5 的收尾判据之一。
 const cForbidden = [
   ['scope 面 $evalAsync', /\.\$evalAsync\s*\(/],
   ['scope 面 $apply', /\.\$apply\s*\(/],
@@ -158,7 +161,6 @@ const cAllowed = [
 ];
 for (const [label, re] of cForbidden) {
   for (const { file, text } of contents) {
-    if (scopedOut(file)) continue;
     for (const line of text.split('\n')) {
       const m = line.match(re);
       if (!m) continue;

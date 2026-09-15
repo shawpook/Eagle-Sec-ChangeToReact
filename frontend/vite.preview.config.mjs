@@ -88,6 +88,15 @@ function readReplacement(name) {
   return fs.readFileSync(path.join(frontendPublic, 'replaced', name), 'utf8');
 }
 
+// M0：替代展示页（registration / manage-device）。源文件落在 frontend/public/replaced/，但**页面
+// 内部引用按 `/src/app/` 层级书写**（`css/base.css`、`assets/images/...` 确实是 src/app 下的路径），
+// 因此这张表的 URL 才是它们的真实解析基准：dev 由下面的中间件直出到该 URL，生产由
+// eagle-production-assets 的复制规则交付到 `dist/frontend/src/app/` 下的同一路径。二者同源同基准。
+const REPLACEMENT_PAGES = {
+  '/src/app/registration.html': 'registration.html',
+  '/src/app/manage-device.html': 'manage-device.html',
+};
+
 // R1：把页面在运行时仍按相对路径/`/src/...` 路径引用的资源交付到产物（页面 HTML 由 Vite 产出，
 // 故 src/app 下排除 .html；src/app/react 已打包，排除）。appRoot 为 `/src`，运行时 require 会取
 // `/src/config.js`、`/src/i18n`、`/src/my_modules/*`、`/src/app/js/*`（见 shimsLegacy 的 require 链）。
@@ -142,14 +151,9 @@ export default defineConfig({
             res.end(readEntryPage(path.join(workspaceRoot, 'src/app/collect-window/index.html')));
             return;
           }
-          if (url === '/src/app/registration.html') {
+          if (REPLACEMENT_PAGES[url]) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readReplacement('registration.html'));
-            return;
-          }
-          if (url === '/src/app/manage-device.html') {
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readReplacement('manage-device.html'));
+            res.end(readReplacement(REPLACEMENT_PAGES[url]));
             return;
           }
           // R5：文档查看器迁入 /src/app/react/viewers/document 后，其 HTML 落在 /src/app/ 前缀下，
@@ -242,6 +246,21 @@ export default defineConfig({
             console.log(`[eagle] copied ${dir.from} -> ${dir.to}`);
           } catch (err) {
             console.error(`[eagle] FAILED copying ${dir.from}:`, err && err.message);
+          }
+        }
+        // M0：替代展示页按它们真实的 URL 交付。两页的相对引用（css/*.css、assets/images/...）
+        // 本就按 `/src/app/` 层级书写，落到别的目录会整片解析失败，而 publicDir 只会原样复制到
+        // replaced/；复制到 src/app/ 后其引用闭包与已交付的 src/app 资产树天然一致，无需第二套
+        // 资产副本（同一页面因此只有一个解析基准，见页内 <base href="/src/app/">）。
+        for (const [url, name] of Object.entries(REPLACEMENT_PAGES)) {
+          const to = path.join(outDir, url.replace(/^\//, ''));
+          try {
+            fs.mkdirSync(path.dirname(to), { recursive: true });
+            fs.copyFileSync(path.join(frontendPublic, 'replaced', name), to);
+            copied += 1;
+            console.log(`[eagle] copied replaced/${name} -> ${url}`);
+          } catch (err) {
+            console.error(`[eagle] FAILED copying replaced/${name}:`, err && err.message);
           }
         }
         for (const rel of ['src/config.js']) {

@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- M0：本页的相对引用按 `/src/app/` 层级书写（css/、assets/ 就在那里），dev 中间件也把
+       /src/app/registration.html 映射到本文件。声明文档基准后，本页的副本无论落在哪个目录，
+       引用的解析结果都与 /src/app/ 一致，不需要把资产树复制成第二套。 -->
+  <base href="/src/app/">
   <title>Eagle 许可状态</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/registration.css">

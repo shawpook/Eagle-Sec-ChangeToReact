@@ -49,6 +49,10 @@ export const REACT_SUITE = [
   // （415/403/404）原样到达渲染层、真实 rotateImage.js 驱动下不再拒绝且真实改写 EXIF、
   // 非 electron 态与通道缺失必须明确失败、preload 具名方法行为与 main 信封契约。
   'tests/image-transform-dispatch.mjs',
+  // M5-1（F17/F22）：`frontend/public` 页面归属分账（纯 Node、秒级）。
+  // 把「public 页面 = 交付路径」「源码在 public、URL 在别处」「显式豁免」三类写成可执行
+  // 不变量，堵住"往 public 里丢一个没人取舍的页面"这条静默债务通道。
+  'tests/frontend-public-policy.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',
@@ -141,6 +145,7 @@ export const TEST_CLASSES = {
   'tests/image-transform-dispatch.mjs': 'static',
   'tests/runtime-services-contract.mjs': 'static',
   'tests/preview-boot-contract.mjs': 'static',
+  'tests/frontend-public-policy.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */

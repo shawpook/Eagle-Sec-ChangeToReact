@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audio Waveform</title>
+  <!-- M5-1（F22）：地址由当前服务进程在请求期给出，页面本身不含端口常量。 -->
+  <script src="/eagle-runtime-config.js"></script>
+  <style>
+    body { margin: 0; min-height: 100vh; background: #101215; color: #e8eaed; font: 14px system-ui, sans-serif; display: grid; place-items: center; }
+    main { width: min(960px, calc(100vw - 32px)); padding: 20px; border: 1px solid #343a41; border-radius: 8px; background: #1d2024; }
+    audio { width: 100%; }
+    canvas { width: 100%; height: 220px; margin-top: 12px; border-radius: 8px; background: #24282d; }
+    .muted { color: #9aa3ad; }
+    /* React 挂载点不参与布局：main 仍是 body 网格的直属项，盒子树与迁移前一致。 */
+    #root { display: contents; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/app/react/viewers/media/audio/entry.tsx"></script>
+</body>
+</html>

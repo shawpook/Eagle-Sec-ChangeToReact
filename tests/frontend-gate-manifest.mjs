@@ -11,17 +11,76 @@ export const REACT_PAGES = [
   'src/app/text-editor/text-editor.html',
   'src/app/font-viewer/font-viewer.html',
   'src/app/react/viewers/document/index.html',
+  // M5-1（F17）：四个原属 public 的产品入口点已迁入 React 模块图，**URL 一个都没变**——
+  // 源码壳换到 `src/app/react/**`，产物落点由 `frontend/vite.preview.config.mjs` 的
+  // RELOCATED_PAGES 在 closeBundle 阶段复位到下面这些旧 public 路径。
+  // 登记在 REACT_PAGES（而非 STATIC_PAGES）是有意的强断言：它们必须带 module 入口
+  // 且不得残留 `.tsx` 源码引用，否则「已进模块图」这句话就没有门禁支撑。
+  'workbench.html',
+  'roadmap.html',
+  'media-viewer/audio.html',
+  'media-viewer/video.html',
 ];
 
+// 产物中按 URL 交付的**纯静态**页面（只需存在，不要求 module 入口）。
+// 注意本表同时被 `tests/typecheck.mjs` 用作「frontend/public/**/*.html 必须登记」的判据，
+// 因此这里的条目一律写成相对 public 的路径；交付于其它路径的页面见 SUPPORTED_PAGES。
 export const STATIC_PAGES = [
-  'pages.html', 'workbench.html', 'roadmap.html',
-  'media-viewer/audio.html', 'media-viewer/video.html',
+  'pages.html',
   'browser-extension/popup.html',
   'replaced/registration.html', 'replaced/manage-device.html',
   'src/app/pdf-viewer/web/viewer.html',
   'src/app/model-viewer/website/index.html',
   'src/app/model-viewer/website/embed.html',
 ];
+
+// M5-1（F17/F22）：**已明确取舍**的「源码在 public、交付在别处」页面台账。
+//
+// `frontend/public/replaced/*.html` 的页面内部引用按 `/src/app/` 层级书写（自带
+// `<base href="/src/app/">`），其真实 URL 因此不是 `replaced/`。M5-1 要求把这一取舍写明：
+// 结论是**正式支持**（生产同 URL 交付，不是"仅开发可用"），故此处逐条登记交付路径，
+// 并把它并入 DIST_POLICY.pages 让产物闭包门禁真正检查该路径存在、其引用可解析。
+// 每条都必须有非空 reason/consumer/exit，且由 `tests/frontend-public-policy.mjs` 反向校验
+// consumer 确实引用了该 URL——防止条目退化成没人消费的长期垃圾。
+export const SUPPORTED_PAGES = [
+  {
+    url: 'src/app/registration.html',
+    source: 'frontend/public/replaced/registration.html',
+    reason:
+      '注册/许可状态展示页。取舍为**正式支持**：生产由 closeBundle 复制到 `dist/frontend/src/app/registration.html`，'
+      + 'dev 由 vite.preview.config.mjs 的 REPLACEMENT_PAGES 中间件直出到同一 URL，两侧同源同基准。'
+      + '未改 URL、未改页面内容。',
+    consumer: 'frontend/public/pages.html:62（`<a href="/src/app/registration.html">`）',
+    exit: '该页迁入 React 模块图（或产品决定下线该入口）时删除本条，并同步删除 REPLACEMENT_PAGES 中对应项',
+  },
+  {
+    url: 'src/app/manage-device.html',
+    source: 'frontend/public/replaced/manage-device.html',
+    reason:
+      '设备管理展示页。取舍同 registration：**正式支持**，生产与 dev 均交付于 `/src/app/manage-device.html`。',
+    consumer: 'frontend/public/pages.html:63（`<a href="/src/app/manage-device.html">`）',
+    exit: '该页迁入 React 模块图（或产品决定下线该入口）时删除本条，并同步删除 REPLACEMENT_PAGES 中对应项',
+  },
+];
+
+// M5-1（F22）：`frontend/public` 中**显式豁免**的页面（不是遗漏，也不是隐藏）。
+//
+// 判据：页面是纯静态导航/展示，自身不发起任何 API/缩略图/扩展请求，因此不需要参与
+// 统一地址策略，也不必进模块图。逐条登记 reason/consumer/exit，并由
+// `tests/frontend-public-policy.mjs` 校验：豁免项必须真实存在、不得同时登记为 REACT_PAGES、
+// 且每个 public HTML 都必须"已登记或被豁免"二者其一。
+export const PUBLIC_PAGE_EXEMPTIONS = [
+  {
+    file: 'frontend/public/pages.html',
+    reason:
+      '复刻工程页面入口索引：一份纯静态导航页，全页只有一个 `<style>` 与一组 `<a href>`，'
+      + '没有 script、不读取运行期地址、不访问后端，故不满足"需要进模块图"的条件。'
+      + '它链接的每个目标 URL 本身都是已登记页面，闭包由 dist-entry-check 照常校验。',
+    consumer: '人工入口页（M5-1 交付说明中列为开发/验收导航）；其出链被 tests/dist-entry-check.mjs 作为产物闭包的一部分检查',
+    exit: '若该页开始携带脚本或需要按运行期地址拼链，则改为迁入 React 模块图并删除本条',
+  },
+];
+
 
 // 字符串拼接/运行期选择的资源不能仅靠构建图发现；按真实消费者登记。
 export const DYNAMIC_ASSETS = [
@@ -71,7 +130,8 @@ export const KNOWN_MISSING_ASSETS = [
 
 export const DIST_POLICY = {
   reactPages: REACT_PAGES,
-  pages: STATIC_PAGES,
+  // 交付路径参与产物闭包检查：SUPPORTED_PAGES 的 url 必须真实存在于 dist 且引用可解析。
+  pages: [...STATIC_PAGES, ...SUPPORTED_PAGES.map((page) => page.url)],
   dynamicAssets: DYNAMIC_ASSETS,
   knownMissing: KNOWN_MISSING_ASSETS,
   extensionManifests: ['browser-extension/manifest.json'],
@@ -86,6 +146,8 @@ export const FIRST_PARTY_SCRIPTS = [
   'frontend/public/browser-extension/background.js',
   'frontend/public/browser-extension/content.js',
   'frontend/public/browser-extension/popup.js',
+  // M5-1（F22）：`/eagle-runtime-config.js` 的静态兜底副本（正常由服务进程按启动环境生成）。
+  'frontend/public/eagle-runtime-config.js',
   'frontend/public/tab-bar.js',
   'frontend/public/vendor/eagle-match-rules.js',
   'frontend/public/vendor/eagle-zoom-helpers.js',

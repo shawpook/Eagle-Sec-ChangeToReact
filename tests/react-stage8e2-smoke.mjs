@@ -50,7 +50,7 @@ try {
       await post('/api/item/addFromPath', { paths: [path.join(librariesRoot, 's8e2.png')] });
     },
   });
-  const { page, debugPort } = stack;
+  const { page, debugPort, vitePort } = stack;
 
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', { expression: `document.readyState`, returnByValue: true });
@@ -85,6 +85,29 @@ try {
       throw new Error(`evaluate failed: ${r.exceptionDetails.exception?.description || r.exceptionDetails.text}`);
     }
     return r.result.value;
+  };
+
+  // R5：页面引用的每个 script/link 都必须真实可达。偏好窗的 tippy 曾因「文件已随退役批删除、
+  // 脚本标签漏摘」而静默失效（window.tippy 恒 undefined、主题气泡全无），本项即该缺陷类的守卫。
+  const assertScriptTagsResolve = async (pageRef, name) => {
+    const refs = (await evalOn(pageRef, `(() => {
+      return [...document.querySelectorAll('script[src]')].map((el) => el.getAttribute('src'))
+        .concat([...document.querySelectorAll('link[href]')].map((el) => el.getAttribute('href')));
+    })()`)) || [];
+    const base = `http://127.0.0.1:${vitePort}/src/app/preferences.html`;
+    const unresolved = [];
+    for (const ref of refs) {
+      try {
+        const response = await fetch(new URL(ref, base).href);
+        if (!response.ok) unresolved.push(`${ref} → HTTP ${response.status}`);
+      } catch (err) {
+        unresolved.push(`${ref} → ${err.message}`);
+      }
+    }
+    const pass = refs.length > 0 && unresolved.length === 0;
+    console.log(`${pass ? 'PASS' : 'FAIL'} ${name}${pass ? '' : ` (${unresolved.join('; ')})`}`);
+    if (!pass) failures.push(name);
+    return pass;
   };
 
   const preferencesTargetGone = async () => {
@@ -237,6 +260,7 @@ try {
   // ── 气泡（tippy 供给面行为契约：hover 出现 / 离开隐藏，内容=tippy-content）──
   // R5 纪律：断言**行为等价**而非实现细节——vendor tippy 与自研 tippyLite 均应通过，
   // 替换前后各跑一次即构成「零行为变化」证据。
+  await assertScriptTagsResolve(prefPage, 'pf8e2-resources-resolve');
   await assertExprOn(prefPage, 'pf8e2-tippy-provided', `(() => typeof window.tippy === 'function')()`);
   // R5 替换证据：磁盘已无 vendors/tippy.js（b1-9bx-A），标签漏摘曾使上面三项恒 FAIL；
   // 现由 entry 的 installTippy() 供给——#eagle-tippy-css 是 tippyLite 的运行时安装标记。

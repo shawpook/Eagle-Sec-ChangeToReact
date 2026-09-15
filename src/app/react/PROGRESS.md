@@ -9211,3 +9211,30 @@ C-6 从「带五个例外的规则」变成「无例外、全仓生效」，是 
 
 - `node tests/react-rewrite-sentinel.mjs` — `SENTINEL_OK`（含上述负向验证）。
 - 同批回归复核：`react-stage9b1/stage9a2/stage9a3/collect-save` 全 OK；`typecheck` 0 诊断。
+
+---
+
+## R5 实施：资源可达性守卫（把「退役批标签漏摘」这一类缺陷变成可测项）
+
+**动机**：本 R5 已两次踩到同一类缺陷——vendor 退役只改了部分窗口，**脚本标签漏摘**导致能力静默失效：
+偏好窗 tippy（文件已删、标签还在 → `window.tippy` 恒 undefined）、采集窗 url-enlarger
+（该窗目录本就没有该文件 → 404）。二者都逃过了既有全部测试（标签 404 不影响其它能力）。
+
+**改动**：
+- `src/app/collect-window/index.html`：移除 `js/lib/api/url-enlarger.js` 标签（404 且本窗零消费）。
+- 两个窗口闭环测试各追加一项**资源全量可达性**断言：
+  - `tests/react-stage9b1-smoke.mjs` → `pw4f-script-tags-resolve`；
+  - `tests/react-stage8e2-smoke.mjs` → `pf8e2-resources-resolve`。
+  实现：页内取出全部 `script[src]` + `link[href]`，由测试进程逐个 `fetch`，任一非 2xx/抛错即 FAIL
+  并打印具体条目（如 `js/lib/api/url-enlarger.js → HTTP 404`）。
+
+**负向验证**（防恒真守卫）：临时把 url-enlarger 标签放回采集窗 →
+`FAIL pw4f-script-tags-resolve (js/lib/api/url-enlarger.js → HTTP 404)`；移除后 PASS。
+偏好窗此前无 tippy 标签的中间态亦已被该断言复现过。
+
+**验证**：`react-stage9b1`（34 项）与 `react-stage8e2`（29 项）全 PASS；
+`stage9a2/9a3/collect-save` OK；`typecheck` 0 诊断；`sentinel` OK。
+
+**附**：采集窗 `js/lib/api/preference.js`（334 行）存在于目录却**未被任何标签加载**，
+且其唯一定义物 `eagle.preference` 在本窗零消费（消费者只有死代码 `env.isReady`）——
+记为死文件候选，留 R6 与 API 迁移批一并处置。

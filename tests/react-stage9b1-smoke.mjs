@@ -423,6 +423,30 @@ try {
       && !!document.querySelector('.folder-select-panel.open');
   })()`);
 
+  // ── 9b-3（R5）：页面引用的每个资源都真实存在（无 404 死标签）──
+  // 这类缺陷在偏好窗 tippy 上真实发生过（脚本已随退役批从磁盘删除、标签却漏摘 → 能力静默失效），
+  // 故此处对「页面引用的 script/link」做一次全量可达性核验，作为该窗资源清单的守卫。
+  {
+    const refs = await evalOn(pw, `(() => {
+      const urls = [...document.querySelectorAll('script[src]')].map((el) => el.getAttribute('src'))
+        .concat([...document.querySelectorAll('link[href]')].map((el) => el.getAttribute('href')));
+      return urls;
+    })()`) || [];
+    const base = `http://127.0.0.1:${vitePort}/src/app/collect-window/index.html`;
+    const unresolved = [];
+    for (const ref of refs) {
+      try {
+        const response = await fetch(new URL(ref, base).href);
+        if (!response.ok) unresolved.push(`${ref} → HTTP ${response.status}`);
+      } catch (err) {
+        unresolved.push(`${ref} → ${err.message}`);
+      }
+    }
+    const pass = refs.length > 0 && unresolved.length === 0;
+    console.log(`${pass ? 'PASS' : 'FAIL'} pw4f-script-tags-resolve${pass ? '' : ` (${unresolved.join('; ')})`}`);
+    if (!pass) failures.push('pw4f-script-tags-resolve');
+  }
+
   await delay(600);
   try {
     const screenshot = await Promise.race([

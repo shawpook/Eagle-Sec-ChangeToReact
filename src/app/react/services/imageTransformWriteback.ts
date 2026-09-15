@@ -30,8 +30,25 @@
  *     （→ `channelBridge` → `item.updateMany`）写入，并等待 `item:operation-result` 回执
  *     校验宽高是否真的落库；未确认且该 item 的缩略图任务也未派发时，显式报
  *     `IMAGE_META_NOT_PERSISTED`，绝不静默当作成功。不新增第二条写入调用。
+ *
+ * 第三批（本批次）追加第 5 条不变量：
+ *
+ *  5. **落点按格式分流，且只有一个判定点**：`.jpg`/`.jpeg` 走渲染层原版实现（EXIF 无损改写），
+ *     其余格式走后端 `POST /api/item/imageTransform`（sharp 原子事务）。判定由
+ *     `./imageTransformRoute` 的 `resolveImageTransformDispatch` **唯一**给出——本文件只是它的
+ *     两个调用分支，不得再出现第二处按扩展名的判断（主窗/预览窗同此）。
  */
 import { getIpcBus } from '../core/channelBridge';
+import {
+  type ImageTransformBackendCapability,
+  type ImageTransformRoute,
+  type ImageTransformRuntime,
+  IMAGE_TRANSFORM_BACKEND_FAILED,
+  IMAGE_TRANSFORM_BACKEND_UNAVAILABLE,
+  invokeImageTransformBackend,
+  resolveImageTransformBackendCapability,
+  resolveImageTransformDispatch,
+} from './imageTransformRoute';
 
 export type ImageTransformKind = 'rotate' | 'flip';
 export type ImageFlipType = 'horizontal' | 'vertical' | 'both';
@@ -136,7 +153,7 @@ export interface ImageMetaReceipt {
 export interface ImageMetaPersistResult {
   ok: boolean;
   /** 宽高由哪条通道确认落库。 */
-  via: 'images-change' | 'regenerate-thumbnail' | 'none';
+  via: 'images-change' | 'regenerate-thumbnail' | 'backend-transform' | 'none';
   expected: { width: number | undefined; height: number | undefined };
   observed: { width: unknown; height: unknown } | null;
   code?: string;
@@ -150,6 +167,8 @@ export interface ImageTransformAcceptance {
   willWrite: boolean;
   kind: ImageTransformKind;
   modulePath: string;
+  /** 本次落点（由唯一判定点给出）；`accepted === false` 时可能缺席（preview 模式不分流）。 */
+  route?: ImageTransformRoute;
   code?: string;
   reason?: string;
 }
@@ -169,6 +188,9 @@ export interface ImageTransformWritebackOptions {
   request?: (name: string) => unknown;
   appRootPath?: string;
   hooks?: ImageTransformHooks;
+  /** 运行环境维度（判定点签名的一部分）。缺省按 `core/shim/environment.ts` 同源判据推断；
+   *  显式传入用于测试与 M2 能力声明接入。 */
+  runtime?: ImageTransformRuntime;
 }
 
 /** 写文件模式判定（**唯一实现**；主窗与预览窗共用，消除分叉）。
@@ -237,22 +259,34 @@ export async function persistImageItemMeta(
     hooks?: ImageTransformHooks;
     /** 本次成功收尾是否已派发缩略图任务（其后端 commitThumbnail 亦写宽高）。 */
     thumbnailDispatched?: boolean;
+    /** 本次是否由**后端图像变换端点**完成：该请求在同一事务内已重生成缩略图并把宽高
+     *  写进 metadata.json（`backend/src/image-transform-service.js` `#run` 第 5 步）。
+     *  与 `thumbnailDispatched` 分开记：那是「本窗前端派发了缩略图任务」，这是「后端事务已落库」。 */
+    backendPersisted?: boolean;
   } = {},
 ): Promise<ImageMetaPersistResult> {
   const hooks = options.hooks || {};
   const imagesChange = hooks.imagesChange || defaultImagesChange();
-  // 元数据通道不可用 / 未回执时的共同出口：缩略图任务若已派发，宽高由其落库
-  // （后端 `backend/src/thumbnail-task-service.js` 的 commitThumbnail 写 width/height
-  //  与 resolutionWidth/resolutionHeight）。此时判定通过，不额外新增第二条写入调用。
-  const fallbackToThumbnail = (viaThumbnailReason: string, noChannelReason: string): ImageMetaPersistResult => (
-    options.thumbnailDispatched
-      ? { ok: true, via: 'regenerate-thumbnail', expected, observed: null, reason: viaThumbnailReason }
-      : { ok: false, via: 'none', expected, observed: null, code: IMAGE_META_NOT_PERSISTED, reason: noChannelReason }
-  );
+  // 元数据通道不可用 / 未回执时的共同出口：宽高若已由另一条**既有**通道落库，则判定通过，
+  // 不额外新增第二条写入调用——
+  //  - `thumbnailDispatched`：后端 `thumbnail-task-service.js` 的 commitThumbnail 写
+  //    width/height 与 resolutionWidth/resolutionHeight；
+  //  - `backendPersisted`：后端图像变换端点在同一请求内已跑完缩略图任务（同上写宽高）。
+  const viaFallback = (): 'regenerate-thumbnail' | 'backend-transform' | 'none' => {
+    if (options.thumbnailDispatched) return 'regenerate-thumbnail';
+    if (options.backendPersisted) return 'backend-transform';
+    return 'none';
+  };
+  const fallbackToPersisted = (persistedReason: string, noChannelReason: string): ImageMetaPersistResult => {
+    const via = viaFallback();
+    return via === 'none'
+      ? { ok: false, via, expected, observed: null, code: IMAGE_META_NOT_PERSISTED, reason: noChannelReason }
+      : { ok: true, via, expected, observed: null, reason: persistedReason };
+  };
   if (typeof imagesChange !== 'function') {
-    return fallbackToThumbnail(
-      `元数据通道 ${IMAGE_META_CHANNEL} 不可用（ayncsImagesChange 缺失），宽高落库交由缩略图任务完成`,
-      `元数据通道 ${IMAGE_META_CHANNEL} 不可用（ayncsImagesChange 缺失），且未派发缩略图任务，宽高未落库`,
+    return fallbackToPersisted(
+      `元数据通道 ${IMAGE_META_CHANNEL} 不可用（ayncsImagesChange 缺失），宽高落库交由既有通道完成`,
+      `元数据通道 ${IMAGE_META_CHANNEL} 不可用（ayncsImagesChange 缺失），且无既有通道落库，宽高未落库`,
     );
   }
 
@@ -299,11 +333,11 @@ export async function persistImageItemMeta(
     if (widthOk && heightOk) {
       return { ok: true, via: 'images-change', expected, observed };
     }
-    if (options.thumbnailDispatched) {
+    if (options.thumbnailDispatched || options.backendPersisted) {
       return {
-        ok: true, via: 'regenerate-thumbnail', expected, observed,
+        ok: true, via: viaFallback(), expected, observed,
         reason: `元数据通道回执未携带新宽高（回执 ${String(observed.width)}×${String(observed.height)}，`
-          + `期望 ${String(expected.width)}×${String(expected.height)}），落库交由缩略图任务完成`,
+          + `期望 ${String(expected.width)}×${String(expected.height)}），落库交由既有通道完成`,
       };
     }
     return {
@@ -313,8 +347,8 @@ export async function persistImageItemMeta(
     };
   }
 
-  return fallbackToThumbnail(
-    `元数据通道 ${IMAGE_META_CHANNEL} 未回执，宽高落库交由缩略图任务完成`,
+  return fallbackToPersisted(
+    `元数据通道 ${IMAGE_META_CHANNEL} 未回执，宽高落库交由既有通道完成`,
     `元数据通道 ${IMAGE_META_CHANNEL} 未回执，宽高未确认落库`,
   );
 }
@@ -333,42 +367,73 @@ export function commitImageTransform(options: ImageTransformWritebackOptions): I
   const log = hooks.log || defaultLog();
   const willWrite = shouldWriteImageTransform(kind, options.writeToFile, options.mode);
 
-  // preview 模式：不落盘 → 不探测能力、不交换宽高、不派发缩略图（既有语义不变）。
+  // preview 模式：不落盘 → 不分流、不探测能力、不交换宽高、不派发缩略图（既有语义不变）。
   if (!willWrite) {
     return { accepted: true, willWrite: false, kind, modulePath };
   }
 
-  const capability = resolveImageTransformCapability(kind, options.request, options.appRootPath);
-  if (!capability.ok) {
+  // ── 唯一判定点（`./imageTransformRoute`）：格式 + 运行环境 → 落点。 ──
+  // 本函数此后只按 dispatch.route 走两条既定分支，**不再出现第二处按扩展名的判断**。
+  const dispatch = resolveImageTransformDispatch(options.item, options.runtime);
+  if (!dispatch.supported || !dispatch.route) {
+    const code = dispatch.code || IMAGE_TRANSFORM_UNAVAILABLE;
+    const reason = dispatch.reason || `${modulePath} 在当前环境无落点`;
+    log.error(`[app] 图像变换写回被拒绝（${code}）：${reason}`);
+    reportError(hooks, code, reason);
+    return { accepted: false, willWrite: true, kind, modulePath, code, reason };
+  }
+
+  const route: ImageTransformRoute = dispatch.route;
+  const capability: ImageTransformCapability | undefined = route === 'renderer'
+    ? resolveImageTransformCapability(kind, options.request, options.appRootPath)
+    : undefined;
+  const backend: ImageTransformBackendCapability | undefined = route === 'backend'
+    ? resolveImageTransformBackendCapability()
+    : undefined;
+
+  if (capability && !capability.ok) {
     // 明确失败：不改成功状态、不交换宽高、不更新视图、不发成功事件、不重生成缩略图。
     // 拒绝发生在调用方施加视觉变换**之前**，因此界面不会出现「看着转了、文件没动」。
     const reason = capability.reason || `${modulePath} 能力不可用`;
     log.error(`[app] 图像变换写回被拒绝（${IMAGE_TRANSFORM_UNAVAILABLE}）：${reason}`);
     reportError(hooks, IMAGE_TRANSFORM_UNAVAILABLE, reason);
     return {
-      accepted: false, willWrite: true, kind, modulePath,
+      accepted: false, willWrite: true, kind, modulePath, route,
       code: IMAGE_TRANSFORM_UNAVAILABLE, reason,
     };
   }
 
-  // 落盘前置条件（在交换宽高之前判定，失败时无需回滚内存模型）。
-  if (!options.rawPath) {
-    const reason = `无法取得条目磁盘路径，${kindLabel(kind)} 结果无处落盘`;
-    log.error(`[app] 图像变换写回被拒绝（${IMAGE_TRANSFORM_NO_RAW_PATH}）：${reason}`);
-    reportError(hooks, IMAGE_TRANSFORM_NO_RAW_PATH, reason);
-    return {
-      accepted: false, willWrite: true, kind, modulePath,
-      code: IMAGE_TRANSFORM_NO_RAW_PATH, reason,
-    };
+  if (backend && !backend.ok) {
+    // 非 JPEG 一路同样「能力不可用即明确失败」：宁可什么都不做，也不静默假成功。
+    const code = backend.code || IMAGE_TRANSFORM_BACKEND_UNAVAILABLE;
+    const reason = backend.reason || `预加载通道不可用，${kindLabel(kind)} 结果无处落盘`;
+    log.error(`[app] 图像变换写回被拒绝（${code}）：${reason}`);
+    reportError(hooks, code, reason);
+    return { accepted: false, willWrite: true, kind, modulePath, route, code, reason };
   }
-  const denied = (hooks.checkWritable || defaultCheckWritable)(options.rawPath);
-  if (denied) {
-    log.error(`[app] 图像变换写回被拒绝（${IMAGE_TRANSFORM_WRITE_DENIED}）：${denied}`);
-    reportError(hooks, IMAGE_TRANSFORM_WRITE_DENIED, denied);
-    return {
-      accepted: false, willWrite: true, kind, modulePath,
-      code: IMAGE_TRANSFORM_WRITE_DENIED, reason: denied,
-    };
+
+  if (route === 'renderer') {
+    // 落盘前置条件只对渲染层一路成立：原版 util 按**磁盘路径**直接改写文件，路径拿不到就无从落盘。
+    // 后端一路按 item id 自行定位源文件，其存在性/可写性以**后端**的 NOT_FOUND(404) /
+    // PERMISSION_DENIED(403) 为权威判据——前端不再做代理判定，免得给出与后端不一致的诊断。
+    if (!options.rawPath) {
+      const reason = `无法取得条目磁盘路径，${kindLabel(kind)} 结果无处落盘`;
+      log.error(`[app] 图像变换写回被拒绝（${IMAGE_TRANSFORM_NO_RAW_PATH}）：${reason}`);
+      reportError(hooks, IMAGE_TRANSFORM_NO_RAW_PATH, reason);
+      return {
+        accepted: false, willWrite: true, kind, modulePath, route,
+        code: IMAGE_TRANSFORM_NO_RAW_PATH, reason,
+      };
+    }
+    const denied = (hooks.checkWritable || defaultCheckWritable)(options.rawPath);
+    if (denied) {
+      log.error(`[app] 图像变换写回被拒绝（${IMAGE_TRANSFORM_WRITE_DENIED}）：${denied}`);
+      reportError(hooks, IMAGE_TRANSFORM_WRITE_DENIED, denied);
+      return {
+        accepted: false, willWrite: true, kind, modulePath, route,
+        code: IMAGE_TRANSFORM_WRITE_DENIED, reason: denied,
+      };
+    }
   }
 
   // write 模式下的宽高交换（唯一实现）。rotate 交换宽高；flip 不改变尺寸。
@@ -383,10 +448,18 @@ export function commitImageTransform(options: ImageTransformWritebackOptions): I
   }
 
   hooks.setIsRotating?.(true);
-  scheduleWrite(options, capability, hooks, log, {
+  scheduleWrite(options, { route, modulePath, capability, backend }, hooks, log, {
     rollbackWidth, rollbackHeight, modulePath,
   });
-  return { accepted: true, willWrite: true, kind, modulePath };
+  return { accepted: true, willWrite: true, kind, modulePath, route };
+}
+
+/** 已定妥的落点与其能力句柄（由唯一判定点分出的两条分支各自的执行面）。 */
+interface ResolvedTransformTarget {
+  route: ImageTransformRoute;
+  modulePath: string;
+  capability?: ImageTransformCapability;
+  backend?: ImageTransformBackendCapability;
 }
 
 interface PendingWrite {
@@ -398,7 +471,7 @@ const pendingWrites = new Map<ImageTransformItem, PendingWrite>();
 /** 去抖落盘：同一 item 的连续调用只保留最后一次（角度/翻转类型取最新值）。 */
 function scheduleWrite(
   options: ImageTransformWritebackOptions,
-  capability: ImageTransformCapability,
+  target: ResolvedTransformTarget,
   hooks: ImageTransformHooks,
   log: ImageTransformLog,
   rollback: { rollbackWidth?: number; rollbackHeight?: number; modulePath: string },
@@ -413,7 +486,7 @@ function scheduleWrite(
   const entry: PendingWrite = {
     timer: schedule(() => {
       pendingWrites.delete(item);
-      runWrite(options, capability, hooks, log, rollback).catch((err) => {
+      runWrite(options, target, hooks, log, rollback).catch((err) => {
         log.error(`[app] 图像变换写回未处理异常：${errorMessage(err)}`, err);
       });
     }, WRITE_DEBOUNCE_MS),
@@ -421,16 +494,35 @@ function scheduleWrite(
   pendingWrites.set(item, entry);
 }
 
+/** 前端累计角度 → 后端可接受的 90/180/270（整圈回转已在调用前提前返回）。 */
+function normalizeRotateDegree(degree: number | undefined): number {
+  const value = Number(degree) || 0;
+  return ((value % 360) + 360) % 360;
+}
+
+/** 后端信封里的结构化失败（承载 code/message/statusCode，供失败收尾**原样**透出）。 */
+class BackendTransformError extends Error {
+  readonly code: string;
+
+  readonly statusCode: number | undefined;
+
+  constructor(code: string, message: string, statusCode: number | undefined) {
+    super(message);
+    this.name = 'BackendTransformError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
 async function runWrite(
   options: ImageTransformWritebackOptions,
-  capability: ImageTransformCapability,
+  target: ResolvedTransformTarget,
   hooks: ImageTransformHooks,
   log: ImageTransformLog,
   rollback: { rollbackWidth?: number; rollbackHeight?: number; modulePath: string },
 ): Promise<void> {
   const kind = options.kind;
   const item = options.item;
-  const util = capability.util as ImageTransformUtil;
 
   // rotate：整圈回转（degree % 360 === 0）无需落盘（既有语义：不写、不重生成缩略图）。
   if (kind === 'rotate' && (Number(options.degree) || 0) % 360 === 0) {
@@ -438,7 +530,7 @@ async function runWrite(
     return;
   }
 
-  // util 真实返回的尺寸（canvas 路径 resolve({width,height}) 并经 onSuccess 回调）。
+  // util / 后端真实返回的尺寸。
   let reportedWidth: number | undefined;
   let reportedHeight: number | undefined;
   const onSuccess = (newWidth: number, newHeight: number): void => {
@@ -448,12 +540,40 @@ async function runWrite(
   };
 
   try {
-    const result = kind === 'rotate'
-      ? await util(options.rawPath, Number(options.degree) || 0, { onSuccess })
-      : await util(options.rawPath, options.flipType as ImageFlipType);
-    if (kind === 'rotate' && result && typeof result === 'object') {
-      const resolved = result as { width?: number; height?: number };
-      if (resolved.width && resolved.height) onSuccess(resolved.width, resolved.height);
+    if (target.route === 'renderer') {
+      const util = target.capability?.util as ImageTransformUtil;
+      const result = kind === 'rotate'
+        ? await util(options.rawPath, Number(options.degree) || 0, { onSuccess })
+        : await util(options.rawPath, options.flipType as ImageFlipType);
+      if (kind === 'rotate' && result && typeof result === 'object') {
+        const resolved = result as { width?: number; height?: number };
+        if (resolved.width && resolved.height) onSuccess(resolved.width, resolved.height);
+      }
+    } else {
+      // 非 JPEG：后端在同一请求内完成「写源文件 → 重生成缩略图 → 落 metadata」。
+      const result = await invokeImageTransformBackend(
+        target.backend as ImageTransformBackendCapability,
+        {
+          id: String(item.id),
+          op: kind,
+          ...(kind === 'rotate'
+            ? { degree: normalizeRotateDegree(options.degree) }
+            : { flipType: options.flipType }),
+        },
+      );
+      if (!result.ok) {
+        throw new BackendTransformError(
+          result.code || IMAGE_TRANSFORM_BACKEND_FAILED,
+          result.message || `后端图像${kindLabel(kind)}失败`,
+          result.statusCode,
+        );
+      }
+      // 后端回传的宽高是事务落库后的权威值（rotate 交换后 / flip 不变）。
+      if (kind === 'rotate') {
+        const width = Number(result.data?.width);
+        const height = Number(result.data?.height);
+        if (width > 0 && height > 0) onSuccess(width, height);
+      }
     }
   } catch (err) {
     // 真实写入失败：回撤视觉变换 + 回滚宽高，并给出真实原因
@@ -464,9 +584,13 @@ async function runWrite(
       item.height = rollback.rollbackHeight;
       safe(log, () => hooks.resetView?.());
     }
+    // 后端结构化错误码/消息**原样**透出（415 UNSUPPORTED_FORMAT / 403 PERMISSION_DENIED /
+    // 404 NOT_FOUND …），只有非结构化的抛错才回落 IMAGE_TRANSFORM_WRITE_FAILED。
+    const code = err instanceof BackendTransformError ? err.code : IMAGE_TRANSFORM_WRITE_FAILED;
     const reason = errorMessage(err);
-    log.error(`[app] 图像${kindLabel(kind)}写入失败：${reason}`, err);
-    reportError(hooks, IMAGE_TRANSFORM_WRITE_FAILED, reason);
+    log.error(`[app] 图像${kindLabel(kind)}写入失败（${code}`
+      + `${err instanceof BackendTransformError && err.statusCode ? `，HTTP ${err.statusCode}` : ''}）：${reason}`, err);
+    reportError(hooks, code, reason);
     return;
   }
 
@@ -482,12 +606,17 @@ async function runWrite(
   safe(log, () => hooks.relayout?.());
   log.info(`[app] ${kindLabel(kind)} image: ${String(item.name)}(${String(item.id)})`);
 
+  // 缩略图任务：**仅渲染层一路需要本窗派发**。后端一路已在其请求内跑完缩略图任务
+  // （该任务的 commitThumbnail 同时把 width/height 写进 metadata.json），再派发一次就是对
+  // 同一 item 的第二次缩略图任务——既重复劳动，又与库事务竞争，故不派发。
   const regenerate = hooks.regenerateThumbnail || defaultRegenerateThumbnail();
-  const thumbnailDispatched = typeof regenerate === 'function';
+  const thumbnailDispatched = target.route === 'renderer' && typeof regenerate === 'function';
   safe(log, () => { if (thumbnailDispatched) regenerate(item); });
 
   const meta = await persistImageItemMeta(item, { width: item.width, height: item.height }, {
-    hooks, thumbnailDispatched,
+    hooks,
+    thumbnailDispatched,
+    backendPersisted: target.route === 'backend',
   });
   if (meta.ok) {
     log.info(`[app] ${kindLabel(kind)} image 宽高落库通道：${meta.via}`

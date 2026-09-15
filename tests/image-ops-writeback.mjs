@@ -6,7 +6,20 @@
  *      不改成功状态、不更新视图、不发成功事件、不派发 `regenerate-thumbnail`、不写元数据；
  *  (b) 宽高写入走**支持宽高的路由**（渲染层唯一元数据通道 `images-change`，其载荷即
  *      `item.updateMany` 的快照）且**只写一次**，并以 `item:operation-result` 回执校验是否落库；
- *  (c) 预览窗与主窗调用**同一个**写回函数（单一实现）。
+ *  (c) 预览窗与主窗调用**同一个**写回函数（单一实现），且解桩后 moduleRegistry 走真实加载。
+ *
+ * 第三批变更（本文件被授权的改动，全部为**收紧**而非放宽）：
+ *  1. `moduleRegistry.ts` 的 rotateImage/flipImage 两行空桩已解为 `loadJsModule(req)`。
+ *     原 (c) 中「仍返回空桩」的形态断言若留在原处即为**错的守护**，故**替换**为
+ *     「不得再无条件返回空桩 + 必须走 loadJsModule」；能力判据（空桩/非函数 → 明确失败）
+ *     本身与解桩无关，**逐字保留**。
+ *  2. 引入格式分流后，落点由扩展名决定（.jpg/.jpeg → 渲染层，其余 → 后端）。本文件原有的
+ *     渲染层路由断言（(a) 的能力/路径/可写性、真实写入失败）此前用 `.png` 条目做夹具——
+ *     那些夹具早于分流，语义上是在测**渲染层一路**，故其扩展名改为 `.jpg` 以继续落在同一
+ *     分支；断言语句本身一条未改。后端一路的覆盖见 `tests/image-transform-dispatch.mjs`。
+ *  3. vm 上下文补 `process.versions.electron`：本模块的目标运行环境就是 Electron 渲染层，
+ *     缺省环境判定（与 `core/shim/environment.ts:18-20` 同源）据此判为 electron；
+ *     非 electron 态的明确失败由 `tests/image-transform-dispatch.mjs` 显式覆盖。
  */
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -16,6 +29,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const WB_PATH = 'src/app/react/services/imageTransformWriteback.ts';
+const ROUTE_PATH = 'src/app/react/services/imageTransformRoute.ts';
 const MAIN_PATH = 'src/app/react/services/imageOpsService.ts';
 const PREVIEW_PATH = 'src/app/react/preview-window/controller.ts';
 const REGISTRY_PATH = 'src/app/react/core/shim/moduleRegistry.ts';
@@ -23,11 +37,40 @@ const CHANNEL_BRIDGE_PATH = 'src/app/react/core/channelBridge.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-/** `core/shim/moduleRegistry.ts:106-107` 的空桩形态——本批次**不解桩**，判据据此成立。 */
+/** `core/shim/moduleRegistry.ts:106-107` **解桩前**的空桩形态。
+ *  第三批已解桩，此常量保留用于守护判据本身（空桩/非函数必须被判为能力不可用）。 */
 const EMPTY_STUB = () => {};
 
-function loadWriteback({ window: win = {}, getIpcBus = () => null } = {}) {
-  const imports = { '../core/channelBridge': { getIpcBus } };
+/** Electron 渲染层的全局面：写回模块与其紧邻模块须在**同一环境事实**下求值，
+ *  否则 `resolveImageTransformDispatch` 的缺省环境判定会因 realm 不同而分叉。 */
+const ELECTRON_RENDERER_PROCESS = { versions: { electron: '22.3.7', node: '22.0.0' } };
+
+/** 紧邻模块（`imageTransformRoute.ts`）的内存转译装载：与写回模块共用同一 window / 环境。 */
+function loadRoute(win, runtime) {
+  const { outputText, diagnostics } = ts.transpileModule(read(ROUTE_PATH), {
+    fileName: ROUTE_PATH,
+    reportDiagnostics: true,
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  });
+  assert.equal(diagnostics.length, 0, `${ROUTE_PATH} 转译应无诊断`);
+  const exports = {};
+  vm.runInNewContext(outputText, {
+    console,
+    exports,
+    window: win,
+    ...(runtime === 'electron' ? { process: ELECTRON_RENDERER_PROCESS } : {}),
+    require(name) {
+      assert.fail(`紧邻模块 ${ROUTE_PATH} 不得有未隔离的依赖：${name}`);
+    },
+  }, { filename: ROUTE_PATH });
+  return exports;
+}
+
+function loadWriteback({ window: win = {}, getIpcBus = () => null, runtime = 'electron' } = {}) {
+  const imports = {
+    '../core/channelBridge': { getIpcBus },
+    './imageTransformRoute': loadRoute(win, runtime),
+  };
   const { outputText, diagnostics } = ts.transpileModule(read(WB_PATH), {
     fileName: WB_PATH,
     reportDiagnostics: true,
@@ -39,6 +82,7 @@ function loadWriteback({ window: win = {}, getIpcBus = () => null } = {}) {
     console,
     exports,
     window: win,
+    ...(runtime === 'electron' ? { process: ELECTRON_RENDERER_PROCESS } : {}),
     require(name) {
       assert.ok(Object.hasOwn(imports, name), `禁止加载未隔离的依赖：${name}`);
       return imports[name];
@@ -106,7 +150,7 @@ for (const [kind, extra] of [['rotate', { degree: -90 }], ['flip', { flipType: '
     const wb = loadWriteback();
     const timers = fakeTimers();
     const rec = recorder();
-    const item = { id: 'I1', name: 'a.png', width: 800, height: 600, orientation: 6 };
+    const item = { id: 'I1', name: 'a.jpg', width: 800, height: 600, orientation: 6 };
     const snapshot = { width: item.width, height: item.height, orientation: item.orientation };
 
     let acceptance;
@@ -114,7 +158,7 @@ for (const [kind, extra] of [['rotate', { degree: -90 }], ['flip', { flipType: '
       acceptance = wb.commitImageTransform({
         kind,
         item,
-        rawPath: 'C:/lib/a.png',
+        rawPath: 'C:/lib/a.jpg',
         mode: 'write',
         request: () => EMPTY_STUB,
         appRootPath: '/src',
@@ -180,7 +224,7 @@ test('(a) 取不到磁盘路径 / 目标不可写 → 明确拒绝而非静默�
 
   const noPath = fakeTimers();
   const recA = recorder();
-  const itemA = { id: 'I3', width: 10, height: 20 };
+  const itemA = { id: 'I3', name: 'z.jpg', width: 10, height: 20 };
   const a = wb.commitImageTransform({
     kind: 'rotate', item: itemA, rawPath: '', degree: -90, mode: 'write',
     request: () => realUtil, appRootPath: '/src', hooks: baseHooks(noPath, recA),
@@ -199,11 +243,11 @@ test('(a) 取不到磁盘路径 / 目标不可写 → 明确拒绝而非静默�
   const wbDenied = loadWriteback({ window: deniedWin });
   const denied = fakeTimers();
   const recB = recorder();
-  const itemB = { id: 'I4', width: 10, height: 20 };
+  const itemB = { id: 'I4', name: 'ro.jpg', width: 10, height: 20 };
   const hooks = baseHooks(denied, recB);
   delete hooks.checkWritable; // 走缺省实现
   const b = wbDenied.commitImageTransform({
-    kind: 'rotate', item: itemB, rawPath: 'C:/lib/ro.png', degree: -90, mode: 'write',
+    kind: 'rotate', item: itemB, rawPath: 'C:/lib/ro.jpg', degree: -90, mode: 'write',
     request: () => realUtil, appRootPath: '/src', hooks,
   });
   assert.equal(b.accepted, false);
@@ -217,11 +261,11 @@ test('(a) 真实写入抛错 → 真实原因透出并回撤视觉，不伪装�
   const wb = loadWriteback();
   const timers = fakeTimers();
   const rec = recorder();
-  const item = { id: 'I5', name: 'c.png', width: 800, height: 600, orientation: 6 };
+  const item = { id: 'I5', name: 'c.jpg', width: 800, height: 600, orientation: 6 };
   const boom = function (src, degree) { return Promise.reject(new Error('ENOSPC: no space left')); };
 
   const acceptance = wb.commitImageTransform({
-    kind: 'rotate', item, rawPath: 'C:/lib/c.png', degree: -90, mode: 'write',
+    kind: 'rotate', item, rawPath: 'C:/lib/c.jpg', degree: -90, mode: 'write',
     request: () => boom, appRootPath: '/src', hooks: baseHooks(timers, rec),
   });
   assert.equal(acceptance.accepted, true);
@@ -406,21 +450,90 @@ test('(c) 预览窗与主窗调用同一个写回函数（单一实现、无分�
   assert.doesNotMatch(preview, /\[rotatedImage\.width,\s*rotatedImage\.height\]\s*=\s*\[originalHeight,\s*originalWidth\]/);
 });
 
-test('(c) 未解桩：moduleRegistry 仍返回空桩，且该桩形态被判为能力不可用', () => {
+test('(c) 已解桩：moduleRegistry 对两个 util 走真实加载，且空桩形态仍被判为能力不可用', () => {
   const registry = read(REGISTRY_PATH);
-  assert.match(registry, /endsWith\('\/app\/js\/utils\/flipImage\.js'\)\)\s*return\s*\(\)\s*=>\s*\{\};/);
-  assert.match(registry, /endsWith\('\/app\/js\/utils\/rotateImage\.js'\)\)\s*return\s*\(\)\s*=>\s*\{\};/);
+  // 演进说明：第三批之前，这两行**无条件**返回 `() => {}` 空桩，是「静默假成功」的直接来源；
+  // 本批次把它们改为与同文件其余 `/app/js/**` 模块**同一出口**的 `loadJsModule(req)`。
+  // 因此旧断言「仍返回空桩」必须被**替换**（只删断言等于放弃守护），换成对解桩后形态的断言：
+  assert.doesNotMatch(
+    registry,
+    /endsWith\('\/app\/js\/utils\/flipImage\.js'\)\)\s*return\s*\(\)\s*=>\s*\{\};/,
+    'flipImage 不得再无条件返回空桩',
+  );
+  assert.doesNotMatch(
+    registry,
+    /endsWith\('\/app\/js\/utils\/rotateImage\.js'\)\)\s*return\s*\(\)\s*=>\s*\{\};/,
+    'rotateImage 不得再无条件返回空桩',
+  );
+  assert.match(
+    registry,
+    /endsWith\('\/app\/js\/utils\/flipImage\.js'\)\)\s*return\s+loadJsModule\(req\);/,
+    'flipImage 必须走同文件既有的 loadJsModule 真实加载',
+  );
+  assert.match(
+    registry,
+    /endsWith\('\/app\/js\/utils\/rotateImage\.js'\)\)\s*return\s+loadJsModule\(req\);/,
+    'rotateImage 必须走同文件既有的 loadJsModule 真实加载',
+  );
+  // 解桩范围必须被限定在这两行：同组其余替身项不得被顺手放开。
+  assert.match(
+    registry,
+    /endsWith\('\/app\/js\/utils\/unorm\.js'\)\)\s*return\s*\{/,
+    '同组其余替身项形态不得变化（只放开这两个模块）',
+  );
+  assert.match(
+    registry,
+    /endsWith\('\/my_modules\/get-drive-type'\)\)\s*return\s*\(\)\s*=>\s*'local';/,
+    '同组其余替身项形态不得变化（只放开这两个模块）',
+  );
 
+  // 能力判据本身**逐字保留**：它守护的是「空桩 / 非函数 → 明确失败」这条不变量，
+  // 与是否解桩无关——解桩后真实实现的元数为 2，该判据自动放行（无需改动判据）。
   const wb = loadWriteback();
   const capability = wb.resolveImageTransformCapability('rotate', () => EMPTY_STUB, '/src');
   assert.equal(capability.ok, false);
   assert.equal(capability.code, wb.IMAGE_TRANSFORM_UNAVAILABLE);
   assert.match(String(capability.reason), /空桩/);
 
-  // 解桩后（真实实现导出 (src, degree[, options])）判据自动放行，无需改动本判据
   const real = function (src, degree, options) { return Promise.resolve(undefined); };
   assert.equal(wb.resolveImageTransformCapability('rotate', () => real, '/src').ok, true);
   assert.equal(wb.resolveImageTransformCapability('flip', () => real, '/src').ok, true);
+});
+
+test('(c) 解桩后分流判定点已就位：同一入口、按扩展名给出不同落点', () => {
+  const wb = loadWriteback();
+  const route = loadRoute({}, 'electron');
+
+  // .jpg/.jpeg → 渲染层原版实现（EXIF 无损改写）；其余 → 后端端点。
+  for (const name of ['a.jpg', 'a.JPG', 'a.jpeg']) {
+    const decision = route.resolveImageTransformDispatch({ id: 'd1', name });
+    assert.equal(decision.supported, true, `${name} 应有落点`);
+    assert.equal(decision.route, 'renderer', `${name} 应走渲染层`);
+  }
+  for (const name of ['a.png', 'a.webp', 'a.bmp', 'a.avif']) {
+    const decision = route.resolveImageTransformDispatch({ id: 'd2', name });
+    assert.equal(decision.supported, true, `${name} 应有落点`);
+    assert.equal(decision.route, 'backend', `${name} 应走后端（前端不再抄一份支持格式清单）`);
+  }
+  // `item.ext` 优先于 `item.name`
+  assert.equal(
+    route.resolveImageTransformDispatch({ id: 'd3', name: 'a.png', ext: 'jpg' }).route, 'renderer',
+  );
+
+  // 唯一判定点由写回层**唯一**调用；调用方（主窗/预览窗）不得自持格式知识。
+  const files = readdirSync(fileURLToPath(new URL('../src/app/react', import.meta.url)), { recursive: true })
+    .map((name) => String(name).replace(/\\/g, '/')).filter((name) => /\.(ts|tsx)$/.test(name));
+  const deciders = files.filter((name) => /resolveImageTransformDispatch\s*\(/.test(read(`src/app/react/${name}`)));
+  assert.deepEqual(deciders.sort(), [
+    'services/imageTransformRoute.ts', // 定义处
+    'services/imageTransformWriteback.ts', // 唯一调用处
+  ], '分流判定必须只有一个定义点与一个调用点');
+  for (const [label, source] of [['主窗', read(MAIN_PATH)], ['预览窗', read(PREVIEW_PATH)]]) {
+    assert.doesNotMatch(source, /RENDERER_IMAGE_FORMATS|resolveImageTransformDispatch/,
+      `${label}不得自持分流判定`);
+  }
+  assert.equal(loadWriteback().IMAGE_META_CHANNEL, wb.IMAGE_META_CHANNEL);
+  assert.equal(route.IMAGE_TRANSFORM_BACKEND_CHANNEL, 'item:image-transform');
 });
 
 test('(c) 宽高路由确为携带 width/height 的写入（images-change → item.updateMany）', () => {

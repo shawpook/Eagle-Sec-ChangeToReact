@@ -103,8 +103,14 @@ export function requireModule(request) {
     if (req.endsWith('/app/js/utils/getBestURL.js')) return () => '';
     if (req.endsWith('/app/js/utils/is-accelerator.js')) return () => true;
     if (req.endsWith('/app/js/utils/unorm.js')) return { nfc: (s) => s, nfd: (s) => s };
-    if (req.endsWith('/app/js/utils/flipImage.js')) return () => {};
-    if (req.endsWith('/app/js/utils/rotateImage.js')) return () => {};
+    // F06 第三批：本两行此前对 rotateImage/flipImage 返回 `() => {}` 空桩——主窗/预览窗
+    // 的 `await util(...)` 对空函数不抛错，于是「界面上转了、磁盘一字节未动」的静默假成功
+    // （flip 侧则是 `undefined.then` 的 TypeError 被记成「加载模块失败」）。两模块是产品原实现
+    // （`src/app/js/utils/{rotate,flip}Image.js`，本批次不得改动），且经可行性实测：在 shim 的
+    // require 链下可正常求值、导出 `(src, op[, options])` 且元数 2，JPEG 的 EXIF 路径可真实落盘。
+    // 故改为与同文件其余 `/app/js/**` 模块**同一出口** `loadJsModule(req)`——不新增分支语义。
+    if (req.endsWith('/app/js/utils/flipImage.js')) return loadJsModule(req);
+    if (req.endsWith('/app/js/utils/rotateImage.js')) return loadJsModule(req);
     if (req.endsWith('/my_modules/tiny-pinyin')) return bareModules['tiny-pinyin'];
     if (req.endsWith('/my_modules/pinyinlite')) return bareModules['pinyinlite'];
     if (req.endsWith('/my_modules/cartesian-product')) return bareModules['cartesian-product'];

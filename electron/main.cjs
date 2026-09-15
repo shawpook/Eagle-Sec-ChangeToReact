@@ -219,7 +219,17 @@ function copyWinFilesToClipboard(paths) {
   }
 }
 
-async function apiRequest(route, options = {}) {
+/**
+ * 传输层单点（结构化版）：**不抛异常**，把 HTTP 状态码与后端的
+ * `{ status:'error', message, code }` 原样交给调用方。
+ *
+ * F06 引入：旋转/翻转的写回需要把后端的结构化错误码（UNSUPPORTED_FORMAT 415 /
+ * PERMISSION_DENIED 403 / NOT_FOUND 404 …）**原样**送到渲染层。旧的 `apiRequest` 把
+ * 非 2xx 一律压成 `new Error(payload.message)`，`code` 在 main→renderer 边界上被丢掉。
+ * `apiRequest` 保持既有抛错语义，改为在本函数之上薄封装——两者共用同一份传输实现，
+ * 不复制粘贴出第二个 HTTP 客户端。
+ */
+async function apiRequestDetailed(route, options = {}) {
   // P1-c-2 验证①：write-path 替身 —— 仅拦截 /api/item/updateMany（main→backend 边界），
   // 其余请求全部真实转发。替身按 control.json 施加延迟/失败并回显请求快照（等价真实后端 data）。
   if (writePathSmokeMode && route === '/api/item/updateMany') {
@@ -228,31 +238,40 @@ async function apiRequest(route, options = {}) {
     writePathStubAppend({ seq, ts: Date.now(), body: options.body || null });
     if (control.failNext > 0) {
       writePathStubWriteControl({ ...control, failNext: Number(control.failNext) - 1 });
-      throw new Error('stub-failure seq=' + seq);
+      return { ok: false, code: null, statusCode: 0, message: 'stub-failure seq=' + seq };
     }
     if (Number(control.delayMs) > 0) await new Promise((r) => setTimeout(r, Number(control.delayMs)));
-    return Array.isArray(options.body && options.body.items) ? options.body.items : [];
+    return {
+      ok: true,
+      data: Array.isArray(options.body && options.body.items) ? options.body.items : [],
+    };
   }
   const target = new URL(`${apiBase}${route}`);
   const body = options.body ? JSON.stringify(options.body) : '';
-  const response = await new Promise((resolve, reject) => {
-    const client = target.protocol === 'https:' ? https : http;
-    const request = client.request(target, {
-      method: options.method || 'GET',
-      headers: {
-        ...(body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}),
-        ...(options.headers || {}),
-      },
-    }, (res) => {
-      let text = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk) => { text += chunk; });
-      res.on('end', () => resolve({ statusCode: res.statusCode || 0, text }));
+  let response;
+  try {
+    response = await new Promise((resolve, reject) => {
+      const client = target.protocol === 'https:' ? https : http;
+      const request = client.request(target, {
+        method: options.method || 'GET',
+        headers: {
+          ...(body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}),
+          ...(options.headers || {}),
+        },
+      }, (res) => {
+        let text = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { text += chunk; });
+        res.on('end', () => resolve({ statusCode: res.statusCode || 0, text }));
+      });
+      request.on('error', reject);
+      if (body) request.write(body);
+      request.end();
     });
-    request.on('error', reject);
-    if (body) request.write(body);
-    request.end();
-  });
+  } catch (err) {
+    // 传输层失败没有后端码；用不与后端码集合碰撞的本层码，避免渲染层误当成后端判据。
+    return { ok: false, code: 'TRANSPORT_ERROR', statusCode: 0, message: (err && err.message) ? err.message : String(err) };
+  }
   let payload;
   try {
     payload = JSON.parse(response.text);
@@ -260,9 +279,21 @@ async function apiRequest(route, options = {}) {
     payload = { status: 'error', message: response.text || `HTTP ${response.statusCode}` };
   }
   if (response.statusCode < 200 || response.statusCode >= 300 || payload.status !== 'success') {
-    throw new Error(payload.message || `API request failed: HTTP ${response.statusCode}`);
+    return {
+      ok: false,
+      statusCode: response.statusCode,
+      // 后端未给码时置 null（而非填空串/泛化文案），渲染层据此走自己的兜底码。
+      code: (typeof payload.code === 'string' && payload.code) ? payload.code : null,
+      message: payload.message || `API request failed: HTTP ${response.statusCode}`,
+    };
   }
-  return payload.data;
+  return { ok: true, data: payload.data };
+}
+
+async function apiRequest(route, options = {}) {
+  const result = await apiRequestDetailed(route, options);
+  if (!result.ok) throw new Error(result.message || `API request failed: HTTP ${result.statusCode || 0}`);
+  return result.data;
 }
 
 async function currentLibrary() {
@@ -1483,6 +1514,28 @@ function registerIpc() {
     } catch (err) {
       console.error(`[b1-9aa] regenerate-video-thumbnail failed: ${err.message}`);
     }
+  });
+
+  // item:image-transform：{id, op:'rotate'|'flip', degree?|flipType?} → /api/item/imageTransform
+  // （后端单请求原子事务：渲染到临时文件 → 原子换入源文件 → 重生成缩略图 → 落 metadata 宽高）。
+  // F06 第三批：非 JPEG 的旋转/翻转由此落盘（JPEG 走渲染层 EXIF 无损路径，不经此处）。
+  //
+  // **返回信封而不是 throw**：`ipcRenderer.invoke` 的 reject 跨 contextBridge 只保留 message，
+  // 结构化 `code`/`statusCode` 会在 main→renderer 边界丢失；而本批次要求后端错误码**原样**
+  // 到达渲染层（415 UNSUPPORTED_FORMAT / 403 PERMISSION_DENIED / 404 NOT_FOUND …）。
+  // 因此统一回 `{ ok:true, data }` 或 `{ ok:false, code, message, statusCode }`，由渲染层
+  // `services/imageTransformRoute.ts` 解码——不吞码、不改写成泛化文案。
+  ipcMain.handle('item:image-transform', async (event, params = {}) => {
+    const result = await apiRequestDetailed('/api/item/imageTransform', { method: 'POST', body: params || {} });
+    if (result.ok) return { ok: true, data: result.data };
+    console.error('[f06] item:image-transform failed:'
+      + ` code=${result.code || '(none)'} http=${result.statusCode || 0} message=${result.message}`);
+    return {
+      ok: false,
+      code: result.code || null,
+      statusCode: result.statusCode || 0,
+      message: result.message,
+    };
   });
 
   // set-custom-thumbnail：{item, thumbnailPath, width?, height?} → /api/item/setCustomThumbnail

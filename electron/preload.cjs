@@ -108,6 +108,13 @@ const api = {
   },
   item: {
     updateMany: (items) => ipcRenderer.invoke('item:update-many', items),
+    // F06 第三批：非 JPEG 的旋转/翻转 → 主进程 → 后端 `/api/item/imageTransform`。
+    // 具名频道（与同组其余方法同一约定）。返回的是主进程的**信封**
+    // `{ ok:true, data }` / `{ ok:false, code, message, statusCode }`——不是 reject，
+    // 后端结构化错误码要原样穿过 contextBridge（reject 只保留 message，code 会丢）。
+    // 本方法是请求/响应，无事件流，故不涉及 F15 的「订阅返回 disposer」那条契约
+    // （本组 `onOperationResult` 等订阅型方法才需要）。
+    imageTransform: (params) => ipcRenderer.invoke('item:image-transform', params),
     batchSave: (params) => ipcRenderer.invoke('item:batch-save', params),
     moveToTrash: (ids) => ipcRenderer.invoke('item:move-to-trash', ids),
     restore: (ids) => ipcRenderer.invoke('item:restore', ids),

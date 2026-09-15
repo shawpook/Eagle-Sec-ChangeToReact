@@ -44,6 +44,11 @@ export const REACT_SUITE = [
   // 覆盖能力未接线时明确失败（旧行为是静默假成功 + 把 TypeError 记成「加载模块失败」）、
   // 宽高经唯一元数据通道写入一次并以回执校验落库、预览窗与主窗共用同一写回实现。
   'tests/image-ops-writeback.mjs',
+  // F06 第三批：格式分流的**唯一判定点** + 非 JPEG 的后端通路 + 解桩后的真实受理。
+  // 覆盖同一入口按扩展名分流（.jpg/.jpeg → 渲染层，其余 → 后端）、后端结构化错误码
+  // （415/403/404）原样到达渲染层、真实 rotateImage.js 驱动下不再拒绝且真实改写 EXIF、
+  // 非 electron 态与通道缺失必须明确失败、preload 具名方法行为与 main 信封契约。
+  'tests/image-transform-dispatch.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',
@@ -124,6 +129,7 @@ export const TEST_CLASSES = {
   'tests/continuous-grid-layout.mjs': 'static',
   'tests/boot-ready-sequence.mjs': 'static',
   'tests/image-ops-writeback.mjs': 'static',
+  'tests/image-transform-dispatch.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */

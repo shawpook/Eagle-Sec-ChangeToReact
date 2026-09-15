@@ -9,7 +9,10 @@
  * （原判据 `!window.eagleDesktop` → 现为 `resolveRuntimeMode() === "demo"`，语义等价）。
  * 计时器句柄提升为模块级，供 `disposeDemoTimers()` 释放。
  */
-import { bodyScope, desktopApi, isElectronRuntime, resolutionMediaExtensions, resolveRuntimeMode } from "./environment";
+import {
+  bodyScope, desktopApi, isDemoRuntime, isElectronRuntime, markUnavailable, probeRuntimeModeOnce,
+  resolutionMediaExtensions, resolveRuntimeMode, RuntimeCapabilityError, unavailableResult,
+} from "./environment";
 import { pluginModule } from "./browserRuntime";
 import { readSetting, settingsMemory } from "./settingsI18n";
 import { ipcRenderer, mockEmit, writeState } from "./ipcBus";
@@ -53,6 +56,14 @@ export function installLifecycleWiring() {
 }
 export function installDemoLibrarySeed() {
   'use strict';
+
+  // M2-1 防御性门禁（纵深防御）：演示种子是**唯一**允许伪造业务数据的地方，只有 demo 态可入。
+  // 调用方（`install.ts`）已在 await 后端探测后判定，此处再判一次，杜绝「浏览器连真后端时
+  // 仍灌 demo seed」经由任何新增调用点复发。
+  if (!isDemoRuntime()) {
+    markUnavailable('demoSeed.librarySeed', `非 demo 态（${resolveRuntimeMode()}）拒绝安装演示库种子`);
+    return;
+  }
 
   const day = 86400000;
   const now = Date.now();
@@ -802,6 +813,23 @@ export function startCapturePolling() {
 
 export function emitMockLifecycle() {
 window.__eagleEmitMockLifecycle = emitMockLifecycle;
+  // M2-1 目标 3 的唯一收紧点：**browser-connected 且无真实库快照**时拒绝发射。
+  //
+  // 为什么不是「按运行态一刀切拒绝非 demo」——见下（对照实验证据）。为什么只收 browser-connected：
+  //  - `electron`：本函数是各子窗启动载荷的当前唯一投递入口，而子窗不一定持有库快照
+  //    （桌面桥分支与子窗 `startLifecycle()` 两条路径的时序不同）。收紧 electron 会直接
+  //    打断子窗（实测：text-editor iframe 超时、主窗布局网格不渲染），属于破坏现有业务行为。
+  //    该路径下是否仍有「无快照回落演示常量」的假数据问题，本批**不修**，登记为遗留
+  //    （调研 §C 未收录此条，见交付汇报）。
+  //  - `demo`：演示态本就是**显式选择**的合成数据来源。
+  //  - `browser-connected`：修前它被当作 demo 而灌演示数据；现要求「有真实来源才发」，
+  //    避免浏览器连真后端时把演示常量当成库数据广播出去。
+  if (!window.__mockLibrary && resolveRuntimeMode() === 'browser-connected') {
+    const reason = 'browser-connected 态无真实库快照（backend 未取回库），拒绝发射演示生命周期载荷';
+    markUnavailable('demoSeed.mockLifecycle', reason);
+    console.warn('[eagle-shim] emitMockLifecycle 被拒绝：' + reason);
+    return;
+  }
   const lib = window.__mockLibrary || {
     rootDir: '/mock-library/Eagle Reverse Demo.library',
     imagesDir: '/mock-library/Eagle Reverse Demo.library/images/',
@@ -811,11 +839,7 @@ window.__eagleEmitMockLifecycle = emitMockLifecycle;
     tagsGroups: [],
   };
   const items = window.__mockLibraryCache || [];
-  const registration = {
-    activated: true,
-    machineID: 'preview',
-    license: { email: 'preview@eagle.local' },
-  };
+  const registration = windowRegistration();
   const pagePath = window.location.pathname || '';
 
   if (pagePath.includes('font-viewer') || pagePath.includes('text-editor') || pagePath.includes('gif-viewer')) {
@@ -961,6 +985,18 @@ window.__eagleEmitMockLifecycle = emitMockLifecycle;
     return;
   }
 
+  emitLibraryLifecycle(lib, registration);
+}
+
+/**
+ * 库生命周期事件序列（`initial` → `app-status-loading` → `preload-library` →
+ * `app-status-library-loaded`），**由 electron 与 browser-connected 共用**。
+ *
+ * M2-1 抽出：修前这段只内联在 `emitMockLifecycle()` 里，于是「浏览器 + 真后端」若想走真实库
+ * 就只能再抄一份事件序列（任务书禁止第二次复制业务实现）。参数化后，两种真实来源
+ * （桌面桥 `library.current()` / backend `/api/library/current`）走**同一条**序列。
+ */
+export function emitLibraryLifecycle(lib, registration) {
   // 固定延时发射存在竞态：页面 bootstrap 慢于 300ms 时 'initial' / 'app-status-loading'
   // 会在控制器注册监听器之前丢失（bundle 22664 的 'initial' 处理器内部才注册
   // app-status-loading 监听），导致 sanitize/tinyPinyin 等运行时 require 缺失。
@@ -1016,29 +1052,117 @@ window.__eagleEmitMockLifecycle = emitMockLifecycle;
   waitControllerReady();
 }
 
+/** 窗口启动载荷里的 Registration 形状（各窗 `initial` 事件共用；非库业务数据）。 */
+function windowRegistration() {
+  return {
+    activated: true,
+    machineID: 'preview',
+    license: { email: 'preview@eagle.local' },
+  };
+}
+
+/**
+ * 把库描述落到本地快照槽位（`__mockLibrary` / `__mockLibraryCache`）。
+ *
+ * 槽位名带 `mock` 是 R2 之前的历史命名——它实际承载的是**本窗的库快照**：electron 态
+ * 一直写的就是 `desktopApi.library.current()` 取回的真实库。M2-1 把同一段落到函数里，
+ * 供桌面桥与 backend 两条真实来源共用，避免第二次拷贝（重命名槽位会波及大量消费者，另行登记）。
+ */
+function applyLibrarySnapshot(library) {
+  window.__mockLibrary = {
+    ...library,
+    rootDir: library.rootDir || library.path,
+    imagesDir: library.imagesDir,
+    libraryName: library.libraryName || library.name,
+  };
+  window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : [];
+  window.__mockLibraryCache.forEach((item) => {
+    if (item && item.customThumbnail) writeState().customThumbnailItemIds.add(item.id);
+  });
+  writeState().scheduleMissingPaletteAnalysis(window.__mockLibraryCache);
+  const storedHistory = readSetting('libraryHistory');
+  settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])]
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index);
+}
+
+/**
+ * M2-1：`browser-connected` 态的库引导——经既有 backend HTTP 端点取真实库。
+ *
+ * 与 electron 分支共用 {@link applyLibrarySnapshot} 与 {@link emitLibraryLifecycle}，
+ * 不新增第二套业务实现。失败时**不回落演示数据**，而是返回带 `unavailable` 标记的结果对象
+ * 并广播 `library:operation-result` 失败事件，让 UI 能显示真实失败。
+ */
+export function loadLibraryFromBackend() {
+  const apiBase = String(window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+  return fetch(`${apiBase}/api/library/current?includeItems=true`)
+    .then((response) => {
+      if (!response || !response.ok) {
+        throw new RuntimeCapabilityError('library.current', `backend ${apiBase} 未返回库描述（HTTP ${response ? response.status : 'n/a'}）`);
+      }
+      return response.json();
+    })
+    .then((payload) => {
+      const library = payload && payload.status === 'success' ? payload.data : payload;
+      if (!library || typeof library !== 'object') {
+        throw new RuntimeCapabilityError('library.current', 'backend 响应缺少库描述');
+      }
+      applyLibrarySnapshot(library);
+      startCapturePolling();
+      mockEmit('library:changed', library);
+      // 与 electron 分支共用**同一个**投递入口（`emitMockLifecycle` 内部按 pathname 分发子窗载荷），
+      // 不另写一套事件序列。快照已落位 ⇒ 序列里用的是 backend 取回的真实库。
+      emitMockLifecycle();
+      return library;
+    })
+    .catch((err) => {
+      const reason = (err && err.message) || String(err);
+      console.warn('[eagle-shim] browser-connected 库引导失败', reason);
+      markUnavailable('library.current', reason);
+      mockEmit('library:operation-result', { ok: false, action: 'current', error: reason });
+      return unavailableResult('library.current', reason);
+    });
+}
+
+/**
+ * 窗口生命周期驱动（三态）。
+ *
+ *  - `electron`          桌面桥 `library.current()`（真实现，语义未变）；
+ *  - `browser-connected` 经 backend `/api/library/current`（真实现，不灌演示数据）；
+ *  - `demo`              发合成库事件（**显式选择的**演示实现）。
+ *
+ * 修前判据是「有没有 `desktopApi.library.current`」——无桌面桥就一律发 mock 生命周期，
+ * 于是浏览器连真后端时 UI 上「真实库」与「演示数据」无法区分（F07 调研 §B.2-3）。
+ */
 export function startLifecycle() {
   if (desktopApi && desktopApi.library && typeof desktopApi.library.current === 'function') {
     desktopApi.library.current().then((library) => {
-      window.__mockLibrary = {
-        ...library,
-        rootDir: library.rootDir || library.path,
-        imagesDir: library.imagesDir,
-        libraryName: library.libraryName || library.name,
-      };
-      window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : [];
-      window.__mockLibraryCache.forEach((item) => {
-        if (item && item.customThumbnail) writeState().customThumbnailItemIds.add(item.id);
-      });
-      writeState().scheduleMissingPaletteAnalysis(window.__mockLibraryCache);
-      const storedHistory = readSetting('libraryHistory');
-      settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
+      applyLibrarySnapshot(library);
       startCapturePolling();
+      // **必须**回到 `emitMockLifecycle()`，不能直接发库生命周期：它同时是各子窗
+      // （font-viewer / text-editor / gif-viewer / preview / model-viewer）启动载荷的
+      // 唯一投递入口，按 `location.pathname` 分发。初版重构在此处换成
+      // `emitLibraryLifecycle(...)`，等于只发主窗那一段——实测后果：electron 态下
+      // 子窗永远拿不到载荷（`react-stage-smoke` 的 text-editor iframe 超时）。
+      // 快照已落位，故 `emitMockLifecycle()` 用的是真实库数据，不是演示常量。
       emitMockLifecycle();
     }).catch((err) => {
-      console.warn('[eagle-shim] current library bootstrap failed', err);
-      emitMockLifecycle();
+      // 真实业务态取库失败时**不再回落演示数据**（M2 验收：真实模式不读取 demo seed 冒充业务数据），
+      // 只登记不可用并由 UI 呈现空态/错误态。
+      const reason = (err && err.message) || String(err);
+      console.warn('[eagle-shim] current library bootstrap failed', reason);
+      markUnavailable('library.current', reason);
+      mockEmit('library:operation-result', { ok: false, action: 'current', error: reason });
     });
     return;
   }
-  emitMockLifecycle();
+  // 无桌面桥：必须区分「浏览器 + 真后端」与「浏览器 + 无后端」——同步判据做不到，
+  // 故与 `install.ts` 的种子判定共用同一个探测 Promise（probeRuntimeModeOnce）。
+  probeRuntimeModeOnce().then((kind) => {
+    if (kind === 'browser-connected') {
+      loadLibraryFromBackend();
+      return;
+    }
+    emitMockLifecycle();
+  });
 }

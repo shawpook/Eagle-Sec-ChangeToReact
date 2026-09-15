@@ -8,7 +8,7 @@
  * ②回程注册体包成 `installReturnBridgeFallback()`，由 `shim/install.ts` 显式调用（时序不变，
  * 仍为 0ms timer）；③预览面动作助手（runPreviewAction 等）随总线一同迁入（desktopCapability 消费）。
  */
-import { bodyScope, desktopApi, nativeRequire } from "./environment";
+import { bodyScope, capabilityGap, desktopApi, nativeRequire } from "./environment";
 import { applyPreferencesToCurrentDocument, broadcastIpc, savePreferences } from "./settingsI18n";
 import { browserImportLocalFiles, browserImportUrl, browserImportUrls } from "./demoSeed";
 import { getIpcWriteState } from "../ipcWriteState";
@@ -90,6 +90,15 @@ export class EventEmitter {
         star: item.star || 0,
       });
     }
+    // M2-1（调研 §C-2 / §E.6）：修前兜底返回 `{canceled:true, filePaths:[], filePath:'', ok:true}`
+    // ——调用方**同时**收到「已取消」与「ok:true」，分支逻辑依实现随机走，且任何未登记频道
+    // 都被伪造成「调用成功」。调研 §E.6 明令：「未登记频道抛错而非 ipcBus.ts:93 的双语义兜底」。
+    // 真实业务态 → 明确 reject；只有 demo 态保留「视为取消」的演示语义。
+    const gap = capabilityGap(
+      `ipc.invoke(${String(channel || 'unknown')})`,
+      '该 invoke 频道未登记任何真实实现（preload/main 均无 handler）',
+    );
+    if (gap) return Promise.reject(gap);
     return Promise.resolve({ canceled: true, filePaths: [], filePath: '', ok: true });
   }
 }

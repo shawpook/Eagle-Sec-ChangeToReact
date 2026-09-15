@@ -116,6 +116,12 @@ export const REACT_SUITE = [
   'tests/d3-selection-closed-loop.mjs',
   'tests/d3-focus-closed-loop.mjs',
   'tests/d3-store-roundtrip-closed-loop.mjs',
+  // ── M2-1：有限 RuntimeServices 契约 + 三态运行模式 + 「能力缺失即明确失败」──
+  // 纯 Node（typescript 内存转译 + node:vm 隔离加载真实模块，无 Electron、秒级）。
+  // 覆盖：electron/browser-connected/demo 三态判定（浏览器连真后端不再被当作 demo）、
+  // 未登记模块/未登记 invoke 频道/无实现 shell·dialog·clipboard 不再「返回成功」、
+  // demo 不写用户资源、8 服务单一装配点与依赖表、能力位 false 必带可查原因。
+  'tests/runtime-services-contract.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -130,6 +136,7 @@ export const TEST_CLASSES = {
   'tests/boot-ready-sequence.mjs': 'static',
   'tests/image-ops-writeback.mjs': 'static',
   'tests/image-transform-dispatch.mjs': 'static',
+  'tests/runtime-services-contract.mjs': 'static',
 };
 
 /** 产物行为测试（针对 dist/frontend，不依赖 Vite dev / 源码路径）。 */
@@ -180,6 +187,7 @@ export const REQUIRED_TESTS = [
   'tests/continuous-grid-layout.mjs',
   'tests/boot-ready-sequence.mjs',
   'tests/continuous-grid-scroll.mjs',
+  'tests/runtime-services-contract.mjs',
   'tests/d3-selection-closed-loop.mjs',
   'tests/d3-focus-closed-loop.mjs',
   'tests/d3-alltags-view-closed-loop.mjs',

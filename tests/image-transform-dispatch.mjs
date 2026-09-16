@@ -23,7 +23,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import ts from 'typescript';
 
@@ -95,14 +95,28 @@ function loadWriteback({ window: win = {}, getIpcBus = () => null, runtime = 'el
 function loadPreload(invoke) {
   const window = {};
   const contextBridge = { exposeInMainWorld: (key, api) => { window[key] = api; } };
+  // M6-3 起 `electron/preload.cjs` 在**模块作用域**多了三个 Node 内核模块的 require，
+  // 并用 `__dirname` 把格式插件 preload 锚定到 <repo>/electron/../src/app/js/plugin/api-format-extension.js。
+  // 白名单**穷尽列举**，且要求逐个都被请求到——依赖面一变就红，不是「允许任意模块」。
+  const requested = [];
+  const imports = {
+    electron: { contextBridge, ipcRenderer: { invoke, on() {}, removeListener() {} } },
+    'node:path': path,
+    'node:fs': nodeFs,
+    'node:url': { pathToFileURL },
+  };
   vm.runInNewContext(read(PRELOAD_CJS), {
     window,
     process: { env: {} },
+    __dirname: path.dirname(PRELOAD_CJS),
     require(name) {
-      assert.equal(name, 'electron');
-      return { contextBridge, ipcRenderer: { invoke, on() {}, removeListener() {} } };
+      requested.push(name);
+      assert.ok(Object.hasOwn(imports, name), `preload.cjs 不得加载白名单外的依赖：${name}`);
+      return imports[name];
     },
   }, { filename: PRELOAD_CJS });
+  assert.deepEqual(requested, ['electron', 'node:path', 'node:fs', 'node:url'],
+    'preload.cjs 的依赖面须与白名单逐项一致（新增依赖必须是有意识的改动，并同步更新本断言）');
   return window.eagleDesktop;
 }
 

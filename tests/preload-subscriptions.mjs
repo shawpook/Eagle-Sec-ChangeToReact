@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../electron/preload.cjs', import.meta.url), 'utf8');
@@ -28,15 +31,28 @@ function loadPreload(mode = 'direct') {
       window[key] = mode === 'proxied' ? proxyAcross(api) : api;
     },
   };
+  // M6-3 起 `electron/preload.cjs` 在**模块作用域**多了三个 Node 内核模块的 require，
+  // 并用 `__dirname` 锚定格式插件 preload。白名单穷尽列举，且要求逐个都被请求到。
+  const requested = [];
+  const imports = {
+    electron: { contextBridge, ipcRenderer },
+    'node:path': path,
+    'node:fs': nodeFs,
+    'node:url': { pathToFileURL },
+  };
   const context = vm.createContext({
     window,
     process: { env: {} },
+    __dirname: path.dirname('electron/preload.cjs'),
     require(name) {
-      assert.equal(name, 'electron');
-      return { contextBridge, ipcRenderer };
+      requested.push(name);
+      assert.ok(Object.hasOwn(imports, name), `preload.cjs 不得加载白名单外的依赖：${name}`);
+      return imports[name];
     },
   });
   vm.runInContext(source, context, { filename: 'electron/preload.cjs' });
+  assert.deepEqual(requested, ['electron', 'node:path', 'node:fs', 'node:url'],
+    'preload.cjs 的依赖面须与白名单逐项一致（新增依赖必须是有意识的改动，并同步更新本断言）');
   return {
     api: window.eagleDesktop,
     ipcRenderer,

@@ -214,6 +214,11 @@ export const REACT_SUITE = [
   'tests/image-transform-closed-loop.mjs',
   //   P3-b 来源文件夹模式真实点击 UI 闭环（自起 backend + Vite + Electron，全部临时端口）。
   'tests/source-mode-browse-closed-loop.mjs',
+  // M8-2：视频夹具的 EBML Duration 注入器（纯 Node，秒级）。夹具被 4 个测试共用，
+  // 而 MediaRecorder 写出的 WebM 不含 Duration ⇒ Chromium 恒报 duration === Infinity ⇒
+  // detailHooks 的原生→MPV 判据把可播放的夹具误判为不可播放。本项钉住注入器的字节级正确性、
+  // TimecodeScale 换算、幂等与「解析失败必须抛错」，含恒等注入下的负向自证。
+  'tests/video-fixture-duration.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -252,6 +257,7 @@ export const TEST_CLASSES = {
   'tests/image-transform-closed-loop.mjs': 'static',
   // 起 Vite dev + 真实 Electron，但后端与端口都由本测试自己拉起 → dev-probe。
   'tests/source-mode-browse-closed-loop.mjs': 'dev-probe',
+  'tests/video-fixture-duration.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

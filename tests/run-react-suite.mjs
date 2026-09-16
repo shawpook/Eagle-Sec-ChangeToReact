@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（98 项，顺序隔离执行）。
+ * React 全量回归套件（99 项，顺序隔离执行）。
  * 项数以 `react-suite-manifest.mjs` 的 `REACT_SUITE` 长度为准；合并各批次的登记项时
  * 必须重新数一遍长度再改这里——历史上多次出现注释与实际长度不同步（71/72/73/77/79 都写过）。
  * R8 起并入 F15 `preload-subscriptions` 与 F13-preview `preview-entry-subscriptions`
@@ -10,6 +10,7 @@
  * R12 起并入 M3-3 `worker-cancel-writeback` 与 `worker-protocol-contract`。
  * R13 起并入 M4-D `m4-ng-click-pairing` / `m4-engine-lifecycle` / `m4-domlite-containment`。
  * R14 起并入 M4-E `f11-scope-face-late-registration`。
+ * R19 起并入 M8-2 `video-fixture-duration`（视频夹具的 EBML Duration 注入器，纯 Node）。
  * R18 起并入三个长期**不属任何套件**的 M1 交付测试（D15 同类问题，M8 覆盖面补齐）：
  * `f08f09-action-supply-contract`（W12）/ `image-transform-closed-loop`（W10）/
  * `source-mode-browse-closed-loop`（P3-b）。三者单独实跑通过后才登记，断言一字未改。

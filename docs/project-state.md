@@ -483,5 +483,7 @@ M8 的两件事（依据任务书 §M8 与 D22）：
 | **多个 Worker 并行跑 Vite/Electron 类测试会互相破坏共享依赖缓存** | 成片假失败、`SUITE_EXIT=127` | 已定为口径（D9）：Worker 只跑自家定向测试，全量由 Coordinator 串行跑。**后续派单沿用此约定** |
 | **`~/.claude/settings.json` 的 `skipDangerousModePermissionPrompt` 会被静默抹掉** | Worker 卡在 Bypass 确认框 | 每次派遣前复查（§7.1）。当日已复发 4 次 |
 | **Worker 的 dispatch prompt 常停在输入框未提交** | 表现为"停在空提示符"，实际在等 Enter | 读终端查 `draft:` 字段，`orca terminal send --terminal <handle> --enter` 提交（§7.5） |
-| **实机验证仍受限**：共享 Vite 预打包 URL 在本机负载下全部超时挂起 | F04 的"迁移后预览窗仍可用"、F06 的端到端均未实机验证 | 无并行 Worker 时重试；仍不可行则如实标注为未验证项并带入 M8 |
-| `H:/resources/plugin_templates` 与 `H:/dev/plugins/example-service-plugin` 在工作区外 | F19 | 涉及工作区外资源，必要时向用户确认 |
+| **邮箱取件口径易错**（本轮新记） | 误以为"worker 没回话" | `--ack` 收的是 **`result.deliveryId`**（不是 `msg_*`，传错得 `stale_delivery`）；`check --wait` 遇到未 ack 批次会**立刻返回**而非等待；`check --ack <id>` 的返回值是**下一批**。已记入记忆 `env-orca-mailbox-mechanics.md` |
+| **`main-ui-workflow-closed-loop` 出现一次未捕获异常**（2026-09-16 晚，M7-3 合并后首次运行） | 若复现则可能是真回归 | 当时 `tail` 截断未留全文；随后**连跑 3 次均 exit 0 且 OK**。**M8 的 L3 必须盯住这一项**：若在 95 项全量里复现，当场留全文并归因 |
+| ~~实机验证受限（共享 Vite 预打包 URL 超时挂起）~~ | — | ✅ **已不再成立**：2026-09-16 晚的各批实机 Electron 检验均正常通过（`react-stage9a2-smoke`、`production-smoke`、`preview-delivery`、`document-viewer-ui`、`main-ui-workflow`、`continuous-grid-scroll`、M6-4 的新真机门禁等）。**仍属未验证的具体项**是：M6-4 的三处 React 插件组件端到端（本机无已安装的格式查看器插件条目）、M7-3 的 RAW/TIFF/UDOC 样本 |
+| ~~`H:/resources/plugin_templates` 与 `H:/dev/plugins/example-service-plugin` 在工作区外~~ | — | ✅ **已由 M6-2 处置（依据 D24①，用户已拍板）**：插件根统一到仓库内 `plugins/`（`EAGLE_PLUGINS_ROOT` 可覆盖），示例插件 `git mv` 至 `plugins/example-service-plugin/`、模板至 `plugins/_templates/`；缺资源时给出结构化错误码而非静默 warn。**对外 URL 一个未变** |

@@ -1,6 +1,7 @@
-/** M0：只读产物闭包门禁。缺失一律失败，不回退源码、不豁免旧路由。
+/** M0：只读产物闭包门禁。入口/生成资源缺失一律失败，不回退源码、不豁免旧路由。
  * 唯一的降级通道是 policy.knownMissing（tests/frontend-gate-manifest.mjs 的
  * KNOWN_MISSING_ASSETS）：逐条登记、要求非空理由/消费者/退出条件，且条目失效会被反向校验。
+ * 显式入口清单与 manifest 本身不得进入该表；它们缺失时必须无条件 FAIL。
  * node tests/dist-entry-check.mjs [--root=<隔离产物根>]
  * import checkDist() 不执行 CLI；可注入只读文件系统做内存负向测试。
  */
@@ -105,13 +106,45 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
   const parsedHtml = new Map();
   const files = new Set();
   const fail = (message) => failures.add(message);
-  const isFile = (rel) => { try { return io.statSync(path.join(root, rel)).isFile(); } catch { return false; } };
-  const exists = (rel) => { try { io.statSync(path.join(root, rel)); return true; } catch { return false; } };
+  const normalizeRel = (value) => typeof value === 'string' ? value.trim().replace(/^\/+/, '') : '';
+  const pathPresent = (full) => {
+    try {
+      // 注入式只读 fs 可用 existsSync 精确模拟 ENOENT，而无需删除真实产物。
+      return typeof io.existsSync !== 'function' || io.existsSync(full);
+    } catch {
+      return false;
+    }
+  };
+  const isFile = (rel) => {
+    try {
+      const full = path.join(root, rel);
+      return pathPresent(full) && io.statSync(full).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const exists = (rel) => {
+    try {
+      const full = path.join(root, rel);
+      if (!pathPresent(full)) return false;
+      io.statSync(full);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const read = (rel) => io.readFileSync(path.join(root, rel), 'utf8');
 
   // 已知缺失登记表：逐条精确登记（reason/consumer/exit 均非空），用于「刻意可选依赖」与
   // 「无现代消费者的 vendor 遗留分支」。它不是普遍豁免——未登记路径一律照旧 FAIL，
   // 且已存在 / 未被命中的条目会被反向校验出来（见函数末尾）。
+  const requiredRoots = new Set([
+    ...(Array.isArray(policy.reactPages) ? policy.reactPages : []),
+    ...(Array.isArray(policy.pages) ? policy.pages : []),
+    ...(Array.isArray(policy.dynamicAssets) ? policy.dynamicAssets.map(({ file }) => file) : []),
+    ...(Array.isArray(policy.extensionManifests) ? policy.extensionManifests : []),
+    ...(Array.isArray(policy.pluginManifests) ? policy.pluginManifests : []),
+  ].map(normalizeRel).filter(Boolean));
   const knownMissing = new Map();
   const knownMissingHit = new Set();
   const registry = policy.knownMissing ?? [];
@@ -122,6 +155,14 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
     if (!missing) { fail(`${label}：缺少 missing 路径`); continue; }
     const blank = ['reason', 'consumer', 'exit'].filter((field) => typeof entry?.[field] !== 'string' || !entry[field].trim());
     if (blank.length) { fail(`${label}（${missing}）：reason/consumer/exit 必须非空，缺 ${blank.join('/')}`); continue; }
+    if (!/\b\d{4}-\d{2}-\d{2}\b/.test(entry.exit)) {
+      fail(`${label}（${missing}）：exit 必须包含 YYYY-MM-DD 退出日期`);
+      continue;
+    }
+    if (requiredRoots.has(missing)) {
+      fail(`${label}（${missing}）：显式入口/清单资源不得登记为已知缺失，必须补齐产物`);
+      continue;
+    }
     if (knownMissing.has(missing)) { fail(`${label}：重复登记 ${missing}`); continue; }
     knownMissing.set(missing, entry);
   }
@@ -194,8 +235,8 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
       else if (/\.css$/i.test(rel)) scanCss(read(rel), rel, document);
     } catch (error) { fail(`${rel}：资源解析失败（${error.message}）`); }
   }
-  function manifest(rel, kind) {
-    visit(rel);
+  function manifest(rel, kind, via = `manifest ${rel}`) {
+    visit(rel, rel, via);
     if (!isFile(rel)) return;
     try {
       const data = JSON.parse(read(rel));
@@ -211,7 +252,14 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
         const icon = data.action?.default_icon;
         for (const ref of typeof icon === 'string' ? [icon] : Object.values(icon || {})) followManifest(ref);
         for (const script of data.content_scripts || []) for (const ref of [...(script.js || []), ...(script.css || [])]) followManifest(ref);
-        for (const ref of [data.options_page, data.options_ui?.page, data.devtools_page, ...Object.values(data.chrome_url_overrides || {})].filter(Boolean)) followManifest(ref);
+        for (const ref of [
+          data.options_page,
+          data.options_ui?.page,
+          data.devtools_page,
+          data.side_panel?.default_path,
+          ...(data.sandbox?.pages || []),
+          ...Object.values(data.chrome_url_overrides || {}),
+        ].filter(Boolean)) followManifest(ref);
         for (const group of data.web_accessible_resources || []) for (const ref of group.resources || []) {
           if (ref.includes('*')) fail(`${rel}：web_accessible_resources 通配符需展开登记 ${ref}`);
           else followManifest(ref);
@@ -230,7 +278,8 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
     } catch (error) { fail(`${rel}：manifest 解析失败（${error.message}）`); }
   }
 
-  for (const rel of [...policy.reactPages, ...policy.pages]) visit(rel);
+  for (const rel of policy.reactPages) visit(rel, rel, `React 页面入口 ${rel}`);
+  for (const rel of policy.pages) visit(rel, rel, `页面入口 ${rel}`);
   for (const rel of policy.reactPages) {
     const html = parsedHtml.get(rel);
     if (!html) continue;
@@ -239,12 +288,13 @@ export function checkDist({ root = path.join(projectRoot, 'dist/frontend'), poli
     for (const { attrs } of modules) {
       const target = localPath(attrs.src, html.document);
       if (!target || !/^assets\/[^?#]+\.m?js$/i.test(target)) fail(`${rel}：入口未指向打包 JS ${attrs.src}`);
+      else if (knownMissing.has(target)) fail(`${rel}：module 入口 ${target} 不得登记为已知缺失，必须补齐产物`);
     }
     if (html.tags.some(({ attrs }) => [attrs.src, attrs.href].some((ref) => ref && /\/src\/app\/react\/.*\.tsx?(?:[?#]|$)/i.test(ref)))) fail(`${rel}：残留 React 源码入口`);
   }
   for (const { file, owner } of policy.dynamicAssets) visit(file, file, `动态清单 ${owner}`);
-  for (const rel of policy.extensionManifests) manifest(rel, 'extension');
-  for (const rel of policy.pluginManifests) manifest(rel, 'plugin');
+  for (const rel of policy.extensionManifests) manifest(rel, 'extension', `扩展 manifest ${rel}`);
+  for (const rel of policy.pluginManifests) manifest(rel, 'plugin', `插件 manifest ${rel}`);
   let manifestFound = false;
   for (const rel of ['.vite/manifest.json', 'manifest.json']) {
     if (isFile(rel)) { manifestFound = true; manifest(rel, 'vite'); }

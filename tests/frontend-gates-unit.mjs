@@ -53,6 +53,44 @@ function assertMissing(result, file) {
   assert.ok(result.failures.some((failure) => failure.endsWith(`产物缺失 ${file}`)), result.failures.join('\n'));
 }
 
+function injectedMissingFs(root, files) {
+  const hidden = new Set(files.map((file) => file.replace(/^\/+/, '')));
+  const insideRoot = (full) => {
+    const rel = path.relative(root, full).split(path.sep).join('/');
+    assert.ok(rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel)), `不应访问隔离根外：${full}`);
+    return rel;
+  };
+  const enoent = (full) => Object.assign(new Error(`ENOENT: injected missing ${full}`), { code: 'ENOENT' });
+  return {
+    existsSync(full) {
+      return !hidden.has(insideRoot(full));
+    },
+    statSync(full, ...args) {
+      const rel = insideRoot(full);
+      if (hidden.has(rel)) throw enoent(full);
+      return fs.statSync(full, ...args);
+    },
+    readFileSync(full, ...args) {
+      const rel = insideRoot(full);
+      if (hidden.has(rel)) throw enoent(full);
+      return fs.readFileSync(full, ...args);
+    },
+  };
+}
+
+function assertInjectedMissing(result, file, label) {
+  assert.equal(result.ok, false, `${label} 注入缺失后仍未变红`);
+  assert.ok(result.failures.length > 0, `${label} 注入缺失后没有 FAIL`);
+  assert.ok(result.failures.every((entry) => entry.endsWith(`产物缺失 ${file}`)), result.failures.join('\n'));
+  for (const failure of result.failures) console.log(`INJECTED_MISSING ${label}: ok=${result.ok}; ${failure}`);
+}
+
+function probeInjectedMissing(t, file, label, customPolicy = policy, overrides = {}) {
+  const root = fixture(t, overrides);
+  const result = checkDist({ root, policy: customPolicy, io: injectedMissingFs(root, [file]) });
+  assertInjectedMissing(result, file, label);
+}
+
 test('完整隔离产物：单双引号、递归 CSS、共享 chunk、worker 上下文与循环引用通过', (t) => {
   const root = fixture(t);
   const result = checkDist({ root, policy });
@@ -181,6 +219,113 @@ test('CLI --root 指向隔离目录，缺失必需入口退出 1', (t) => {
   assert.match(result.stderr, /FAIL .*产物缺失 src\/app\/index\.html/);
   assert.match(result.stdout, /DIST_ENTRY_CHECK_FAILED/);
   assert.doesNotMatch(result.stdout + result.stderr, /WARN/);
+});
+
+const deliveryFixtures = {
+  'workbench.html': `<script type="module" src="/assets/entry.js"></script>`,
+  'roadmap.html': `<script type="module" src="/assets/entry.js"></script>`,
+  'media-viewer/audio.html': `<script type="module" src="/assets/entry.js"></script>`,
+  'media-viewer/video.html': `<script type="module" src="/assets/entry.js"></script>`,
+  'browser-extension/manifest.json': JSON.stringify({
+    manifest_version: 3,
+    background: { service_worker: 'background.js' },
+    action: { default_popup: 'popup.html', default_icon: { 128: 'icons/icon128.png' } },
+    content_scripts: [{ js: ['content.js'], css: ['content.css'] }],
+    side_panel: { default_path: 'sidepanel.html' },
+    sandbox: { pages: ['sandbox.html'] },
+  }),
+  'browser-extension/background.js': 'self.ready = true;',
+  'browser-extension/popup.html': `<script src="popup.js"></script>`,
+  'browser-extension/popup.js': 'self.popupReady = true;',
+  'browser-extension/icons/icon128.png': '图标占位',
+  'browser-extension/content.js': 'self.contentReady = true;',
+  'browser-extension/content.css': 'body { color: black; }',
+  'browser-extension/sidepanel.html': '<p>side panel</p>',
+  'browser-extension/sandbox.html': '<p>sandbox</p>',
+  'plugins/example/manifest.json': JSON.stringify({
+    id: 'example',
+    version: '1.0.0',
+    main: { url: 'js/plugin.js' },
+    logo: 'logo.png',
+  }),
+  'plugins/example/js/plugin.js': 'module.exports = {};',
+  'plugins/example/logo.png': '插件图标占位',
+};
+const deliveryPolicy = {
+  ...policy,
+  reactPages: ['src/app/index.html', 'workbench.html', 'roadmap.html', 'media-viewer/audio.html', 'media-viewer/video.html'],
+  extensionManifests: ['browser-extension/manifest.json'],
+  pluginManifests: ['plugins/example/manifest.json'],
+};
+
+for (const [label, file] of [
+  ['React 主入口 HTML', 'src/app/index.html'],
+  ['静态页面 HTML', 'pages.html'],
+  ['工作台页面 HTML', 'workbench.html'],
+  ['路线图页面 HTML', 'roadmap.html'],
+  ['媒体页面 HTML', 'media-viewer/audio.html'],
+  ['主入口 JS', 'assets/entry.js'],
+  ['静态 chunk', 'assets/shared.js'],
+  ['动态 chunk', 'assets/lazy.js'],
+  ['CSS', 'assets/main.css'],
+  ['字体', 'assets/fonts/App Font.woff2'],
+  ['静态图片', 'assets/images/icon.svg'],
+  ['Worker', 'assets/workers/start.js'],
+  ['扩展 manifest 自身', 'browser-extension/manifest.json'],
+  ['扩展 manifest 引用', 'browser-extension/background.js'],
+  ['后端插件 manifest 自身', 'plugins/example/manifest.json'],
+  ['后端插件入口引用', 'plugins/example/js/plugin.js'],
+]) {
+  test(`内存负向：只读 fs 隐藏${label}必须 FAIL`, (t) => {
+    probeInjectedMissing(t, file, label, deliveryPolicy, deliveryFixtures);
+  });
+}
+
+test('内存负向：主入口 JS 不得通过 knownMissing 降级', (t) => {
+  const knownMissingPolicy = {
+    ...policy,
+    knownMissing: [{
+      missing: 'assets/entry.js',
+      reason: '负向隔离探针',
+      consumer: 'src/app/index.html module 入口',
+      exit: '2099-12-31 删除测试探针',
+    }],
+  };
+  const root = fixture(t);
+  const result = checkDist({ root, policy: knownMissingPolicy, io: injectedMissingFs(root, ['assets/entry.js']) });
+  assert.equal(result.ok, false, result.failures.join('\n'));
+  const failure = result.failures.find((entry) => entry.includes('module 入口 assets/entry.js 不得登记为已知缺失'));
+  assert.ok(failure, result.failures.join('\n'));
+  console.log(`INJECTED_MISSING main-entry-known-missing: ok=${result.ok}; ${failure}`);
+});
+
+test('knownMissing 的 exit 缺少退出日期时 FAIL', (t) => {
+  const invalidPolicy = {
+    ...policy,
+    knownMissing: [{ missing: 'vendor/optional.css', reason: '可选', consumer: '测试消费者', exit: '以后复核' }],
+  };
+  const result = checkDist({ root: fixture(t), policy: invalidPolicy });
+  assert.equal(result.ok, false);
+  assert.ok(result.failures.some((failure) => failure.includes('exit 必须包含 YYYY-MM-DD 退出日期')), result.failures.join('\n'));
+});
+
+test('knownMissing 条目对应的产物已存在时反向校验 FAIL', (t) => {
+  const stalePolicy = {
+    ...policy,
+    knownMissing: [{
+      missing: 'vendor/optional.css',
+      reason: '负向隔离探针',
+      consumer: '测试消费者',
+      exit: '2099-12-31 删除无效登记',
+    }],
+  };
+  const root = fixture(t, { 'vendor/optional.css': 'body { color: black; }' });
+  const result = checkDist({ root, policy: stalePolicy });
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.failures.some((failure) => failure.includes('已知缺失登记表已失效：vendor/optional.css 在产物中已存在')),
+    result.failures.join('\n'),
+  );
 });
 
 const records = (text, file = 'scope.ts') => scanTypeDirectives(text, file).map((record) => ({ ...record, file }));

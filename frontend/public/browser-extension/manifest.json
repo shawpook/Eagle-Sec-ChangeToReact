@@ -5,13 +5,12 @@
   "description": "Collect page images and URLs into Eagle Reverse.",
   "permissions": [
     "activeTab",
-    "scripting",
     "storage",
     "tabs"
   ],
   "host_permissions": [
-    "http://localhost:41593/*",
-    "http://localhost:41595/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "background.js"

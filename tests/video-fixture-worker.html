@@ -33,14 +33,18 @@
       }
       recorder.stop();
       await stopped;
+      const recordedMs = performance.now() - startedAt;
       stream.getTracks().forEach((track) => track.stop());
       const blob = new Blob(chunks, { type: mimeType });
-      return new Promise((resolve, reject) => {
+      const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = () => reject(reader.error || new Error('Unable to encode fixture'));
         reader.readAsDataURL(blob);
       });
+      // 一并回传本次录制的真实时长：宿主侧据此往 WebM 的 Info 里补 Duration
+      // （MediaRecorder 自身不写 Duration，Chromium 会恒报 duration === Infinity）。
+      return { dataUrl, durationMs: recordedMs };
     };
   </script>
 </body>

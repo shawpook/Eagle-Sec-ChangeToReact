@@ -21,6 +21,8 @@ import {
   recomputeCommentRatio,
 } from './commentHooks';
 import { runInBodyScope } from '../../core/appCore';
+// M6-3：格式插件 webview 的 preload 走**唯一**解析点（原先此处内联的惯用式恒产出 http:// URL）。
+import { resolveFormatExtensionPreloadFromHost } from '../../core/pluginFormatPreload';
 
 import { openItemContextMenu } from '../../services/itemMenuService';
 
@@ -156,11 +158,13 @@ function PluginView({ snapshot }: { snapshot: DetailSnapshot }) {
     if (!current) return;
 
     function init() {
-      const preloadPath = req('url')
-        .pathToFileURL(req('path').join((window as any).appRoot.path, '/app/js/plugin/api-format-extension.js'))
-        .href;
+      // M6-3：preload 由 `core/pluginFormatPreload.ts` **唯一**解析。不可用（非 Electron 态 /
+      // 桥缺失 / 文件不在磁盘）时该模块已登记能力缺口并告警，此处**省略 preload 属性**，
+      // 不再写原先那个指向 `http://<origin>/src/…` 的伪造值（该值恒非文件系统路径，从未被加载）。
+      // webview 本体仍按既有路径创建：`tests/m4-preview-dispose.mjs:462` 断言首挂必创建 plugin webview。
+      const preload = resolveFormatExtensionPreloadFromHost();
       const wv = document.createElement('webview') as any;
-      wv.setAttribute('preload', preloadPath);
+      if (preload.ok) wv.setAttribute('preload', preload.preloadUrl);
       wv.setAttribute('allowpopups', '');
       wv.setAttribute('nodeintegration', '');
       wv.setAttribute('webpreferences', 'contextIsolation=false');

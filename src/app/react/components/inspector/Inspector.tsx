@@ -1,4 +1,6 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
+// M6-3：格式插件 webview 的 preload 走**唯一**解析点（原先此处内联的惯用式恒产出 http:// URL）。
+import { resolveFormatExtensionPreloadFromHost } from '../../core/pluginFormatPreload';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useInspectorState, InspectorSnapshot, SelectedItemSnapshot } from '../../store/inspectorState';
@@ -943,11 +945,13 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
           }
           return acc;
         }, 100) || 32;
-      const preloadPath = req('url')
-        .pathToFileURL(req('path').join((window as any).appRoot.path, '/app/js/plugin/api-format-extension.js'))
-        .href;
+      // M6-3：preload 由 `core/pluginFormatPreload.ts` **唯一**解析。不可用时该模块已登记能力
+      // 缺口并告警，此处**整段省略 preload 属性**（不再写 `http://…/src/…` 的伪造值）；
+      // 其余属性及其顺序（id/style/src/allowpopups/nodeintegration/webpreferences）一字未改。
+      const preload = resolveFormatExtensionPreloadFromHost();
+      const preloadAttr = preload.ok ? ` preload="${preload.preloadUrl}"` : '';
 
-      (element as HTMLElement).innerHTML = `<webview id="${webviewId}" style="height: ${height}px;" src="${src}" preload="${preloadPath}" allowpopups nodeintegration webpreferences="contextIsolation=false"></webview>`;
+      (element as HTMLElement).innerHTML = `<webview id="${webviewId}" style="height: ${height}px;" src="${src}"${preloadAttr} allowpopups nodeintegration webpreferences="contextIsolation=false"></webview>`;
       const webview = (element as HTMLElement).querySelector('webview') as any;
       if (!webview) return;
 

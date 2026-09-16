@@ -1,6 +1,19 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const path = require('node:path');
+const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 
 const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692').replace(/\/$/, '');
+
+// M6-3：格式插件 webview 的 preload —— **唯一**真实磁盘来源。
+//
+// 锚点与 `main.cjs:1769` 的 `path.join(__dirname, '..', 'plugins')` **同族**：以本 preload
+// 所在目录（<repo>/electron）为基准。2026-09-16 实测（Electron 22.3.7）：preload 模块作用域内
+// `__dirname` = <repo>/electron，稳定；`process.cwd()` = 启动目录（随调用方式变化，**不采用**）；
+// `process.resourcesPath` 指向 node_modules/electron/dist/resources（与应用无关，**不采用**）。
+const formatExtensionPreloadPath = path.join(
+  __dirname, '..', 'src', 'app', 'js', 'plugin', 'api-format-extension.js',
+);
 
 // b1-9ak：冒烟旗标直通（preload 的 process 是原生对象，先于 shims 注入且不被其覆盖；
 // 渲染层 window.process/window.require 均被 shims stub，env 不可达）
@@ -133,6 +146,29 @@ const api = {
     cancel: (jobId) => ipcRenderer.invoke('duplicates:cancel', jobId),
   },
   openPlugin: (payload) => ipcRenderer.invoke('plugin:open', payload),
+  // M6-3：格式插件 webview 的 preload 解析面（**新增字段**，既有字段一律未改）。
+  //
+  // 契约：`{ ok: true, url, diskPath }` 或 `{ ok: false, reason }`——**没有第三种形态**。
+  // 文件不在磁盘上时明确返回 ok:false，不回落任何猜测路径（`/src` 是 URL 空间路径，不是磁盘根）。
+  //
+  // 返回 `file://` URL 而非原生路径的依据（2026-09-16 实测，Electron 22.3.7）：两种形态都能让
+  // `<webview>` attach，但 Electron 要求 preload 协议为 `file:`；且本机 worktree 路径含空格与中文
+  // （`Eagle-Sec-development - 副本`），百分号编码必须由 `pathToFileURL` 完成——渲染层手拼
+  // `'file://' + p` 会产出非法 URL，故构造留在本 Node 上下文内（渲染层 `window.require` 已被 shims stub）。
+  formatExtensionPreload: () => {
+    try {
+      if (!fs.existsSync(formatExtensionPreloadPath)) {
+        return { ok: false, reason: `preload 脚本不存在：${formatExtensionPreloadPath}` };
+      }
+      return {
+        ok: true,
+        url: pathToFileURL(formatExtensionPreloadPath).href,
+        diskPath: formatExtensionPreloadPath,
+      };
+    } catch (err) {
+      return { ok: false, reason: `preload 解析失败：${err && err.message ? err.message : String(err)}` };
+    }
+  },
   openFile: (options) => ipcRenderer.invoke('dialog:openFile', options),
   listDirectory: (target) => ipcRenderer.invoke('fs:list', target),
   readFile: (target) => ipcRenderer.invoke('fs:read', target),

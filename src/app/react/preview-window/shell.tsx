@@ -7,6 +7,8 @@ import { useRetryWhenError, useCommentsContainer, useCommentItem } from '../comp
 import { WebviewToolbar } from '../components/detail/DetailToolbar';
 import { useTippy } from '../components/hooks';
 import { shortcuts } from '../app/filters';
+// M6-3：格式插件 webview 的 preload 走**唯一**解析点（原先此处内联的惯用式恒产出 http:// URL）。
+import { resolveFormatExtensionPreloadFromHost } from '../core/pluginFormatPreload';
 
 const req = (name: string): any => (window as any).require?.(name);
 
@@ -581,11 +583,12 @@ export function PreviewPluginView({ item, url }: { item: any; url?: string }) {
     };
 
     function init() {
-      const preloadPath = req('url')
-        .pathToFileURL(req('path').join((window as any).appRoot.path, '/app/js/plugin/api-format-extension.js'))
-        .href;
+      // M6-3：preload 由 `core/pluginFormatPreload.ts` **唯一**解析（原先此处内联的惯用式恒产出
+      // http:// URL，故该 preload 从未被加载）。不可用时该模块已登记能力缺口并告警，此处**省略
+      // preload 属性**；webview 本体与其余属性/监听一字未改。
+      const preload = resolveFormatExtensionPreloadFromHost();
       const wv = document.createElement('webview') as any;
-      wv.setAttribute('preload', preloadPath);
+      if (preload.ok) wv.setAttribute('preload', preload.preloadUrl);
       wv.setAttribute('allowpopups', '');
       wv.setAttribute('nodeintegration', '');
       wv.setAttribute('webpreferences', 'contextIsolation=false');

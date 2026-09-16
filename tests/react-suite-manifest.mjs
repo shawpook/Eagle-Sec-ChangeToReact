@@ -150,6 +150,10 @@ export const REACT_SUITE = [
   // M2-4 / M7-1：moduleRegistry 撤销 @ts-nocheck + 隐式截获表驱动契约化。
   // 覆盖 34 项条目穷尽对照、逐项行为等价性、可观测性结构化记录与 /index.js 封堵。
   'tests/module-registry-contract.mjs',
+  // M4-A：URL 双向同步与 goBack/goForward 守卫。纯 Node（node:vm 装载真实源码 + 确定性假浏览器，
+  // location.hash setter 排队投递 hashchange），无 Electron、秒级。覆盖守卫真值、
+  // popstate/hashchange 触发面与三重防回环、URL→状态四类语义映射、结构守卫。
+  'tests/m4-url-history.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -170,6 +174,7 @@ export const TEST_CLASSES = {
   'tests/preview-entry-subscriptions.mjs': 'static',
   'tests/match-rules-equivalence.mjs': 'static',
   'tests/m4-preview-dispose.mjs': 'static',
+  'tests/m4-url-history.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

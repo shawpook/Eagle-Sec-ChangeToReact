@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（82 项，顺序隔离执行）。
+ * React 全量回归套件（83 项，顺序隔离执行）。
  * 项数以 `react-suite-manifest.mjs` 的 `REACT_SUITE` 长度为准；合并各批次的登记项时
  * 必须重新数一遍长度再改这里——历史上多次出现注释与实际长度不同步（71/72/73/77/79 都写过）。
  * R8 起并入 F15 `preload-subscriptions` 与 F13-preview `preview-entry-subscriptions`

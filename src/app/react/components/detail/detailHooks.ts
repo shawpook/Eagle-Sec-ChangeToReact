@@ -13,6 +13,7 @@ import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
 import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeClass, onEl, offEl, offAllEl, createEl, setHtml, show, hide } from '../../utils/domQuery';
+import { dom } from '../../utils/domLite';
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
@@ -28,14 +29,26 @@ import { useMiscRawState, writeUseMpvPlayer } from '../../store/miscRawState';
  * 与 #detail-container ng-class/ng-click 行为的逐字移植。
  *
  * 规范原则：
- * - 全局 jQuery/$、videojs、Mousetrap、videoHelper、FileUrlHelper、preferences、
- *   debounce/throttle/guid/AnnotationPreview 与旧版共用同一份（window 属性）。
+ * - 全局 videojs、Mousetrap、videoHelper、FileUrlHelper、preferences、
+ *   debounce/throttle/guid/AnnotationPreview 与旧版共用同一份（window 属性）；
+ *   jQuery/`$` 已随 b1-9bx-A 退役，`$` 改由 domLite 承接——见下方 export 注释。
  * - 事件回调一律调 getBodyScope() 上的同名函数；「scope.$parent.useMpvPlayer」
  *   写到 body scope（接管后该旗标的唯一消费方是 React 快照）。
  * - React 卸载等价旧 scope.$on('$destroy')；element.remove() 不做（节点归 React 管）。
  */
 
-export const $: any = () => (window as any).jQuery;
+/* M4-E：原 `export const $: any = () => (window as any).jQuery;` 是哑雷。取证结论：
+ *  - jQuery 随 b1-9bx-A 退役——`src/app/index.html` / `preview-window.html` 不再加载，
+ *    全仓（`src/app/react/**`）零 `window.jQuery` / `window.$` 写入点，冒烟判据
+ *    `pw4e-jquery-retired` 即「两者均 undefined」；
+ *  - 故 `$` 恒返回 `undefined`：任何 `$(sel)` 调用点都会在紧接的 `.xxx` 处 TypeError；
+ *  - 而全仓**零调用点**：三个导入方（DetailToolbar / ContentEditable / inspectorActions）
+ *    都只 import，无一处裸 `$(`；`jq` 更是全仓零引用（仅自身定义处出现）。
+ * 按 M4-D 在 smoothZoomEngine 已采取的同一口径处置：**不删代码路径**（无消费者 ≠ 可删，
+ * 且导入方不在本批可改范围），只把死引用换成活的模块内等价物——本仓 jQuery `$(...)` 工厂的
+ * 接替者就是 `utils/domLite.ts` 的 `dom`（其注释即「jQuery $(...) 工厂（子集）」），故直接别名。
+ * 别名后零调用点的现状不变，仅使该路径不再产出 `undefined`。 */
+export const $: typeof dom = dom;
 export const jq = $;
 
 /** safeZoomData：smoothZoom('getZoomData') 的容错包装（插件未初始化时按 1:1 兜底，

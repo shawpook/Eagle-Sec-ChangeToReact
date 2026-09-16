@@ -4,8 +4,13 @@
  * 与旧 shim 的差别（DoD ①）：
  *  - **无 `coreState` 后端**：注册字段经 `Object.defineProperty` 直连 store（读 `read()`、
  *    写 `write(v)`）；未注册字段落本模块的普通对象 `plain`（等价旧 coreState 的稀疏写穿）。
- *  - **无 Proxy**：字段描述符在建面时按注册表枚举声明；晚注册（面创建后）由 getter/setter
- *    动态查表兜住（`plain` 承接未注册值）。
+ *  - **无 Proxy**：字段描述符在建面时按注册表枚举声明；**面创建之后**才注册的字段由
+ *    `scopeFieldBridge` 的晚注册钩子回调同一个 `define()` 补挂（语义与建面时逐字一致）。
+ *    ⚠ F11 订正：本行原写「晚注册（面创建后）由 getter/setter 动态查表兜住」——getter/setter
+ *    确实动态查表，但**晚注册名在面上根本没有描述符**，压根走不到 getter/setter：直读恒
+ *    `undefined`、直写落 `plain` 自有属性而不落 store（运行期探针 `tests/f11-scope-face-
+ *    late-registration.mjs` 实测坐实）。原注释描述的是「描述符已建」时的行为，不是晚注册
+ *    的行为，故此处据实改写。
  *  - 函数面（machinery 挂载、跨窗/驱动供给）不变：`machineryInfra.applyDataMachineryScope`
  *    等直接写本面属性。
  *
@@ -20,7 +25,10 @@
  * 共享 `core/*` 模块必须经 `getWindowScope()` 取「本窗 scope」，否则会建出空的 store 面并
  * **覆盖子窗自有 scope**。
  */
-import { getMigratedScopeField, getMigratedScopeFieldNames } from './scopeFieldBridge';
+import { getMigratedScopeField, getMigratedScopeFieldNames, installScopeFieldLateRegistrationHook } from './scopeFieldBridge';
+
+/** 面自身的保留名（方法面 / Angular 同形标记位）：字段描述符不得覆盖它们。 */
+const RESERVED_FACE_NAMES = new Set(['__eagleShim', '$root', '$parent', '$$phase', '$eval', '$destroy']);
 
 export function createBodyScopeFace(): any {
   // 单例：内部面已达则直接返回（`__eagleScopeShim.factory()` 冒烟直调与 getScopeFace 共享同一面）。
@@ -40,7 +48,13 @@ export function createBodyScopeFace(): any {
   face.$root = face;
   face.$parent = face;
 
+  // 已挂描述符的名字：registration 可能重复（HMR / 模块重求值），而 configurable:false 下
+  // 重定义会抛 TypeError，故此处幂等短路。getter/setter 本身是动态查表的，重复注册后读到的
+  // 仍是注册表里最新的 read/write，无需重建描述符。
+  const definedFields = new Set<string>();
   const define = (name: string): void => {
+    if (definedFields.has(name)) return;
+    definedFields.add(name);
     Object.defineProperty(face, name, {
       // configurable:false：注册字段是 store 的**稳定视图**，不可 delete/redefine——
       // 否则 `delete scope.X` 会摘掉访问器，使该字段此后从面读取恒 undefined（cz2 契约测试
@@ -59,6 +73,17 @@ export function createBodyScopeFace(): any {
     if (name in face) continue; // 保留方法面（$eval 等）不被字段描述符覆盖
     define(name);
   }
+
+  // F11：面创建**之后**才注册的字段同样要拿到面属性——注册表变化时回调本面的 define（同一个
+  // 闭包，语义与上面建面枚举逐字一致）。
+  // 与建面枚举用 `name in face` 判重不同，这里只认保留名：此时面上多出来的自有属性只可能是
+  // 「未注册期直写落下的 plain 值」，而注册表已声明该名字归 store —— 按全仓既有口径
+  // （`writeScopeField` / `driverApi` / `__eagleScopeRegistry` 一律注册表优先），该描述符必须
+  // 补挂以收敛到 store，否则面会永远返回那个陈旧值。
+  installScopeFieldLateRegistrationHook((name: string) => {
+    if (RESERVED_FACE_NAMES.has(name)) return;
+    define(name);
+  });
 
   internalFace = face;
   return face;

@@ -11,8 +11,26 @@ import { getWindowScope } from './scopeFace';
 
 const migratedFields = new Map<string, { read: () => any; write: (v: any) => void }>();
 
+/**
+ * F11：**面创建之后**才注册的字段通知口（单槽——面是单例，只有一个订阅方）。
+ *
+ * 为什么需要它：`scopeFace` 无 Proxy，字段描述符只在建面那一刻按注册表枚举声明；面已建时
+ * 再注册，该名字在面上**没有描述符**，于是直读恒 `undefined`、直写落 `plain` 自有属性
+ * （不落 store）——注册表说它归 store、面说它归 plain，两边永久分歧且静默无报错。
+ *
+ * 钩子由 `createBodyScopeFace()` 在建面时注入（那一刻两侧模块必已求值完毕，故不存在
+ * 循环 import 的 TDZ 风险）；未注入时（面尚未创建，或测试桩接本模块）注册行为与从前
+ * 逐字一致——面未建，建面时的枚举自然覆盖得到。
+ */
+let lateRegistrationHook: ((name: string) => void) | null = null;
+
+export function installScopeFieldLateRegistrationHook(hook: (name: string) => void): void {
+  lateRegistrationHook = hook;
+}
+
 export function migrateScopeFieldToStore(name: string, read: () => any, write: (v: any) => void): void {
   migratedFields.set(name, { read, write });
+  if (lateRegistrationHook) lateRegistrationHook(name);
 }
 
 /** 诊断/测试契约：已源翻转字段清单。 */

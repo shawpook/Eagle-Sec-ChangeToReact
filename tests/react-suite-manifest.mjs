@@ -176,6 +176,10 @@ export const REACT_SUITE = [
   'tests/m4-engine-lifecycle.mjs',
   // M4-D：domLite 只限受控引擎岛——普通 UI 必须走 domQuery 原生助手。纯 Node、秒级。
   'tests/m4-domlite-containment.mjs',
+  // M4-E：F11 晚注册缺陷——面创建之后才注册的字段在面上没有描述符（直读恒 undefined、
+  // 直写落 plain 不落 store）。纯 Node（node:vm 跑真实 scopeFace/scopeFieldBridge），秒级；
+  // 含「当前为什么不触发」的 AST 断言与撤钩子负向自证。
+  'tests/f11-scope-face-late-registration.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -204,6 +208,7 @@ export const TEST_CLASSES = {
   'tests/m4-ng-click-pairing.mjs': 'static',
   'tests/m4-engine-lifecycle.mjs': 'static',
   'tests/m4-domlite-containment.mjs': 'static',
+  'tests/f11-scope-face-late-registration.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };
@@ -215,6 +220,12 @@ export const ARTIFACT_TESTS = [
   // M6-1：扩展交付契约——端口单一来源与生产默认的漂移、权限面闭合性、popup 两加载环境、
   // MV2 对照物仍在且确实不同、产物与源码逐字一致。读 dist/frontend，故先 npm run build。
   'tests/browser-extension-delivery.mjs',
+  // M5-2：生产启动**等三个监听口就绪再开窗**，且任一子进程提前退出即 fail-fast。
+  // 起完整生产栈 + Electron，属产物层验收（依赖先 npm run build）。
+  'tests/start-production-readiness.mjs',
+  // M5-2：非默认端口生产验收——四类页面（主窗/文档窗/工作台/路线图）的请求必须全部命中
+  // **覆盖后**的端口，且 artifactDigest 不变（证明是「同一份产物换端口」而非重新构建）。
+  'tests/production-runtime-ports.mjs',
 ];
 
 /**

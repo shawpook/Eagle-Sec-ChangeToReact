@@ -2,7 +2,7 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（M1 全项集成完毕；M2 第一批、M5 第一批、F04 均已集成）
+> 最后更新：2026-09-16（M1 全项集成完毕；M2 第一批 + 回归修复已集成；**主分支全量回归 ALL GREEN**）
 
 ---
 
@@ -34,7 +34,7 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| M2 替代万能 shim | 🔄 **第一批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1 已集成**（RuntimeServices + 三态 + 能力缺失即失败）；后续批次见 §8 |
+| **M2** 替代万能 shim | 🔄 **第一批 + 回归修复已集成** | F07 能力矩阵调研已交付（§6）；**M2-1 已集成**（RuntimeServices + 三态 + 能力缺失即失败）；**M2-2 回归修复已集成**（补真实裸模块登记 + 相对 require 解析）；后续批次见 §8 |
 | M3 经典业务脚本进模块图 | ⏸ 待派 | — |
 | M4 窗口与 scope 收口 | ⏸ 待派 | — |
 | M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边见 §8 |
@@ -51,6 +51,8 @@
 已集成的提交（自下而上）：
 
 ```
+82d5b1f8 fix(m2): 补真实裸模块登记 + 模块内相对 require 解析 + JsonRestServer 失败通道改同步抛  [W18]
+f25876fb docs(state): 记录全量回归 FAILED 4 的根因（M2-1 未登记真实模块被抛错）与修复中状态
 1fc34443 test(m1): 修复 F06 分流测试的 flaky 时序依赖（改为确定性等待真实落盘）  [W17]
 69b489d6 feat(m5): 外围工具页/媒体页迁入 React 模块图 + 运行期地址单一来源（F17/F22）  [W16]
 257ebd1c fix(m1): F04 预览窗 boot 迁入模块图（显式依赖、先安装后挂载）  [W15]
@@ -78,11 +80,26 @@ e6f6383e docs(m0): 纳入总体任务书
 
 | 门禁 | 结果 |
 |---|---|
-| `node tests/dist-entry-check.mjs` | **FAIL 0**，已检查文件 299（原 206） |
+| `node tests/dist-entry-check.mjs` | **FAIL 0**，已检查文件 299（原 206）※ **必须先在主工作区跑 `npm run build`**，见 D12 |
 | `node tests/frontend-gates-unit.mjs` | 40/40 |
 | `node tests/preload-subscriptions.mjs` | 43/43 |
 | `node tests/preview-entry-subscriptions.mjs` | 12/12 |
 | `node tests/typecheck.mjs` | TYPECHECK_OK，0 诊断 |
+
+### 主分支验收证据（M2-2 合并后，`82d5b1f8`）
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run build`（`vite build --config frontend/vite.preview.config.mjs`） | BUILD_EXIT=0；4/4 page relocated |
+| `node tests/dist-entry-check.mjs` | **FAIL 0**，已检查文件 303 |
+| `node tests/typecheck.mjs` | TYPECHECK_OK，0 诊断 |
+| `node tests/shim-module-boundaries.mjs` | SHIM_BOUNDARY_OK |
+| `node tests/continuous-grid-scroll.mjs` | PASS（EXIT=0） |
+| `react-stage7a/7c/8e2-smoke` | STAGE7A_SMOKE_OK / STAGE7C_SMOKE_OK / STAGE8E2 SMOKE OK |
+| `node tests/run-react-suite.mjs` | **REACT SUITE ALL GREEN（77 项：OK 76 + retry-OK 1）**，SUITE_EXIT=0 |
+
+> 唯一 retry 项 `react-s2-sidebar-dnd-closed-loop`（首败 `dragend cleanup timeout`）是 `run-react-suite.mjs`
+> 头部注释里已记载的既有低频抖动，本次改动不涉及 DnD；首败尾部已留证。
 
 已知缺失登记（非豁免，带退出条件，`tests/frontend-gate-manifest.mjs` 的 `KNOWN_MISSING_ASSETS`）：
 - `src/my_modules/utif/UDOC.js`（worker 侧 try/catch 包裹的刻意可选依赖）
@@ -112,6 +129,12 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W15** | task_1e1194c99c58 | ctx_abc83ddf074b | **M1-F04 预览窗 boot 迁入模块图** | ✅ **已集成(`257ebd1c`)** |
 | **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 工具页/媒体页进模块图 + 运行期地址** | ✅ **已集成(`69b489d6`)** |
 | **W17** | task_2f6fabf7dd28 | ctx_54b60df66dc7 | **F06 分流测试 flaky 修复** | ✅ **已集成(`1fc34443`)** |
+| **W18** | task_6f79bc8608a8 | ctx_1978100e92dd | **M2-2 回归修复（补真实模块登记 + 能力取舍取证）** | ✅ **已交付核验并集成(`82d5b1f8`)**，终端已释放 |
+
+> W18 报告：`test-run/m2-2-regression-report.md`（worktree `m2-runtime-services` 内，`test-run/` 为 gitignore）。
+> **注意基线口径**：该 worktree 基于 `930f189c`（M2-1 合入前的分叉点），其 `REACT_SUITE` 为 **73 项**、
+> 不含 F04/M5-1/F06 第三批/flaky 修复的登记项。故它的 "ALL GREEN 73 项" 只能证明"在其基线上回归被修复"，
+> **不能替代主分支 77 项验收**——后者由 Coordinator 在合并后独立跑，见 §3 验收证据。
 
 已停止/废弃的 dispatch（均因 Claude Code Bypass 确认框吞掉 prompt，见 §7）：
 `ctx_5663f9e12c59`、`ctx_a7448bed8767`、`ctx_a2cc223b93bb`、`ctx_bfea030a61fb`（全部 stopped）
@@ -146,6 +169,9 @@ e6f6383e docs(m0): 纳入总体任务书
 | D9 | **Worker 不跑全量回归**（用户 2026-09-15 指示）；全量由 Coordinator 在**无并行 Worker** 时统一跑 | 各 worktree 的 `node_modules` 是共享 junction，`node_modules/.vite/deps` 也共享——任一 Vite 实例 hash 不匹配就**先删该缓存再重建**，被 teardown 打断即永久缺失，导致其他 Worker 的 Vite/smoke 测试成片假失败（M2-1 实测 `SUITE_EXIT=127`、F06 第三批实测 stage7d4/7d5a/7d5b 连续 FAIL）。M2-1 用 HEAD 对照（stash 前后报错文本与行号完全一致）证明非其改动所致 |
 | D10 | **测试里的"等异步完成"必须是有上限的条件轮询，不得用固定轮数推进假计时器** | F06 第三批的 `drainIo(timers, 60)` 实测整段仅约 0.3ms 墙钟、与真实 fs 写盘无关；注入 +10ms 即需约 228 轮，12 并发可稳定复现断言失败。已改为「推进假计时器 + 有上限轮询真实条件（10s）+ 超时打印现场」 |
 | D11 | **`tests/react-suite-manifest.mjs` 的 `REACT_SUITE` 长度必须每次合并后重新数** | 历史上注释与实际长度多次不同步（写过 71/72/73），本批合并后实际为 **77**。已在 `run-react-suite.mjs` 头部写明"必须重新数" |
+| D12 | **跑 `dist-entry-check` 前必须先在主工作区 `npm run build`** | 该门禁读的是 **gitignored 的构建产物 `dist/frontend`**（`checkDist` 默认 `root = projectRoot/dist/frontend`），不是源码。M5-1 改的是源 shell（`src/app/react/tools/workbench/index.html` 等），主分支 `dist` 未重建，于是 4 项报「没有 module 入口脚本」（workbench/roadmap/media-viewer audio+video，产物 mtime 分别停在 Aug 3 / Aug 28 / Sep 15 12:27）。**重建后 FAIL 0（303 文件）**，源 shell 确有 `<script type="module">`——属假失败，非回归 |
+| D13 | **`JsonRestServerStub.start()` 的失败通道由 rejected Promise 改为同步抛出** | 两个真实调用点（`bundleGlobals._startAPIServer` 的 try/catch + noop、`miscDomain` power-resume 的 try/catch + `electronLog.error`）**都只接得住同步抛错**；`Promise.reject` 两者都接不住 → unhandled rejection 被 CDP 记为 `Runtime.exceptionThrown`，把「能力缺口」淹没成未捕获异常。失败语义**未放宽**：`capabilityGap` 照旧登记缺口、成功回调照旧不触发、不退回修前那个「无条件 `Promise.resolve` 调 callback」的假成功。契约测试相应**加严**（1 → 3 条断言） |
+| D14 | **M2-2 的能力取舍裁决：`http`/`https` 与 `JsonRestServer` 保持显式失败；`archiver`/`fast-glob` 维持 no-op** | 三者均经消费者取证：`http`/`https` 唯一消费者 `urlEnlarger.#checkURLByEagle` 被 `isRunningInEagleApp` 门控且**无 try/catch**（贸然给真实实现会重新引入「抛点落在无保护表达式上」）；`JsonRestServer` 真实实现 `src/my_modules/json-rest-light` 首行即 `require('http')`，browser-connected 态确无该能力（41595 的 API 面由后端承担，见 `installBrowserFetchRewrite`）；`archiver` 仅见于**从不被加载**的 `src/app/js/plugin/index.js` 与渲染层 0 消费者的 `src/my_modules/zip-folder`，`fast-glob` 唯一消费者在独立后端进程。两者已登记进 `capabilities.gaps`，不是静默成功。**待证项：Electron 下 `nativeRequire('http')` 可能可用（`nodeIntegration: true`），两条接线均未做，是推测不是结论** |
 
 ---
 
@@ -197,9 +223,7 @@ e6f6383e docs(m0): 纳入总体任务书
 ## 8. 下一步计划（恢复时从这里继续）
 
 ### 进行中（等结果）
-1. **W13 / M2-1**（有限 RuntimeServices 与显式能力失败）→ 收结果、核验、合并
-2. **W14 / F06 第三批**（前端接上真实能力：解桩 + 格式分流唯一判定点 + 接后端端点）
-   → 收结果、核验、合并。**合并后 F06 才算真正闭环**（见 D7）
+**无**——W18 已交付、核验、集成并释放终端；主分支全量回归 ALL GREEN。下一步见上文「可立即派」。
 
 ### 已完成（本轮新增）
 - ✅ **W11 F06 前端失败语义与写回收敛**（`25f84998`）：新增 `services/imageTransformWriteback.ts`
@@ -228,14 +252,15 @@ e6f6383e docs(m0): 纳入总体任务书
   **一次性** IPC `app-status-library-loaded`，任一侧推迟即永久丢事件（三组 A/B 实测）。
   Coordinator 已批准。
 
-### 本轮已集成（5 个 Worker，均已核验后才合并）
-> ⚠️ **合并后全量回归未通过**：`REACT SUITE FAILED: 4`（77 项：OK 70 + retry-OK 3 + FAIL 4）——
-> `react-stage7a-smoke` / `react-stage7c-smoke` / `react-stage8e2-smoke` / `continuous-grid-scroll`。
-> 根因是 **M2-1 引入的真实回归**：它把 `genericStub` 从"静默返回替身"改为"调用期抛错"
-> （方向正确），但没把**真实存在却未登记**的模块补进登记表，于是 `compare-versions`
-> （实际在 `src/node_modules/compare-versions`）落入抛错分支，主窗启动路径中断。
-> 已派 **M2-1fix**（`task_6f79bc8608a8` / `ctx_1978100e92dd`）修复，见 §9。
-> **在该修复合并并通过全量回归前，不得把本轮视为验收通过。**
+### 本轮已集成（6 个 Worker，均已核验后才合并）
+> ✅ **合并后全量回归已通过**：`REACT SUITE ALL GREEN（77 项：OK 76 + retry-OK 1）`（证据见 §3）。
+> 此前的 `FAILED 4` 已由 W18 修复（`82d5b1f8`）：根因是 **M2-1 把 `genericStub` 从"静默返回替身"
+> 改为"调用期抛错"（方向正确），但没把真实存在却未登记的模块补进登记表**——`compare-versions`
+> （实际在 `src/node_modules/compare-versions`）落入抛错分支，`PluginCenter.calculateNeedUpdate`
+> 的 `w().require('compare-versions')` 无 try/catch，直接打断主窗就绪；另一条独立成因是
+> `JsonRestServerStub.start` 的 rejected Promise 逃逸（见 D13）。
+> 另 3 项 react-smoke（7a/7c/8e2）**单独跑本来就通过**，其全量失败属套件内主窗启动抖动，
+> 与上述不是同一根因（W18 已逐项单独复现举证）。
 1. **F06 第三批**（W14 / `fd378cf5`）：`moduleRegistry.ts` 仅改 106-107 两行解桩
    （`() => {}` → `loadJsModule(req)`）；新增 `services/imageTransformRoute.ts` 作**格式分流唯一判定点**；
    `electron/{main,preload}.cjs` 新增具名通道 `item:image-transform`（信封而非 reject，保住后端错误码）；
@@ -259,25 +284,25 @@ e6f6383e docs(m0): 纳入总体任务书
    缩略图服务路由不匹配返回 404——改为原样透传后 200。
 5. **F06 flaky 修复**（W17 / `1fc34443`）：见 D10。
 
-### 下一步（可立即派）
-6. **M2 后续批次**：逐模块撤销 shim 的 8 个 `@ts-nocheck`（460 条类型债）、清理 guarded Angular 分支（F01）、
-   收敛 `moduleRegistry.ts` 的 bareModules no-op（archiver/fast-glob）。
-7. **M3**（F03/F16 经典业务脚本与自有 Worker）、**M4**（F11–F14 窗口收口）、**M6**（F18/F19 扩展与插件）、
-   **M7**（F02/F20/F24 遗留隔离）——注意 M5 的 `frontend-gate-manifest.mjs` 所有权需与后续批次切分。
-8. **M8 最终验收**。
+### 下一步（可立即派，无并行 Worker 阻塞）
 
-### 立即可派（依赖已满足）
-5. **F04 预览窗 boot 移出前置内联脚本**——spec 已备好（`outputs/_spec-f04.txt`，未跟踪）。
-   与 W14 有潜在重叠（`preview-window/controller.ts`），spec 已明确禁止触碰该文件。
-   **因资源竞争暂缓派遣**：W11 的回归期间并行派遣曾导致 `react-stage-smoke` 首跑
-   `exit=null` 进重试——3 个 Worker 同时跑全量回归会互相干扰，待 W13 或 W14 完成后再派。
-6. **M2 后续批次**（逐模块撤销 `@ts-nocheck` 的 460 条类型债；清理 guarded Angular 分支 F01）
-   —— 待 M2-1 合并后，在其 RuntimeServices 骨架上做。
+M1 与 M2 第一批至此**全部闭环且主分支全绿**。后续按批次推进，可并行派遣（各 Worker 只跑自家定向测试，见 D9）：
 
-### 未派但已规划
-- M3（F03/F16 经典业务脚本与自有 Worker）、M4（F11–F14 窗口收口）、
-  M5（F17/F22 外围 UI 与运行时配置）、M6（F18/F19 扩展与插件）、
-  M7（F02/F20/F24 遗留隔离）、M8（最终验收）
+6. **M2 后续批次**：① 逐模块撤销 shim 的 8 个 `@ts-nocheck`（460 条类型债，`typecheck.mjs` 报「整文件免检 8，待撤销 8」）
+   —— 建议按文件切分、每个 Worker 一个文件，避免 shim 层互踩；② 清理 guarded Angular 分支（F01）；
+   ③ `http`/`https` 在 Electron 态的接线裁决（D14 的待证项，需先取证 `nativeRequire('http')` 是否真的可用）。
+7. **M3**（F03/F16 经典业务脚本与自有 Worker）
+8. **M4**（F11–F14 窗口与 scope 收口）
+9. **M6**（F18/F19 扩展与插件）—— 注意 F19 涉及工作区外资源（`H:/resources/plugin_templates`），可能需向用户确认
+10. **M7**（F02/F20/F24 遗留隔离）—— 退役审计（W5）已交付，可据其结论分条退役
+11. **M8 最终验收**
+
+**文件所有权提示**：`tests/frontend-gate-manifest.mjs`（含 `DIST_POLICY`/`KNOWN_MISSING_ASSETS`）在 M5 与 M7 之间需切分；
+`src/app/react/core/shim/**` 的 8 个文件在 M2 后续批次中**一文件一 Worker**，不得两人同改。
+
+### 尚未清理的中间产物
+- worktree `m2-runtime-services`（`shawpook/m2-runtime-services`，HEAD `e8b3d2b1`）已交付完毕，可回收。
+- 未跟踪临时文件：主工作区 `tests/` 下若残留 `tmp-bare-diff.mjs` 等，**一律不得提交**。
 
 ---
 
@@ -285,7 +310,8 @@ e6f6383e docs(m0): 纳入总体任务书
 
 | 阻塞 | 影响 | 处置 |
 |---|---|---|
-| **M2-1 引入的回归**：未登记但真实存在的模块（`compare-versions` 等）落入 `genericStub` 的抛错分支 | **全量回归 FAILED 4**；主窗启动路径中断 | M2-1fix 修复中（见 §8）。差分已取证：**需补真实加载 4 项**（`compare-versions`/`electron-referer`/`junk`/`stopword`），**应保持显式失败 3 项**（`${appRoot}/app/js/plugin`、`http`、`https`）；另有 `archiver`/`fast-glob`（已登记但被映射为 no-op）与 `JsonRestServer.start` 等需消费者取证 |
+| ~~M2-1 引入的回归~~ | — | ✅ 已由 W18 修复并集成（`82d5b1f8`），主分支全量回归 ALL GREEN（见 D13/D14 与 §3） |
+| **`dist-entry-check` 依赖本地构建产物** | 未重建时会出现「4 页没有 module 入口脚本」的**假失败** | 按 D12：跑该门禁前先 `npm run build`。**后续 Worker 的 spec 必须写明这一条**，否则会误报回归 |
 | ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并 |
 | ~~F06 中间态（解桩前写文件明确拒绝）~~ | — | ✅ 已由 F06 第三批解桩闭合 |
 | **多个 Worker 并行跑 Vite/Electron 类测试会互相破坏共享依赖缓存** | 成片假失败、`SUITE_EXIT=127` | 已定为口径（D9）：Worker 只跑自家定向测试，全量由 Coordinator 串行跑。**后续派单沿用此约定** |

@@ -42,10 +42,10 @@
 | **M2** 替代万能 shim | 🔄 **前三批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态）、**M2-2**（补真实裸模块登记）、**M2-3**（撤销环境层/设置层 `@ts-nocheck`）、**M2-4/M7-1**（moduleRegistry 强类型化 + 截获契约化，待撤销 6→5）均已集成。剩 5 个 shim 文件的 `@ts-nocheck` 与 D20 的 `declare global` 待做 |
 | M3 经典业务脚本进模块图 | 🔄 **前两批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*` 具名模块化）、**M3-2**（调用点切换 + 冷启动空快照不自愈 + 等价性测试事实源迁移）均已集成（`4c1fc124` / `35675429`）。F16 的 Worker 协议类型化待派 |
 | M4 窗口与 scope 收口 | 🔄 **前三批已集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）均已集成（`553804f3` / `2502357f` / `ebf90c6d`）。F14（第三方引擎 adapter）与 domLite/ng-* 待派 |
-| M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边见 §8 |
-| M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；插件侧（F19）待派 |
-| M7 最小产物与遗留隔离 | ⏸ 待替代就位 | 退役审计已交付（§6） |
-| M8 最终收官 | ⏸ | — |
+| M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边待派 |
+| M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；**插件侧（F19）待派**——注意 M6-R 标了 4 条需用户确认的产品/外部资源取舍 |
+| M7 最小产物与遗留隔离 | 🔄 **第一批在跑（W35）** | 退役审计（W5）已交付；M7-1 = 低风险四项退役（url-state-service / config.gypi / test-snippets / src/app/main.js）。**tab-bar 与 src/run.js 明确不在本批**（前者需产品取舍，后者建议隔离归档不删） |
+| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量 85 项） |
 
 ---
 
@@ -183,6 +183,17 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W29** | task_6ddbc52ec73b | ctx_010830f11495 | **M2-4 moduleRegistry 类型化与截获契约化** | ✅ **已交付核验并集成(`d4f611a2`)**；`待撤销 6 → 5`，截获表契约 6/6 |
 | **W30** | task_da247f585fd6 | ctx_4c6460644027 | **M3-2fix 等价性测试事实源迁移（按裁决加严）** | ✅ **已交付核验并集成(`35675429`)**；`match-rules-equivalence` 22/22（原 21 条全保留 +1b） |
 | **W31** | task_a7644295ccf7 | ctx_c892cf9860cf | **M4-Afix 修 `continuous-grid-scroll` 回归** | ✅ **已交付核验并集成(`1c4214b9`)**，终端已释放 |
+| **W32** | task_446c1cccd6cc | ctx_f3379bc2f123 | **M2-5 `install.ts` 类型化 + 具名全局声明面（含 D20 的 3 处 cast 收口）** | 🔄 进行中（worktree `m2-install-types`，claude/deepseek-flash） |
+| **W33** | task_77b37af7755a | ctx_25153d2bed77 | **M3-3 Worker 协议类型化 + 取消写回守卫** | 🔄 进行中（worktree `m3-workers`，claude/deepseek-flash） |
+| **W34** | task_21486b3c4d89 | ctx_0ee6165705f7 | **M4-D 引擎 adapter + domLite + ng-* 成对替换** | 🔄 进行中（worktree `m4-engine-adapter`，**codex 默认配置**） |
+| **W35** | task_bc9de10cc760 | ctx_c9c8c7ce142e | **M7-1 低风险退役批次 1** | 🔄 进行中（worktree `m7-retire1`，**codex 默认配置**） |
+
+> W32–W35 的 spec 均在 `outputs/`（未跟踪）：`_spec-m2-5.txt`、`_spec-m3-3.txt`、`_spec-m4-d.txt`、`_spec-m7-1.txt`。
+> 本波按 D16 分档：前两个 claude/deepseek-flash、后两个 **codex 默认配置**（实测 `--agent codex`
+> 可不带 `--model` 直接派起，`turnStart: observed`）。
+> **四个 Worker 的文件所有权互斥**（spec 的禁止清单已交叉写明）：
+> W32=shim/install.ts + globals.d.ts + 3 行 cast；W33=workers/ + commentHooks.ts；
+> W34=viewers/ + smoothZoomEngine(3020-3050) + css/sass；W35=四个待退役文件 + gate-manifest。
 
 > W23–W25 **首次派单全部卡在 Bypass 确认框**（`skipDangerousModePermissionPrompt` 又被抹掉，
 > 见 §7.1），进程实际已退出、`worker-stop` 后带 `--retry-of` 重派成功。

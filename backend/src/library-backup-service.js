@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { copyTreeSync } from './copy-tree.js';
 import {
   assertPathInside,
   readGeneration,
@@ -144,8 +145,9 @@ export function restoreRecoveryPoint(rootDir, id, destDir) {
   if (!destination.toLowerCase().endsWith('.library')) throw new Error('Restore destination must end with .library');
   if (fs.existsSync(destination)) throw new Error(`Restore destination already exists: ${destination}`);
   fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.cpSync(source, destination, {
-    recursive: true,
+  // M8-7：不用 fs.cpSync(recursive)——源路径含非 ASCII 时宿主会把进程打死（见 copy-tree.js）。
+  // filter 语义原样保留：recovery-manifest.json 是备份自带的校验清单，不进恢复出的库。
+  copyTreeSync(source, destination, {
     filter: (sourcePath) => path.basename(sourcePath) !== 'recovery-manifest.json',
   });
   return {

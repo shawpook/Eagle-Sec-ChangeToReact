@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { copyTreeSync } from './copy-tree.js';
 import { resolveLibraryPath, saveItems, saveLibraryState } from './library-store.js';
 import { generateThumbnail, readImageDimensions } from './thumbnailer.js';
 import { getControlledDownloadService } from './controlled-downloader.js';
@@ -361,7 +362,8 @@ export function importBookmark(library, params = {}) {
 export function exportLibrary(library, destDir) {
   const resolved = path.resolve(destDir);
   fs.mkdirSync(resolved, { recursive: true });
-  fs.cpSync(library.rootDir, resolved, { recursive: true });
+  // M8-7：不用 fs.cpSync(recursive)——源路径含非 ASCII 时宿主会把进程打死（见 copy-tree.js）。
+  copyTreeSync(library.rootDir, resolved);
   return resolved;
 }
 

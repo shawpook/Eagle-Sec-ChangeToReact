@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyTreeSync } from '../backend/src/copy-tree.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
@@ -136,7 +137,8 @@ async function verifyRoadmapPage() {
 }
 
 try {
-  fs.cpSync(mockLibrary, tempLibrary, { recursive: true });
+  // M8-7：不用 fs.cpSync(recursive)——源路径含非 ASCII 时宿主会把进程打死（见 backend/src/copy-tree.js）。
+  copyTreeSync(mockLibrary, tempLibrary);
   await api('/api/library/switch', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

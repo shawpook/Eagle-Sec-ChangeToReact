@@ -17,10 +17,37 @@ import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { NOCHECK_LEDGER, scanTypeDirectives } from './typecheck.mjs';
+import { fileURLToPath } from 'node:url';
+import { NOCHECK_LEDGER, scanTypeDirectives, auditNoCheck } from './typecheck.mjs';
 
 const { posix } = path;
 const REGISTRY_FILE = 'src/app/react/core/shim/moduleRegistry.ts';
+// 必须用 fileURLToPath：本仓路径含空格与中文，`new URL(...).pathname` 不做百分号解码。
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * 实扫 `src/` 下头部带**有效**整文件 `@ts-nocheck` 的文件，产出真实记录。
+ *
+ * 用途：本节断言「台账与源码逐项一致」时，**期望值由源码实扫得出，而不是写死一个数字**。
+ * 原先这里写的是 `assert.equal(NOCHECK_LEDGER.length, 5, '待撤销清单数量必须精确为 5')`——
+ * 那会让本测试随**任何其他批次**的 shim 类型化进度无谓变红（M2-7 把它降到 2 时就撞上了）。
+ * 本测试守的是「moduleRegistry.ts 已从台账解绑」，不是「全仓恰好剩 N 个文件」。
+ * 路径经原文还原（`.pathname` 会把空格与非 ASCII 目录名百分号编码）。
+ */
+function scanSrcNoCheckRecords() {
+  const found = [];
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(?:[cm]?js|tsx?)$/.test(entry.name)) continue;
+      const rel = path.relative(projectRoot, full).split(path.sep).join('/');
+      // scanTypeDirectives 的返回值**不含 file**，由调用方补（口径同 frontend-gates-unit.mjs）。
+      found.push(...scanTypeDirectives(fs.readFileSync(full, 'utf8'), rel).map((record) => ({ ...record, file: rel })));
+    }
+  })(path.join(projectRoot, 'src'));
+  return found;
+}
 
 function readSource(rel) {
   return fs.readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
@@ -151,7 +178,17 @@ test('静态守卫：moduleRegistry.ts 已撤销 @ts-nocheck，且 NOCHECK_LEDGE
   // 台账中不再有 moduleRegistry.ts
   const hasInLedger = NOCHECK_LEDGER.some((entry) => entry.file === REGISTRY_FILE);
   assert.equal(hasInLedger, false, `${REGISTRY_FILE} 必须已从 NOCHECK_LEDGER 移除`);
-  assert.equal(NOCHECK_LEDGER.length, 5, '待撤销清单数量必须精确为 5（比修前 6 下降 1）');
+
+  // 台账与**源码实扫**逐项对账（而非写死数字）：台账多一行、少一行，或源码多一个、少一个
+  // 整文件 @ts-nocheck，都会让 unlisted / stale 至少一侧非空而变红。
+  const audit = auditNoCheck(scanSrcNoCheckRecords());
+  assert.deepEqual(audit.unlisted, [], '源码里的整文件 @ts-nocheck 必须都已登记进台账');
+  assert.deepEqual(audit.stale, [], '台账条目对应的文件必须仍带整文件 @ts-nocheck（否则该条目已失效）');
+  assert.deepEqual(
+    audit.files,
+    NOCHECK_LEDGER.map((entry) => entry.file).sort(),
+    '台账集合必须与源码实扫集合逐一相等',
+  );
 });
 
 // =============================================================================

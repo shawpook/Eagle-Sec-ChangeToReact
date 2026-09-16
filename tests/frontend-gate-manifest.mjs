@@ -160,7 +160,7 @@ export const FIRST_PARTY_SCRIPTS = [
     'plugin/index.js', 'plugin/ipc.js', 'plugin/logger.js', 'plugin/main.js',
     'plugin/model/context-menu.js', 'plugin/model/folder.js', 'plugin/model/item.js',
     'plugin/model/smart-folder.js', 'plugin/model/tag-group.js', 'plugin/model/tag.js',
-    'plugins/eagle-note-plugin.js', 'services/url-state-service.js',
+    'plugins/eagle-note-plugin.js',
     'utils/downloadFile.js', 'utils/flipImage.js', 'utils/getBestURL.js',
     'utils/ignoreMenuShortcuts.js', 'utils/is-accelerator.js',
     'utils/remainingFilenameLength.js', 'utils/rotateImage.js',

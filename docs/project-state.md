@@ -2,10 +2,10 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（**M1 / M2 / M3 / M4 / M5 / M6 已全部完成并集成**；M7-3 在跑）
-> 当前套件 **94 项** + ARTIFACT **5 项**；最近提交 `e84f1618`。
+> 最后更新：2026-09-16（**M1 / M2 / M3 / M4 / M5 / M6 / M7 已全部完成并集成**；下一步 M8 最终验收）
+> 当前套件 **95 项** + ARTIFACT **5 项**；最近提交 `9036e4c8`。
 > 验证口径为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次；此后各批只做 L1/L2 定向核验，
-> 尚未重跑 L3（当前套件 94 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
+> 尚未重跑 L3（当前套件 95 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
 
 ---
 
@@ -41,25 +41,22 @@
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
 | **M2** 替代万能 shim | ✅ **全部完成并集成** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**M2-8**（`demoSeed.ts` + `ipcBus.ts`，`0aedf7a2`）已集成，`NOCHECK_LEDGER` **清空**——`tests/typecheck.mjs` 现报「整文件 @ts-nocheck **0**，待撤销 **0**」。shim 层 8 个文件全部撤销完毕。**记录在案的允许写法**：`desktopApi!.duplicates!.status(...)` 等 4 处非空断言（修前此处即 `null.status`，断言只抹类型、不改求值）、守卫后定格为 const、`waitPreferencesEntry.attempts` 改等价闭包计数器（该属性只写不读、且是块级局部不可达）、`new Set()`/`Array.isArray` 的隐式 any 收敛为显式标注。同时抓到一个**历史缺陷**（未修、只如实标注）：`demoSeed.ts` 的 `capturePollTimer` 声明并在 `disposeDemoTimers` 里清理，但**从未被赋值** |
-| M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
+| M3 经典业务脚本进模块图 | ✅ **三批全部集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
 | M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
 | M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
 | M6 扩展与插件专项 | ✅ **全部完成并集成** | **M6-1**（扩展，`242a8663`）+ **M6-2**（插件根统一到仓库内 `plugins/` + SDK 顺序 + 回调真实派发，`c220af64`，依据 D24①）+ **M6-3**（格式插件 preload 收敛为唯一解析点、Electron 态返回真实磁盘路径，`b6c9a79f`）已集成。**M6-3 顺带坐实一个更大的缺陷（D26）**：`electron/main.cjs` 的 `createWindow` 未启用 `webviewTag` ⇒ 三处 `<webview>` 从不 guest 化，格式插件视图在 React 构建里实际是死的；用户已裁决「恢复」，**M6-4 已集成（`6b1e11b6` + 登记 `e84f1618`）**——`createWindow` 补回 `webviewTag: true`，三处 `<webview>` 首次真正 guest 化。**M6 至此无遗留** |
-| M7 最小产物与遗留隔离 | 🔄 **前两批已集成** | **M7-1**（`d59071d8`）：四项低风险退役；**M7-2**（`b923215c` 含我方修）：tab-bar 退出发布清单（脱钩测试改造为 **11 项负向门禁**）+ `src/run.js`/`run.jsc`/`main.jsc` 隔离归档（R100 零改动）。全部先归档到 `docs/retired-2026-09-16/`。**剩**：`src/package.json`（main 已悬空但无消费者解析它）、`src/my_modules/**`（硬前置是穷尽 `nativeRequire` 目标集） |
-| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **94 项** + ARTIFACT **5 项**） |
+| M7 最小产物与遗留隔离 | ✅ **三批全部集成** | **M7-1**（`d59071d8`）：四项低风险退役；**M7-2**（`b923215c` 含我方修）：tab-bar 退出发布清单（脱钩测试改造为 **11 项负向门禁**）+ `src/run.js`/`run.jsc`/`main.jsc` 隔离归档（R100 零改动）。全部先归档到 `docs/retired-2026-09-16/`。**M7-3**（`9036e4c8`）已集成：任务书点名的两条落地——**发布资产从整树 copy 改为登记驱动**（`frontend/publish-asset-manifest.mjs` 为单一事实源，构建与门禁共同 import）、**必要资源复制失败即失败**（源缺失抛错、复制抛错向上抛，`skip (absent)` 与 `catch { console.error }` 两条静默通道消除）；`src/my_modules` **48 项零消费者条目归档**到 `docs/retired-2026-09-16/src/my_modules/`（保留 8 项有行号依据的真实磁盘加载依赖），`src/package.json` 清 `main`/`scripts`/`devDependencies`/`build`/`extend-info`（**保留 `version`/`buildVersion`/`buildNumber`**，审计 §3.2 有 5 处现役消费者）。新增门禁 `tests/publish-asset-manifest.mjs`（登记进 `REACT_SUITE`，**套件 94 → 95**）。**M8 仍需做**：最小隔离部署副本的完整启动验收（任务书 M7 第 3 条） |
+| M8 最终收官 | ⏸ **可开始** | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **95 项** + ARTIFACT **5 项**）。**M7 收官后 M8 的前置已齐**：M2 待撤销 0、M6 无遗留、M7 三批集成。M8 还需补任务书点名的「最小隔离部署副本能完整启动，不读取源工作区、tests 或未登记的 `src/node_modules`」 |
 
-### 各批次最新集成提交（2026-09-16 下午）
+### 各批次最新集成提交（2026-09-16 晚，本轮收口）
 
 | 批次 | 提交 | 要点 |
 |---|---|---|
-| M2-5 | `6d51ac5a` | `install.ts` 类型化 + 具名全局声明面；**待撤销 5 → 4**；收口 D20 的 3 处 cast |
-| M3-3 | `55dc91ff` | 「取消任务不回写已关闭窗口」修复（负向自证）+ 四个自有 Worker 的协议契约 |
-| M4-D | `b5f9ab71` | ng-* 成对替换（实测命中集替换前后均为空 → 零外观变化）、jQuery 哑雷、引擎生命周期 adapter、domLite 收口 |
-| M7-1 | `d59071d8` | 四项低风险退役，先归档到 `docs/retired-2026-09-16/` |
-| M2-6 | `f761c440` | `desktopCapability.ts` 类型化；**待撤销 4 → 3**；清 `ng-click` 死声明 |
-| M4-E | `242e5618` | F11 晚注册缺陷（探针坐实）+ `detailHooks` 的 jQuery 同族哑雷 |
-| M5-2 | `c987dfef` | 生产启动等就绪再开窗 + 非默认端口生产验收（真实 Electron 实测） |
-| 登记 | `ecfe83f4` / `2d8dff9d` | REACT_SUITE 87 → 90 → **91**；ARTIFACT_TESTS 3 → **5** |
+| M2-8 | `0aedf7a2` | `demoSeed.ts` + `ipcBus.ts` 去 `@ts-nocheck`；`NOCHECK_LEDGER` **清空**（整文件免检 0 / 待撤销 0）——**M2 收官** |
+| M6-3 | `b6c9a79f` | 格式插件 preload 收敛为唯一解析点 `core/pluginFormatPreload.ts`；Electron 态经 `preload.cjs` 新增供给面返回真实磁盘 `file://`；非 Electron 态明确不可用 |
+| M6-4 | `6b1e11b6` | `createWindow` 补回 `webviewTag: true`（**D26**）；新真机门禁把 M6-3 的解析结果喂进真实 `<webview>`，断言 guest 侧真的跑起 `api-format-extension.js` |
+| M7-3 | `9036e4c8` | 发布资产**登记驱动** + **复制失败即失败**；`src/my_modules` 48 项归档、保留 8 项；`src/package.json` 清旧宿主字段、留元数据 |
+| 登记 | `2b837329` / `e84f1618` / 本轮 | REACT_SUITE 92 → **95**（+ `plugin-format-preload` / `webview-tag-enabled` / `publish-asset-manifest`） |
 
 > **M4-D 对审计报告的两条勘误**（由其交付时提出，我核对采纳）：
 > ① 审计说删 JSX 上的 `ng-click` 会静默改变无边框窗口拖拽区与 toast 间距——
@@ -76,6 +73,8 @@
 已集成的提交（自下而上）：
 
 ```
+9036e4c8 feat(m7): 发布资产改为登记驱动 + 复制失败即失败；归档 48 项零消费者 my_modules 条目  [W48]
+d047abd1 docs(state): M6 全部完成（M6-4 已核验集成，webviewTag 恢复）  [Coordinator]
 e84f1618 test(suite): 登记 M6-4 的 webview-tag-enabled，REACT_SUITE 93 → 94  [Coordinator]
 6b1e11b6 fix(m6): 恢复 webviewTag（D26）—— 格式插件 webview 首次真正 guest 化  [W47]
 2389f064 docs(state): M2 收官（待撤销 0）——W44 已核验集成  [Coordinator]
@@ -232,7 +231,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W45** | task_c5922c0e3ca7 | ctx_e9636c5b0a65 | **M6-3 格式插件 preload 的原生根修正** | ✅ **已交付核验并集成（`b6c9a79f` + 登记 `2b837329`）**；新测试 13/13、typecheck 0 诊断。**顺带坐实 webviewTag 缺陷 → D26** |
 | **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | ✅ **已交付并核验**（`outputs/research-m7r2-my-modules-2026-09-16.md`，705 行）。核验见 §5 备注 |
 | **W47** | task_0224e87e62c4 | ctx_98debf473286 | **M6-4 恢复 `webviewTag`（D26）+ 实机门禁** | ✅ **已交付核验并集成（`6b1e11b6` + 登记 `e84f1618`）**。`main.cjs` 只加一行、`stage9a2` 只改一处断言（已验证是加严非放宽）。**我方独立做了负向自证**：移除 `webviewTag` 后门禁 0/4、红 4（`constructorName=HTMLElement`、无 guest、零 attach 事件、`guestProbe=null`），恢复后 4/4。L2 复核：stage9a2 / main-ui-workflow / preview-delivery / typecheck 全绿 |
-| **W48** | task_4504588e768c | ctx_94ff0bd35249 | **M7-3 发布资产登记驱动 + 复制失败即失败 + 退役零消费者 `my_modules` 条目** | 🔄 进行中（worktree `m7-publish-assets`，codex 默认配置） |
+| **W48** | task_4504588e768c | ctx_94ff0bd35249 | **M7-3 发布资产登记驱动 + 复制失败即失败 + 退役零消费者 `my_modules` 条目** | ✅ **已交付核验并集成（`9036e4c8`）**。我方独立核验：① 写了独立扫描器把 live code 里所有 `my_modules/<首段>` 引用与「现存目录 / 截获表」两侧对账，结论**无悬挂引用**（唯二命中是 `QuickSearchModal.tsx:36` 注释里的 `...` 与死文件 `src/app/js/plugin/main.js:125`）；② `moduleRegistry.ts` 全部磁盘路径逐一 `test -e` 均存在；③ 主工作区实跑 `npm run build`（13 条登记资源、无 `skip(absent)`）+ `dist-entry-check` FAIL 0/304 + 新门禁 5/5 + `frontend-gates-unit` 59/59；④ **真实 Electron 闭环**：`main-ui-workflow`（3 连跑均 OK）、`library-switch-ui`、`d3-boot-render`、`continuous-grid-scroll`（哨兵）全绿 |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。
@@ -442,29 +441,29 @@ e6f6383e docs(m0): 纳入总体任务书
    缩略图服务路由不匹配返回 404——改为原样透传后 200。
 5. **F06 flaky 修复**（W17 / `1fc34443`）：见 D10。
 
-### 下一步（M7/M8 收口）
+### 下一步：M8 最终验收（前置于本轮已全部收齐）
 
-W40–W43 已全部集成；M2 只剩最后 2 个 shim 文件（`demoSeed.ts` + `ipcBus.ts`，**互为循环依赖**），
-M6 只剩格式插件 preload 一项，M7 剩 `src/package.json` 与 `src/my_modules/**`，随后进 M8。
+**M0–M7 全部完成并集成。W44/W45/W46/W47/W48 均已核验集成，当前无 Worker 在跑。**
 
-本波（5 个 Worker，按 D16 分档：第 1、2 个 claude/deepseek-flash，第 3 个起 codex 默认配置）：
+M8 的两件事（依据任务书 §M8 与 D22）：
 
-| 波次 ID | 任务 | 起草依据 |
-|---|---|---|
-| **W44** | **M2-8** 撤销 `demoSeed.ts` + `ipcBus.ts` 的 `@ts-nocheck`（**M2 收官：待撤销 2 → 0**） | 二者互为循环依赖，必须同 Owner |
-| **W45** | **M6-3** 格式插件 preload 的原生根修正（`DetailViewer.tsx:160` / `Inspector.tsx:947` / `preview-window/shell.tsx:585`） | W22 审计第 7 条 + Coordinator 本次行号级取证 |
-| **W47** | **M6-4** 恢复 `webviewTag` + 实机门禁（**依据 D26**，W45 交付时坐实的更大缺陷） | W45 探针 + 原版 `run.jsc` 常量池 + 原版 `plugin/index.js:3324` |
-| **W48** | **M7-3** 发布资产登记驱动 + 复制失败即失败 + 归档零消费者 `my_modules` 条目 + `src/package.json` 分字段 | 任务书 M7 原话（`plan:522-536`）+ W46 审计（我方已独立核验其 48 项主张） |
-| **W46** | **M7-R2** 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json` | M7 剩余项的硬前置 |
+1. **跑 L3 全量**：`node tests/run-react-suite.mjs`（**95 项**）+ `ARTIFACT_TESTS` 5 项
+   +`EXTRA_REGRESSION` 7 项；外加统一入口 `npm run test:acceptance`。
+   注意 D12：跑 `dist-entry-check` 前必须先 `npm run build`（主工作区 dist 可能过期）。
+2. **补一条任务书点名、至今未做的验收**：**「最小隔离部署副本能完整启动，不读取源工作区、
+   tests 或未登记的 `src/node_modules`」**。做法建议：把 `dist/frontend` 拷到临时目录，
+   只带后端/Electron 所需的最小集启动，并用文件访问探针证明没有回读源工作区。
+   这是 M7 唯一未闭合的验收项，M7-3 的登记驱动机制正好为它提供了前提。
 
-> **W45 的新取证（Coordinator 于派单前核实，已写进 spec）**：`bareModules['url'] = urlModule` 是**无条件**的
-> （`moduleRegistry.ts:570`），且 Electron 渲染进程是**以 HTTP 加载**的（`electron/main.cjs:8` 的
-> `previewUrl = http://localhost:5176/src/app/index.html`），因此三处算出的 preload 在**生产 Electron 下
-> 同样是 `http://localhost:5176/src/app/js/plugin/api-format-extension.js`** —— 这不是「浏览器态才有的
-> 假路径」，而是真实功能缺陷。审计原文只说「未做运行期验证」，此行号级推理补齐了它。
-
-M8 触发前必须先收掉：① M2 待撤销归零（W44 在跑）；② **M6-4 闭合**（M6-3 已集成，它暴露的宿主缺口由 D26 裁决、M6-4 执行）；③ **M7-3 闭合**（W48 在跑：任务书点名的「整树 copy → 登记驱动」「复制失败即失败」两条尚未做，`my_modules` 退役与 `src/package.json` 分字段一并处理；退役一律走归档 + 登记回滚方式）。
-M8 才跑 **L3 全量**（92 项 + ARTIFACT 5 项）。
+**已知需要带入 M8 的诚实遗留**（不得当成通过）：
+- M6-4 的三处 React 插件组件（DetailViewer / Inspector / preview shell）**实机端到端未跑**——
+  本机没有可用的、已安装的格式查看器插件条目；
+- M7-3 的 RAW / TIFF / UDOC 运行期样本未跑；
+- 执行中的观察：`main-ui-workflow-closed-loop` 在 M7-3 合并后有一次**未捕获异常**（`tail`
+  截断未留全文），随后 3 次连跑均 exit 0 且 OK。全量 L3 时必须盯这一项，若复现要当场留证并归因；
+- D14 的待证项（Electron 下 `nativeRequire('http')` 是否可用）仍未取证；
+- 之前几处登记在案的偏差（D20 的 3 处 `(window as any)`、`demoSeed.ts` 的 `capturePollTimer`
+  从未赋值）已在状态文件与代码注释中登记，M8 报告里要如实带上。
 
 ### 尚未清理的中间产物
 - worktree `m2-runtime-services`（`shawpook/m2-runtime-services`，HEAD `e8b3d2b1`）已交付完毕，可回收。

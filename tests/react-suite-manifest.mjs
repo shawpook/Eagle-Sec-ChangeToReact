@@ -199,6 +199,12 @@ export const REACT_SUITE = [
   // 负向自证（Coordinator 独立实跑）：移除 webviewTag 后 constructorName=HTMLElement、
   // 无 guest、零 attach 事件、guestProbe=null → 0/4 通过、4 红。
   'tests/webview-tag-enabled.mjs',
+  // M7-3：发布资产登记的**单一事实源**对账（纯 Node，秒级，无 Electron、不依赖 dist）。
+  // 任务书 M7 点名两条：发布资产从整树 copy 改为登记驱动；必要资源复制失败即失败。
+  // 本项钉住：清单必须显式登记 src/my_modules 且不得退回父目录整树条目、现存条目/
+  // 清单登记项/退役归档三方逐一一致（**与源码实扫对账，不写死数字**）、
+  // 以及「调用真实复制函数时源不存在必须拒绝」——含 1 项负向自证。
+  'tests/publish-asset-manifest.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -232,6 +238,7 @@ export const TEST_CLASSES = {
   'tests/plugin-format-preload.mjs': 'static',
   // 起 Vite dev（URL 为 /src/app/... 源码路径）并驱动真实 Electron 行为 → dev-probe。
   'tests/webview-tag-enabled.mjs': 'dev-probe',
+  'tests/publish-asset-manifest.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

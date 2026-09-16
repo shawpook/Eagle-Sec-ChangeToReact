@@ -261,6 +261,17 @@ function loadShell({ controllerScope = { theme: 'gray', platform: 'win' }, win =
     '../components/detail/DetailToolbar': { WebviewToolbar: () => null },
     '../components/hooks': { useTippy: noop },
     '../app/filters': { shortcuts: {} },
+    // M6-3：shell.tsx 的格式插件 webview 改走**唯一**解析点（原先是内联的惯用式）。
+    // 本文件测的是 dispose/监听账目，不测该解析器——解析器有自己的专项测试
+    // tests/plugin-format-preload.mjs（三处调用点收敛、Electron 态磁盘路径、非 Electron 态明确不可用）。
+    // 这里给受控替身，返回与生产 Electron 态同形的 ok:true，使 shell.tsx 走真实的 `if (preload.ok)` 分支。
+    '../core/pluginFormatPreload': {
+      resolveFormatExtensionPreloadFromHost: () => ({
+        ok: true,
+        preloadUrl: 'file:///mock/electron/../src/app/js/plugin/api-format-extension.js',
+        diskPath: '/mock/electron/../src/app/js/plugin/api-format-extension.js',
+      }),
+    },
   };
 
   const exported = {};

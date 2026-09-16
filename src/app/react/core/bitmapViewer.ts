@@ -9,6 +9,14 @@
  */
 import { getRawUrl } from './itemDomain';
 import { q, getAttr, setAttrEl, setCssEl, widthOf, heightOf } from '../utils/domQuery';
+import {
+	NATIVE_HEIC_CHANNEL,
+	type BitmapWorkerRequest,
+	type BitmapWorkerResponse,
+	type NativeHeicInitMessage,
+	type NativeHeicParseRequestMessage,
+	type NativeHeicParseResponseMessage,
+} from './workers/protocol';
 /* bundle/主窗全局：typed ambient 声明，只补类型不改运行期。 */
 declare const require: any;
 declare const FileUrlHelper: any;
@@ -76,39 +84,42 @@ export class BitmapViewer {
 	#setupWorkerNativeHeic(worker: any) {
 		if (!this.#nativeHeicParser) return;
 		
-		// 設置消息處理
-		worker.addEventListener('message', (e: any) => {
-			if (e.data.type === 'NATIVE_HEIC_PARSE_REQUEST') {
+		// 設置消息處理（P2：主线程 ↔ worker 的反向请求，通道名见 core/workers/protocol.ts）
+		worker.addEventListener('message', (e: MessageEvent<NativeHeicParseRequestMessage>) => {
+			if (e.data.type === NATIVE_HEIC_CHANNEL.REQUEST) {
 				const { filePath, requestId } = e.data.data;
-				
+
 				this.#nativeHeicParser.parseHeic(filePath).then((result: any) => {
-					worker.postMessage({
-						type: 'NATIVE_HEIC_PARSE_RESPONSE',
+					const response: NativeHeicParseResponseMessage = {
+						type: NATIVE_HEIC_CHANNEL.RESPONSE,
 						data: {
 							requestId,
 							success: result.success,
 							tempFilePath: result.tempFilePath,
 							error: result.error
 						}
-					});
+					};
+					worker.postMessage(response);
 				}).catch((error: any) => {
-					worker.postMessage({
-						type: 'NATIVE_HEIC_PARSE_RESPONSE',
+					const response: NativeHeicParseResponseMessage = {
+						type: NATIVE_HEIC_CHANNEL.RESPONSE,
 						data: {
 							requestId,
 							success: false,
 							error: error.message
 						}
-					});
+					};
+					worker.postMessage(response);
 				});
 			}
 		});
-		
+
 		// 通知 Worker 原生解析器可用
-		worker.postMessage({
-			type: 'INIT_NATIVE_PARSER',
+		const initMessage: NativeHeicInitMessage = {
+			type: NATIVE_HEIC_CHANNEL.INIT,
 			available: true
-		});
+		};
+		worker.postMessage(initMessage);
 	}
 
     clear() {
@@ -225,9 +236,10 @@ export class BitmapViewer {
 		// 抽成 const 后 minifier 会提升为变量，门禁将看不到这条引用。
 		this.#preloadBitmapWorker = new Worker('/src/app/js/workers/bitmapWorker.js');
 		this.#setupWorkerNativeHeic(this.#preloadBitmapWorker);  // ✅ 設置原生 HEIC 支持
-		this.#preloadBitmapWorker.postMessage({ url, item: {...item, url: url}, tileSize: this.#tileSize });
+		const preloadRequest: BitmapWorkerRequest = { url, item: { ...item, url: url }, tileSize: this.#tileSize };
+		this.#preloadBitmapWorker.postMessage(preloadRequest);
 
-		this.#preloadBitmapWorker.onmessage = (e: any) => {
+		this.#preloadBitmapWorker.onmessage = (e: MessageEvent<BitmapWorkerResponse>) => {
 			if (e.data.error) {
 				this.#preloadBitmapWorker.terminate();
 				delete this.preloadData[url];
@@ -316,9 +328,10 @@ export class BitmapViewer {
 
 			this.#createBitmapWorker = new Worker('/src/app/js/workers/bitmapWorker.js');
 			this.#setupWorkerNativeHeic(this.#createBitmapWorker);  // ✅ 設置原生 HEIC 支持
-			this.#createBitmapWorker.postMessage({ url, item, tileSize: this.#tileSize });
+			const createRequest: BitmapWorkerRequest = { url, item, tileSize: this.#tileSize };
+			this.#createBitmapWorker.postMessage(createRequest);
 
-			this.#createBitmapWorker.onmessage = (e: any) => {
+			this.#createBitmapWorker.onmessage = (e: MessageEvent<BitmapWorkerResponse>) => {
 				// ✅ 使用版本控制而不是 URL 比較
 				if (requestVersion !== this.#requestVersion) {
 					console.log('Request version outdated, ignore');

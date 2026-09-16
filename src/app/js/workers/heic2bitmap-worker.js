@@ -1,3 +1,19 @@
+/**
+ * 自有协议契约 —— 类型与字符串常量的唯一事实源：
+ *   src/app/react/core/workers/protocol.ts
+ *
+ * 本文件是**经典 script worker**（`new Worker(url)`，无 type: module），没有模块加载器，
+ * 无法 import 上面那个 .ts；两端一致性改由 tests/worker-protocol-contract.mjs 用 AST
+ * 逐条比对（双向字面量校验）保证：改动本文件的协议字段 / 通道名 / 错误文案而不改
+ * protocol.ts，该测试立刻变红。
+ *
+ * 注意：本文件不是 new Worker() 的入口，而是被 bitmapWorker.js 用 importScripts 装载的
+ * 同 Realm 脚本 —— 只安装 self.heic2bitmap 函数，不走消息协议。
+ *
+ * @protocol-version 1
+ * @protocol-module src/app/react/core/workers/protocol.ts
+ */
+
 // Web Worker optimized version - direct ArrayBuffer to ImageBitmap
 // Skips Canvas creation for better performance
 

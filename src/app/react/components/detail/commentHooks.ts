@@ -12,6 +12,7 @@ import { makeResizable } from '../interactions/resizable';
 import { useSelectionState } from '../../store/selectionState';
 import { useBodyState } from '../../store/bodyState';
 import { useMiscRawState, writeRatio } from '../../store/miscRawState';
+import type { TifWorkerRequest, TifWorkerResponse, TifWorkerSuccessResponse } from '../../core/workers/protocol';
 
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
@@ -1099,11 +1100,17 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     const img = imgRef.current;
     if (!img || !currentId) return;
     let worker: Worker | null = null;
+    // 取消语义（与 core/bitmapViewer.ts 的 requestVersion 同口径）：
+    // `terminate()` 只拦得住 onmessage 的**后续**投递，拦不住已经 resolve 的 Promise 的
+    // await 续体——而续体里全是裸 DOM 写入（createElement / appendChild / setCssEl）。
+    // 所以除版本号外另设「已卸载」标志，并在 await **之后、任何写入之前**再判定一次。
+    let disposed = false;
+    let requestVersion = 0;
 
     const $parent = img.parentNode as HTMLElement | null;
 
-    async function loadURLFromWorker(url: string) {
-      return new Promise<any>((resolve, reject) => {
+    async function loadURLFromWorker(url: string, version: number): Promise<TifWorkerSuccessResponse> {
+      return new Promise<TifWorkerSuccessResponse>((resolve, reject) => {
         if (worker) {
           worker.terminate();
           worker = null;
@@ -1112,25 +1119,31 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         // M0：站点根绝对路径；原 'js/workers/tifWorker.js' 相对文档 URL 解析，
         // 在采集窗层级下会指向不存在的子目录。字面量不抽公共常量，见 bitmapViewer.ts 同处说明。
         worker = new Worker('/src/app/js/workers/tifWorker.js');
-        worker.postMessage({ url });
+        const active = worker;
+        const request: TifWorkerRequest = { url };
+        active.postMessage(request);
 
-        worker.onmessage = (e) => {
-          const processedURL = e?.data?.url;
-          if (processedURL !== url && processedURL) {
-            worker?.terminate();
+        active.onmessage = (e: MessageEvent<TifWorkerResponse>) => {
+          // 原实现在此处拿 `e.data.url` 与本次入参 `url` 比——但 onmessage 注册在**本次新建**
+          // 的 worker 上，回显值恒等于入参，该判定对任何陈旧响应都为假，是无效代码。
+          // 改为与 bitmapViewer.ts 同口径的「已卸载 / 版本过期」判定。
+          if (disposed || version !== requestVersion) {
+            active.terminate();
+            reject(new Error('Request version outdated'));
             return;
           }
-          if (e.data.error) {
+          if ('error' in e.data) {
             reject(new Error(e.data.error));
           } else {
             resolve(e.data);
           }
-          worker?.terminate();
+          active.terminate();
         };
 
-        worker.onerror = () => {
+        active.onerror = () => {
+          active.terminate();
+          if (disposed || version !== requestVersion) return;
           reject(new Error('Worker error occurred'));
-          worker?.terminate();
         };
       });
     }
@@ -1151,9 +1164,16 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         });
       }
 
+      const version = ++requestVersion;
       try {
         const filePath = FileUrlHelper.getRawUrl(image);
-        const { rgba, width, height } = await loadURLFromWorker(filePath);
+        const { rgba, width, height } = await loadURLFromWorker(filePath, version);
+
+        // ★ 唯一的写入闸门：await 的续体一定会在微任务队列里跑完（即使 worker 已被
+        //   terminate）。卸载/换图后必须在此处短路，否则 createElement / appendChild /
+        //   setCssEl(q('#detail-image')) 会照常写到已关闭的窗口上（后者是按 id 全局查询，
+        //   关窗后该 id 可能已属新视图 —— 会把新视图的图片设成透明）。
+        if (disposed || version !== requestVersion) return;
 
         if (rgba) {
           canvas?.remove();
@@ -1185,6 +1205,9 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     })();
 
     return () => {
+      disposed = true;
+      // 递增版本号：让任何在飞的请求（含「已 resolve、续体尚未跑」的那个）立刻判为陈旧。
+      requestVersion++;
       worker?.terminate();
       worker = null;
     };

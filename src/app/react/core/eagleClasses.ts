@@ -18,6 +18,12 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 ;
 import { useMiscRawState } from '../store/miscRawState';
 import { getIpcBus } from './channelBridge';
+import {
+  HAMMING_WORKER_POOL_MAX,
+  HAMMING_ITEMS_PER_WORKER,
+  type HammingWorkerRequest,
+  type HammingWorkerResponse,
+} from './workers/protocol';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
@@ -754,7 +760,7 @@ class DuplicateChecker {
                 }
             };
 
-            const numWorkers = Math.min(4, Math.ceil(cloneItems.length / 3000));
+            const numWorkers = Math.min(HAMMING_WORKER_POOL_MAX, Math.ceil(cloneItems.length / HAMMING_ITEMS_PER_WORKER));
             const workers: any[] = [];
             const workerResults: any[] = [];
             const addedItemMap: any = {};
@@ -765,9 +771,10 @@ class DuplicateChecker {
                 workers[i] = new Worker('/src/app/js/workers/calHammingDistance.js');
 
                 const partItems = cloneItems.slice(i * cloneItems.length / numWorkers, (i + 1) * cloneItems.length / numWorkers);
-                workers[i].postMessage({all: cloneItems, part: partItems, fingerprintMap, fingerprintWeighted: options.fingerprintWeighted});
+                const hammingRequest: HammingWorkerRequest = {all: cloneItems, part: partItems, fingerprintMap, fingerprintWeighted: options.fingerprintWeighted};
+                workers[i].postMessage(hammingRequest);
 
-                workers[i].onmessage = function(event: any) {
+                workers[i].onmessage = function(event: MessageEvent<HammingWorkerResponse>) {
 
                     workers[i].terminate();
 

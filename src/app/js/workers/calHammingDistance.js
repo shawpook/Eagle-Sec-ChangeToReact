@@ -1,3 +1,16 @@
+/**
+ * 自有协议契约 —— 类型与字符串常量的唯一事实源：
+ *   src/app/react/core/workers/protocol.ts
+ *
+ * 本文件是**经典 script worker**（`new Worker(url)`，无 type: module），没有模块加载器，
+ * 无法 import 上面那个 .ts；两端一致性改由 tests/worker-protocol-contract.mjs 用 AST
+ * 逐条比对（双向字面量校验）保证：改动本文件的协议字段 / 通道名 / 错误文案而不改
+ * protocol.ts，该测试立刻变红。
+ *
+ * @protocol-version 1
+ * @protocol-module src/app/react/core/workers/protocol.ts
+ */
+
 function hammingDistance(string1, string2) {
     var xorResult = BigInt("0b" + string1) ^ BigInt("0b" + string2);
     var binary = xorResult.toString(2);

@@ -2,10 +2,10 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（**M1 / M2 / M3 / M4 / M5 已全部完成并集成**；M6-3 已集成、M6-4 在跑；M7-3 在跑）
-> 当前套件 **93 项** + ARTIFACT **5 项**；最近提交 `e2cdf202`。
+> 最后更新：2026-09-16（**M1 / M2 / M3 / M4 / M5 / M6 已全部完成并集成**；M7-3 在跑）
+> 当前套件 **94 项** + ARTIFACT **5 项**；最近提交 `e84f1618`。
 > 验证口径为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次；此后各批只做 L1/L2 定向核验，
-> 尚未重跑 L3（当前套件 93 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
+> 尚未重跑 L3（当前套件 94 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
 
 ---
 
@@ -44,9 +44,9 @@
 | M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
 | M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
 | M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
-| M6 扩展与插件专项 | 🔄 **M6-3 已集成；M6-4 在跑** | **M6-1**（扩展，`242a8663`）+ **M6-2**（插件根统一到仓库内 `plugins/` + SDK 顺序 + 回调真实派发，`c220af64`，依据 D24①）+ **M6-3**（格式插件 preload 收敛为唯一解析点、Electron 态返回真实磁盘路径，`b6c9a79f`）已集成。**M6-3 顺带坐实一个更大的缺陷（D26）**：`electron/main.cjs` 的 `createWindow` 未启用 `webviewTag` ⇒ 三处 `<webview>` 从不 guest 化，格式插件视图在 React 构建里实际是死的；用户已裁决「恢复」，**M6-4 在跑（W47）** |
+| M6 扩展与插件专项 | ✅ **全部完成并集成** | **M6-1**（扩展，`242a8663`）+ **M6-2**（插件根统一到仓库内 `plugins/` + SDK 顺序 + 回调真实派发，`c220af64`，依据 D24①）+ **M6-3**（格式插件 preload 收敛为唯一解析点、Electron 态返回真实磁盘路径，`b6c9a79f`）已集成。**M6-3 顺带坐实一个更大的缺陷（D26）**：`electron/main.cjs` 的 `createWindow` 未启用 `webviewTag` ⇒ 三处 `<webview>` 从不 guest 化，格式插件视图在 React 构建里实际是死的；用户已裁决「恢复」，**M6-4 已集成（`6b1e11b6` + 登记 `e84f1618`）**——`createWindow` 补回 `webviewTag: true`，三处 `<webview>` 首次真正 guest 化。**M6 至此无遗留** |
 | M7 最小产物与遗留隔离 | 🔄 **前两批已集成** | **M7-1**（`d59071d8`）：四项低风险退役；**M7-2**（`b923215c` 含我方修）：tab-bar 退出发布清单（脱钩测试改造为 **11 项负向门禁**）+ `src/run.js`/`run.jsc`/`main.jsc` 隔离归档（R100 零改动）。全部先归档到 `docs/retired-2026-09-16/`。**剩**：`src/package.json`（main 已悬空但无消费者解析它）、`src/my_modules/**`（硬前置是穷尽 `nativeRequire` 目标集） |
-| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **93 项** + ARTIFACT **5 项**） |
+| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **94 项** + ARTIFACT **5 项**） |
 
 ### 各批次最新集成提交（2026-09-16 下午）
 
@@ -76,6 +76,9 @@
 已集成的提交（自下而上）：
 
 ```
+e84f1618 test(suite): 登记 M6-4 的 webview-tag-enabled，REACT_SUITE 93 → 94  [Coordinator]
+6b1e11b6 fix(m6): 恢复 webviewTag（D26）—— 格式插件 webview 首次真正 guest 化  [W47]
+2389f064 docs(state): M2 收官（待撤销 0）——W44 已核验集成  [Coordinator]
 e2cdf202 test(typecheck): 订正头部过期注释（"保留现有 8 项整文件免检" → 以台账为准）  [Coordinator]
 0aedf7a2 refactor(m2): 撤销 demoSeed.ts 与 ipcBus.ts 的 @ts-nocheck（待撤销 2 → 0，M2 收官）  [W44]
 47af1683 docs(state): 核验 W46 审计、派 W48（M7-3 发布资产登记驱动 + my_modules 退役）  [Coordinator]
@@ -228,7 +231,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W44** | task_adcdfbccc219 | ctx_a511943eb8ae | **M2-8 `demoSeed.ts` + `ipcBus.ts` 类型化（M2 收官，待撤销 2 → 0）** | ✅ **已交付核验并集成（`0aedf7a2`）**；我方独立复核：typecheck 0 诊断/免检 0、shim-module-boundaries OK、runtime-services-contract 20/20、module-registry-contract 6/6、frontend-gates-unit 59/59、preload-subscriptions 43/43、m4-window-subscriptions 23/23；偏差清单逐条复核通过（`.attempts` 全仓只写不读、`clearInterval(null)` 本是 no-op） |
 | **W45** | task_c5922c0e3ca7 | ctx_e9636c5b0a65 | **M6-3 格式插件 preload 的原生根修正** | ✅ **已交付核验并集成（`b6c9a79f` + 登记 `2b837329`）**；新测试 13/13、typecheck 0 诊断。**顺带坐实 webviewTag 缺陷 → D26** |
 | **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | ✅ **已交付并核验**（`outputs/research-m7r2-my-modules-2026-09-16.md`，705 行）。核验见 §5 备注 |
-| **W47** | task_0224e87e62c4 | ctx_98debf473286 | **M6-4 恢复 `webviewTag`（D26）+ 实机门禁** | 🔄 进行中（worktree `m6-webviewtag`，codex 默认配置） |
+| **W47** | task_0224e87e62c4 | ctx_98debf473286 | **M6-4 恢复 `webviewTag`（D26）+ 实机门禁** | ✅ **已交付核验并集成（`6b1e11b6` + 登记 `e84f1618`）**。`main.cjs` 只加一行、`stage9a2` 只改一处断言（已验证是加严非放宽）。**我方独立做了负向自证**：移除 `webviewTag` 后门禁 0/4、红 4（`constructorName=HTMLElement`、无 guest、零 attach 事件、`guestProbe=null`），恢复后 4/4。L2 复核：stage9a2 / main-ui-workflow / preview-delivery / typecheck 全绿 |
 | **W48** | task_4504588e768c | ctx_94ff0bd35249 | **M7-3 发布资产登记驱动 + 复制失败即失败 + 退役零消费者 `my_modules` 条目** | 🔄 进行中（worktree `m7-publish-assets`，codex 默认配置） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**

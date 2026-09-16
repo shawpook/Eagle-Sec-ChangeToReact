@@ -23,7 +23,7 @@ import {
   updateFolder,
 } from './library-store.js';
 import { configureThumbnailTaskService, exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder, importUrl } from './importer.js';
-import { thumbnailPath } from './thumbnailer.js';
+import { ensureThumbnail, thumbnailPath } from './thumbnailer.js';
 import { exportCsvFile, itemsToCsv } from './csv-export.js';
 import { importEaglepack, packLibrary } from './eaglepack.js';
 import { findDuplicates, findDuplicatesWithProgress, findSimilarDuplicates } from './duplicates.js';

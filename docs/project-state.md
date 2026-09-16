@@ -39,12 +39,12 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前五批已集成** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 4 → 3，剩 2 个 shim 文件**（`browserRuntime` / `demoSeed`） |
+| **M2** 替代万能 shim | 🔄 **前六批已集成，剩最后 1 个文件** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 3 → 2**（M2-6 `f761c440`、M2-7 `5d6c4311`）；**只剩 1 个 shim 文件**：`demoSeed.ts` |
 | M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
 | M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
 | M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
-| M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；**插件侧（F19）待派**——注意 M6-R 标了 4 条需用户确认的产品/外部资源取舍 |
-| M7 最小产物与遗留隔离 | 🔄 **第一批已集成** | 退役审计（W5）已交付；**M7-1 已集成（`d59071d8`）**：四项低风险退役（`url-state-service.js` / `src/app/main.js` / `src/build/config.gypi` / `src/test/api-v2/test-snippets.js`），**全部先归档到 `docs/retired-2026-09-16/`**（内容零改动，可 `git mv` 回或 revert）。**tab-bar 与 src/run.js 明确未动**（前者需产品取舍，后者建议隔离归档不删） |
+| M6 扩展与插件专项 | 🔄 **扩展侧 + 插件侧已集成** | **M6-1**（扩展，`242a8663`）+ **M6-2**（插件根统一到仓库内 `plugins/` + SDK 顺序 + 回调真实派发，`c220af64`，依据用户决策 D24①）已集成。**剩一项**：格式插件 preload 把 HTTP `/src` 当原生文件根（`DetailViewer.tsx:159` / `Inspector.tsx:946` / `shell.tsx:566`） |
+| M7 最小产物与遗留隔离 | 🔄 **前两批已集成** | **M7-1**（`d59071d8`）：四项低风险退役；**M7-2**（`b923215c` 含我方修）：tab-bar 退出发布清单（脱钩测试改造为 **11 项负向门禁**）+ `src/run.js`/`run.jsc`/`main.jsc` 隔离归档（R100 零改动）。全部先归档到 `docs/retired-2026-09-16/`。**剩**：`src/package.json`（main 已悬空但无消费者解析它）、`src/my_modules/**`（硬前置是穷尽 `nativeRequire` 目标集） |
 | M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **91 项** + ARTIFACT **5 项**） |
 
 ### 各批次最新集成提交（2026-09-16 下午）
@@ -214,10 +214,10 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W37** | task_30c0a7fb77c4 | ctx_fe6d73d44011 | **M2-6 `desktopCapability.ts` 类型化 + 清 `ng-click` 死声明** | ✅ **已交付核验并集成(`f761c440`)**；`待撤销 4 → 3` |
 | **W38** | task_79c25c10868d | ctx_e53afa53c372 | **M4-E `detailHooks` jQuery 哑雷 + F11 晚注册 + 死声明** | ✅ **已交付核验并集成(`242e5618`)**；F11 探针坐实缺陷真实存在 |
 | **W39** | task_3af87fd55102 | ctx_a8c14395e5cd | **M5-2 非默认端口生产验收 + 等就绪再开窗** | ✅ **已交付核验并集成(`c987dfef`)**；`PRODUCTION_RUNTIME_PORTS_OK`（真实 Electron） |
-| **W40** | task_5d997ffff22d | ctx_e13631998354 | **M6-2 插件根统一到仓库内 `plugins/` + SDK 顺序与回调派发（F19）** | 🔄 进行中（worktree `m6-plugin-root`，claude/deepseek-flash） |
-| **W41** | task_8d1331bb9419 | ctx_6653e3718049 | **M7-2 tab-bar 退役 + 旧宿主入口隔离归档（F02/F20）** | 🔄 进行中（worktree `m7-tabbar`，claude/deepseek-flash） |
-| **W42** | task_984014a701ea | ctx_16e2a6cd099e | **F23 产物门禁加固（入口/生成资源缺失无条件失败）** | 🔄 进行中（worktree `f23-gate`，**codex**） |
-| **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | 🔄 进行中（worktree `m2-browser-runtime`，**codex**） |
+| **W40** | task_5d997ffff22d | ctx_e13631998354 | **M6-2 插件根统一到仓库内 `plugins/` + SDK 顺序与回调派发（F19）** | ✅ **已交付核验并集成(`c220af64`)**；两个新测试登记进 `npm test`（`3b3861c4`） |
+| **W41** | task_8d1331bb9419 | ctx_6653e3718049 | **M7-2 tab-bar 退役 + 旧宿主入口隔离归档（F02/F20）** | ✅ **已交付核验并集成**；其负向门禁的**扫描口径有缺陷（我方修）**见 D25 |
+| **W42** | task_984014a701ea | ctx_16e2a6cd099e | **F23 产物门禁加固（入口/生成资源缺失无条件失败）** | ✅ **已交付核验并集成(`a436d3f1`)**；`frontend-gates-unit` **40 → 59**（+19 条负向用例） |
+| **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | ✅ **已交付核验并集成(`5d6c4311`)**；`待撤销 3 → 2`。其上报的写死台账断言由我方改造（`9febfb15`） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。
@@ -296,6 +296,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | D20 | **M4-B 存一处已登记偏差：净增 3 处 `(window as any)`——不掩饰、留后续项** | W28 在 `collect-window/controller.ts`（14→15）与 `preferences/entry.tsx`（3→4）净增 3 行 `(window as any)`（`preferences?.theme`、`CollectItem`、`__eaglePreferencesEntryReady`）。核查结论：三者都是这两个文件**既有的**「读 window 动态全局」惯用式（同文件原本已有 14 处 / 3 处），**不是用来掩盖类型错误**——同批里它们反而**加强**了守卫（`?.`、`typeof` 判函数、失败回落）。但它确实踩了硬约束 1「不得新增 `any`」。**根治方式**：在 `global/globals.d.ts` 为这些 window 全局加 `declare global` 声明，届时这三处与同仓既有 85 处可一并消除。**已登记为 M2 类型化批次的后续项**，不在本批回退（回退会让那三处的空值防护一并丢失） |
 | D21 | **合并后必须跑全量回归；红了要用 git worktree 二分定位到具体提交，再派原 Worker 修** | 实例：85 项全量回归 `FAILED: 1: continuous-grid-scroll`（`first folder visit starts at the top`，`4500 !== 0`，首跑与重跑均红 → 确定性，非抖动）。定位手法：`git worktree add --detach <commit> <路径>` + 建 `node_modules` junction + 单独跑该测试 —— `d4f611a2`（M4-A 之前）**PASS**、`2502357f`（含 M4-A）**FAIL**，一次二分即锁定。**教训：单个 Worker 的定向测试全绿不等于合并后安全**——M4-A 自己的 `m4-url-history` 25/25 全绿，却在它没覆盖的既有闭环测试上打红了主分支。**另注**：`continuous-grid-scroll` 正是 M2-2 那次回归的同一项，它是本项目对「主窗启动/网格几何」最灵敏的哨兵 |
 | D22 | **分层验证口径：非必要不跑全量回归**（用户 2026-09-16 指示「非必要不跑全套了太慢了」） | 替代「每批合并后跑 85 项」的默认动作：**L1**（每次合并后必跑，秒级～分钟级）= `typecheck` + 改动覆盖到的定向 `tests/<域>-*.mjs`（改了 `core/shim/**` 再加 `shim-module-boundaries` 与 `runtime-services-contract`）；**L2**（改动共享面时）= L1 + 该域既有全部闭环测试（选测试的办法：`grep -l "<改动的源文件路径>" tests/*.mjs`，再补该域已知闭环）；**L3**（全量 85 项）= 只在 ① M8 最终验收 ② 出现无法归因的红 ③ 大范围重构（shim 装载链 / 启动序列 / 构建产物）时跑。**状态文件里必须写明本轮跑的是哪一层**，未跑 L3 不得让人误以为已全量验收。**注意**：L1/L2 必须真的选到受影响面——M4-A 的教训（D21）正是「定向测试全绿但横向打红」 |
+| D25 | **新写的门禁必须在「主工作区」与「全新 worktree」给出同样结论——否则它不可信** | 实例：W41 交付的 `tests/tab-bar-closed-loop.mjs` 的 S5「源码树零加载引用」用**文件系统遍历**，只跳过了 `.git/node_modules/dist/outputs/docs/tests/coverage`，没跳过本机存在的 `.tmp/`、`tests-tmp/` 等**抓痕目录**。后果是**同一个提交在主工作区红、在全新 worktree 绿**（worktree 里没有这些未跟踪目录）——Worker 自测全绿、我合并后立刻红。修法（只修扫描面、不放宽判据）：遍历时**跳过所有点开头目录**，并把 `.gitignore` 里非点开头的顶层目录（`test-run`/`screenshots`/`tests-tmp`/`图片参考定位组件位置`）补进 `SKIP_DIRS`。**规则**：新门禁一律在**有抓痕的主工作区**验收一次，不要只在干净的 worktree 里验 |
 | D24 | **用户 2026-09-16 拍板的四项产品/边界决策**（均由 Coordinator 提供选项，用户选推荐项） | ① **插件根统一到仓库内 `plugins/`**——把示例插件与模板迁入仓库，backend 与 electron 都从它读，缺资源时**明确失败而非静默 warn**（现状：backend 从 `tests/fixtures/plugins` 读，是任务书 M7 点名禁止的「从测试目录读取」；`electron/main.cjs:1768` 从仓库外 `H:/dev/plugins/example-service-plugin` 读，本机不存在、失败被 try/catch 吞成一行 warn；模板根指向同样不存在的 `H:/resources/plugin_templates`）。② **`frontend/public/tab-bar.js` + `.css` 退出发布清单**（全仓无加载入口、产物中 0 命中，唯一消费者 `tests/tab-bar-closed-loop.mjs` 未登记任何套件且自己不注入）。③ **`src/run.js` / `run.jsc` / `main.jsc` 按 W5 建议隔离归档**（移出日常操作与发布路径、标明非支持入口、保留可恢复；不删除——`.jsc` 内容不可读、任务书 §4 不反推其内部依赖）。④ **`popup.html` 维持双载**（扩展本体磁盘加载 + HTTP 演示副本注入；M6-1 已把差异写成断言） |
 | D23 | **codex worker 的 shell 通道：曾整段不可用，同日复测已恢复——派前先探针，否定性结论仍须自己复核** | **曾（2026-09-16 早）**：所有命令（`rg` 与 PowerShell `Select-String` **都**含）经 WSL 转发，恒报 `execvpe(/bin/bash) failed`，**输出为空却像正常执行**；当时 `wsl -l -v` 只有 `docker-desktop` 且已停止（**无默认 Linux 发行版**，很可能即根因）。后果：M4-D 90 分钟零产出 → 停掉回退 claude 重派为 W36。**复测（同日 07:10）**：派最小探针（`_spec-codex-probe.txt`）实测 `git rev-parse` → `0ccd046f`、`node -e` → `SHIM_FILES 8`、`rg --version` → `ripgrep 15.2.0`、`rg -n "machineryOpenAll" src/app/react/core` → 真实命中 `filterDomain.ts:43/:2234`、`keymap.ts:3/:19/:475`，**shell 与检索均已恢复**。**规则**：① 派依赖检索/跑测试的 codex 任务前先花 30 秒探针；② 判卡住 = worktree 长时间零改动 + 终端反复 execvpe；③ **无论何时，codex 给的「无消费者/搜不到」类否定结论都要自己复核**（M7-1 就是靠这条才安全合入）。已记入记忆 `env-codex-shell-status.md` |
 

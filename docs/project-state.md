@@ -2,7 +2,9 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（M1 全项完毕；M2 前三批、M3-1、M4-C、M5-1、M6-1 已集成；**主分支 81 项全量回归 ALL GREEN**）
+> 最后更新：2026-09-16（M1 全项完毕；M2 前三批、M3 前两批、M4 前三批、M5-1、M6-1 已集成；
+> **M4-A 回归已修**；验证口径改为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次，
+> 修复后只做了 L1/L2 定向核验，尚未重跑 L3**）
 
 ---
 
@@ -54,6 +56,9 @@
 已集成的提交（自下而上）：
 
 ```
+1c4214b9 fix(m4): 修 M4-A 引入的回归——自写回显被误判为外部导航，把旧视图滚动位置带进新视图  [W31]
+b608b851 docs(state): 新增 D22 分层验证口径（非必要不跑全量回归）
+ab465ecd docs(state): 记录 M4-A 引入的 continuous-grid-scroll 回归与二分定位（D21）
 5f2d5518 test(suite): 登记 M3-2 的 m3-filter-cold-start 与 M4-B 的 m4-window-subscriptions，REACT_SUITE 83 → 85  [Coordinator]
 ebf90c6d fix(m4): 采集/偏好窗 dispose 收口 + 主窗 store 订阅整形  [W28]
 35675429 fix(m3): 调用点切到 core/rules/* + 治冷启动空快照不自愈 + 等价性测试事实源迁移  [W26+W30]
@@ -177,6 +182,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W28** | task_7ed261ef6422 | ctx_b1de96b5d57e | **M4-B 采集/偏好窗 dispose 与 store 订阅守卫** | ✅ **已交付核验并集成(`ebf90c6d`)**；`m4-window-subscriptions` 23/23。**存一处已登记偏差**（净增 3 处 `(window as any)`，见 D20） |
 | **W29** | task_6ddbc52ec73b | ctx_010830f11495 | **M2-4 moduleRegistry 类型化与截获契约化** | ✅ **已交付核验并集成(`d4f611a2`)**；`待撤销 6 → 5`，截获表契约 6/6 |
 | **W30** | task_da247f585fd6 | ctx_4c6460644027 | **M3-2fix 等价性测试事实源迁移（按裁决加严）** | ✅ **已交付核验并集成(`35675429`)**；`match-rules-equivalence` 22/22（原 21 条全保留 +1b） |
+| **W31** | task_a7644295ccf7 | ctx_c892cf9860cf | **M4-Afix 修 `continuous-grid-scroll` 回归** | ✅ **已交付核验并集成(`1c4214b9`)**，终端已释放 |
 
 > W23–W25 **首次派单全部卡在 Bypass 确认框**（`skipDangerousModePermissionPrompt` 又被抹掉，
 > 见 §7.1），进程实际已退出、`worker-stop` 后带 `--retry-of` 重派成功。
@@ -378,8 +384,8 @@ M1 与 M2 第一批至此**全部闭环且主分支全绿**。后续按批次推
 
 | 阻塞 | 影响 | 处置 |
 |---|---|---|
-| **`continuous-grid-scroll` 被 M4-A 打红**（首次进入文件夹停在 4500 而非顶部） | 主分支 85 项全量回归 `FAILED: 1`；**这是用户可见缺陷**，不是测试期望过时 | **已二分定位**：`d4f611a2`（M4-A 之前）PASS，`2502357f`（含 M4-A）FAIL。已派 **M4-Afix**（`task_a7644295ccf7` / `ctx_c892cf9860cf`），见 D21 |
-| ~~M2-1 引入的回归~~ | — | ✅ 已由 W18 修复并集成（`82d5b1f8`），主分支全量回归 ALL GREEN |
+| ~~`continuous-grid-scroll` 被 M4-A 打红~~ | — | ✅ **已修并集成（`1c4214b9`，W31）**。根因：**Electron 渲染进程里 `location.hash = next` 会在该赋值语句内同步派发 `popstate`**，而 `usSelfWritten.add` 写在赋值**之后** → 自写回显被当成外部导航 → 消费端二次派发 `openFolder`（ignoreReload 为假）→ `restoreScrollPosition()+reload()` 把进入前的 4500 带进新视图。改法：登记先于赋值（三处）+ `onChange` 分发加来源标记、消费端只对**外部导航**派发。**核验（L1/L2，未跑 L3）**：`continuous-grid-scroll` EXIT=0、`m4-url-history` 26/26、typecheck 0 诊断、`continuous-grid-layout` PASS，另跑 9 项受影响面既有测试（boot-ready-sequence / f08f09 / stage1c2 / runtime-services-contract / shim-module-boundaries / d3-viewmode / d3-boot-render / menu-popup / residue）全 OK |
+| ~~M2-1 引入的回归~~ | — | ✅ 已由 W18 修复并集成（`82d5b1f8`） |
 | **`dist-entry-check` 依赖本地构建产物** | 未重建时会出现「4 页没有 module 入口脚本」的**假失败** | 按 D12：跑该门禁前先 `npm run build`。**后续 Worker 的 spec 必须写明这一条**，否则会误报回归 |
 | ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并 |
 | ~~F06 中间态（解桩前写文件明确拒绝）~~ | — | ✅ 已由 F06 第三批解桩闭合 |

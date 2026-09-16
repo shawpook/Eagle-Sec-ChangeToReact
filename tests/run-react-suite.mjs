@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（91 项，顺序隔离执行）。
+ * React 全量回归套件（93 项，顺序隔离执行）。
  * 项数以 `react-suite-manifest.mjs` 的 `REACT_SUITE` 长度为准；合并各批次的登记项时
  * 必须重新数一遍长度再改这里——历史上多次出现注释与实际长度不同步（71/72/73/77/79 都写过）。
  * R8 起并入 F15 `preload-subscriptions` 与 F13-preview `preview-entry-subscriptions`
@@ -9,7 +9,10 @@
  * R11 起并入 M4-A `m4-url-history` 与 M3-2 `m3-filter-cold-start`、M4-B `m4-window-subscriptions`。
  * R12 起并入 M3-3 `worker-cancel-writeback` 与 `worker-protocol-contract`。
  * R13 起并入 M4-D `m4-ng-click-pairing` / `m4-engine-lifecycle` / `m4-domlite-containment`。
- * R14 起并入 M4-E `f11-scope-face-late-registration`
+ * R14 起并入 M4-E `f11-scope-face-late-registration`。
+ * R15 起并入 M7-2 `tab-bar-closed-loop`（改造为 11 项负向门禁）与 M6-3 `plugin-format-preload`
+ * （格式插件 preload 的唯一解析点：三处调用点原先各自内联的惯用式，在包括 Electron 生产态
+ * 在内的任何运行态下都产出 http:// URL，而 <webview preload> 只接受文件系统路径）。
  * （M5-2 的两个生产验收进了 `ARTIFACT_TESTS`，起完整生产栈 + Electron，不属本套件）。
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。

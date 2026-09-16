@@ -184,6 +184,13 @@ export const REACT_SUITE = [
   // 已改造为 11 项断言：源位置不得复活 / 归档完整性与指纹 / 源码树零加载引用 /
   // 清单不得重新登记 / 产物不得交付）。纯 Node、秒级；含 8 项负向自证。
   'tests/tab-bar-closed-loop.mjs',
+  // M6-3：格式插件 preload 的**唯一解析点**（纯 Node，秒级，无 Electron）。
+  // 原先三处调用点各自内联同一惯用式，在**包括 Electron 生产态在内**的任何运行态下都产出
+  // http://<origin>/src/... —— 而 <webview preload> 只接受文件系统路径，故该 preload 从未被加载。
+  // 本项钉住：三处调用点收敛到同一具名解析函数、解析入口全仓只有一处定义、
+  // Electron 态返回真实磁盘 file:// 路径、非 Electron 态明确不可用、
+  // 以及「解析函数在全输入域上绝不产出 http(s) 值」的硬闸门。含 3 项负向自证。
+  'tests/plugin-format-preload.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -214,6 +221,7 @@ export const TEST_CLASSES = {
   'tests/m4-domlite-containment.mjs': 'static',
   'tests/f11-scope-face-late-registration.mjs': 'static',
   'tests/tab-bar-closed-loop.mjs': 'static',
+  'tests/plugin-format-preload.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

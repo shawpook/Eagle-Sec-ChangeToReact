@@ -9,10 +9,15 @@ import {
   renderRuntimeConfigScript,
   resolveRuntimeConfig,
 } from './runtime-config.mjs';
+import {
+  PUBLISH_OUT_DIR,
+  copyPublishAssets,
+} from './publish-asset-manifest.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../');
 const frontendPublic = path.resolve(here, 'public');
+const publishOutDir = path.resolve(workspaceRoot, PUBLISH_OUT_DIR);
 // R5：文档查看器已从 frontend/document-viewer 迁入 src/app/react/viewers/document
 // （与其余六个查看器同址；其源码本就在 typecheck 的 src/app/react 范围内，迁移后不再需要
 // tsconfig 的独立 include 条目）。
@@ -108,23 +113,6 @@ const RELOCATED_PAGES = [
   { name: 'media-video', url: '/media-viewer/video.html', shell: 'src/app/react/viewers/media/video/index.html' },
 ];
 const RELOCATED_PAGE_SHELLS = Object.fromEntries(RELOCATED_PAGES.map((page) => [page.url, page.shell]));
-
-// R1：把页面在运行时仍按相对路径/`/src/...` 路径引用的资源交付到产物（页面 HTML 由 Vite 产出，
-// 故 src/app 下排除 .html；src/app/react 已打包，排除）。appRoot 为 `/src`，运行时 require 会取
-// `/src/config.js`、`/src/i18n`、`/src/my_modules/*`、`/src/app/js/*`（见 shimsLegacy 的 require 链）。
-//
-// 注：不用 fs.cpSync——在本机（Windows/Node 22）复制含 `.node` 原生二进制的 src/my_modules 时
-// 会令进程硬崩（exit 127，无异常）；手工遍历复制稳定。
-function copyTree(from, to, filter) {
-  fs.mkdirSync(to, { recursive: true });
-  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
-    const src = path.join(from, entry.name);
-    const dst = path.join(to, entry.name);
-    if (filter && !filter(src)) continue;
-    if (entry.isDirectory()) copyTree(src, dst, filter);
-    else fs.copyFileSync(src, dst);
-  }
-}
 
 export default defineConfig({
   root: workspaceRoot,
@@ -235,60 +223,14 @@ export default defineConfig({
       name: 'eagle-production-assets',
       apply: 'build',
       closeBundle() {
-        const outDir = path.resolve(here, '../dist/frontend');
-        console.log('[eagle] copying runtime assets ->', outDir);
-        let copied = 0;
-        for (const dir of [
-          { from: 'src/app', to: 'src/app', filterPages: true },
-          { from: 'src/my_modules', to: 'src/my_modules', filterPages: false },
-          { from: 'src/i18n', to: 'src/i18n', filterPages: false },
-        ]) {
-          const from = path.join(workspaceRoot, dir.from);
-          if (!fs.existsSync(from)) { console.log(`[eagle] skip (absent) ${dir.from}`); continue; }
-          try {
-            copyTree(from, path.join(outDir, dir.to), dir.filterPages
-              ? (src) => {
-                  if (src.split(path.sep).includes('react')) return false;
-                  // 只排除由 Vite 产出的 React 页 HTML；pdf-viewer/model-viewer 等引擎页
-                  // 无 React 入口，按原样交付（R1）。
-                  const rel = path.relative(workspaceRoot, src).split(path.sep).join('/');
-                  if (src.endsWith('.html') && REACT_PAGE_ENTRIES[rel]) return false;
-                  return true;
-                }
-              : null);
-            copied += 1;
-            console.log(`[eagle] copied ${dir.from} -> ${dir.to}`);
-          } catch (err) {
-            console.error(`[eagle] FAILED copying ${dir.from}:`, err && err.message);
-          }
-        }
-        // M0：替代展示页按它们真实的 URL 交付。两页的相对引用（css/*.css、assets/images/...）
-        // 本就按 `/src/app/` 层级书写，落到别的目录会整片解析失败，而 publicDir 只会原样复制到
-        // replaced/；复制到 src/app/ 后其引用闭包与已交付的 src/app 资产树天然一致，无需第二套
-        // 资产副本（同一页面因此只有一个解析基准，见页内 <base href="/src/app/">）。
-        for (const [url, name] of Object.entries(REPLACEMENT_PAGES)) {
-          const to = path.join(outDir, url.replace(/^\//, ''));
-          try {
-            fs.mkdirSync(path.dirname(to), { recursive: true });
-            fs.copyFileSync(path.join(frontendPublic, 'replaced', name), to);
-            copied += 1;
-            console.log(`[eagle] copied replaced/${name} -> ${url}`);
-          } catch (err) {
-            console.error(`[eagle] FAILED copying replaced/${name}:`, err && err.message);
-          }
-        }
-        for (const rel of ['src/config.js']) {
-          const abs = path.join(workspaceRoot, rel);
-          if (!fs.existsSync(abs)) { console.log(`[eagle] skip (absent) ${rel}`); continue; }
-          try {
-            fs.mkdirSync(path.dirname(path.join(outDir, rel)), { recursive: true });
-            fs.copyFileSync(abs, path.join(outDir, rel));
-            copied += 1;
-            console.log(`[eagle] copied ${rel}`);
-          } catch (err) {
-            console.error(`[eagle] FAILED copying ${rel}:`, err && err.message);
-          }
-        }
+        const outDir = publishOutDir;
+        console.log('[eagle] copying registered runtime assets ->', outDir);
+        const { copied } = copyPublishAssets({
+          workspaceRoot,
+          outDir,
+          appRuntimeHtmlExcludes: new Set(Object.keys(REACT_PAGE_ENTRIES)),
+        });
+        console.log(`[eagle] copied ${copied} registered asset entr${copied === 1 ? 'y' : 'ies'}`);
         // R1：publicDir（frontend/public）会整目录复制，其中 mock-library / mock-assets 是
         // 开发/演示数据，不进生产产物（开发态仍由 public 提供）。
         for (const devOnly of ['mock-library', 'mock-assets']) {
@@ -303,15 +245,13 @@ export default defineConfig({
         for (const page of RELOCATED_PAGES) {
           const from = path.join(outDir, page.shell);
           const to = path.join(outDir, page.url.replace(/^\//, ''));
-          try {
-            if (!fs.existsSync(from)) { console.log(`[eagle] skip (not built) ${page.shell}`); continue; }
-            fs.mkdirSync(path.dirname(to), { recursive: true });
-            fs.renameSync(from, to);
-            relocated += 1;
-            console.log(`[eagle] relocated ${page.shell} -> ${page.url}`);
-          } catch (err) {
-            console.error(`[eagle] FAILED relocating ${page.shell}:`, err && err.message);
+          if (!fs.existsSync(from)) {
+            throw new Error(`[eagle] 必需构建页不存在，无法重定位：${page.shell}`);
           }
+          fs.mkdirSync(path.dirname(to), { recursive: true });
+          fs.renameSync(from, to);
+          relocated += 1;
+          console.log(`[eagle] relocated ${page.shell} -> ${page.url}`);
         }
         // 全部复位成功才清理残留的空目录链；有失败时保留现场便于排查。
         if (relocated === RELOCATED_PAGES.length) {
@@ -337,7 +277,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(here, '../dist/frontend'),
+    outDir: publishOutDir,
     emptyOutDir: true,
     rollupOptions: {
       input: {

@@ -35,10 +35,10 @@
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
 | **M2** 替代万能 shim | 🔄 **第一批 + 回归修复已集成** | F07 能力矩阵调研已交付（§6）；**M2-1 已集成**（RuntimeServices + 三态 + 能力缺失即失败）；**M2-2 回归修复已集成**（补真实裸模块登记 + 相对 require 解析）；后续批次见 §8 |
-| M3 经典业务脚本进模块图 | ⏸ 待派 | — |
-| M4 窗口与 scope 收口 | ⏸ 待派 | — |
+| M3 经典业务脚本进模块图 | 🔄 **第一批已派（W23）** | M3-R 审计已交付（§5）；M3-1 = `core/rules/*` 具名模块化（不改调用点） |
+| M4 窗口与 scope 收口 | 🔄 **第一批已派（W24）** | M4-R 审计已交付（§5）；M4-C = 预览窗 dispose + 两处持续性开销 |
 | M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边见 §8 |
-| M6 扩展与插件专项 | ⏸ 待 M2/M5 | — |
+| M6 扩展与插件专项 | 🔄 **第一批已派（W25）** | M6-R 审计已交付（§5）；M6-1 = 扩展端口单一来源 + MV3 交付契约 |
 | M7 最小产物与遗留隔离 | ⏸ 待替代就位 | 退役审计已交付（§6） |
 | M8 最终收官 | ⏸ | — |
 
@@ -51,6 +51,7 @@
 已集成的提交（自下而上）：
 
 ```
+0d31dbc3 fix(tests): 登记两个孤儿测试并修复 F04 打断的预览窗订阅测试  [Coordinator]
 82d5b1f8 fix(m2): 补真实裸模块登记 + 模块内相对 require 解析 + JsonRestServer 失败通道改同步抛  [W18]
 f25876fb docs(state): 记录全量回归 FAILED 4 的根因（M2-1 未登记真实模块被抛错）与修复中状态
 1fc34443 test(m1): 修复 F06 分流测试的 flaky 时序依赖（改为确定性等待真实落盘）  [W17]
@@ -130,6 +131,23 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W16** | task_1ef187d72462 | ctx_445c33347b34 | **M5-1 工具页/媒体页进模块图 + 运行期地址** | ✅ **已集成(`69b489d6`)** |
 | **W17** | task_2f6fabf7dd28 | ctx_54b60df66dc7 | **F06 分流测试 flaky 修复** | ✅ **已集成(`1fc34443`)** |
 | **W18** | task_6f79bc8608a8 | ctx_1978100e92dd | **M2-2 回归修复（补真实模块登记 + 能力取舍取证）** | ✅ **已交付核验并集成(`82d5b1f8`)**，终端已释放 |
+| **W19** | task_d4c71c975ace | ctx_932025c58101 | **M2-3 撤销 shim 环境层/设置层 `@ts-nocheck`** | 🔄 进行中（worktree `m2-shim-env`）。代码侧已完工全绿，等门禁台账裁决 → 已裁决 **A**（授权删 2 行台账 + 更新 `frontend-gates-unit` 的写死 8） |
+| **W20** | task_96e61753ab96 | ctx_29094d93aabd | **M3-R 只读审计（F03 / F16）** | ✅ 已交付 `outputs/research-m3-scripts-workers-2026-09-16.md` |
+| **W21** | task_cb07c2b92eb5 | ctx_e3db3e7b5f55 | **M4-R 只读审计（F11–F14）** | ✅ 已交付 `outputs/research-m4-windows-scope-2026-09-16.md`（1167 行） |
+| **W22** | task_ce1be135c8b1 | ctx_821ced9fb23f | **M6-R 只读审计（F18 / F19）** | ✅ 已交付 `outputs/research-m6-extension-plugin-2026-09-16.md` |
+| **W23** | task_d185576cff1e | ctx_c2d358c25c93 | **M3-1 `core/rules/*` 具名模块化（不改调用点）** | 🔄 进行中（worktree `m3-rules`） |
+| **W24** | task_631ea410089d | ctx_c5af03659909 | **M4-C 预览窗 dispose 与两处持续性开销** | 🔄 进行中（worktree `m4-preview-dispose`） |
+| **W25** | task_cc246d9917e9 | ctx_e9d3a9ff65d5 | **M6-1 扩展端口单一来源 + MV3 交付契约** | 🔄 进行中（worktree `m6-extension`） |
+
+> W23–W25 **首次派单全部卡在 Bypass 确认框**（`skipDangerousModePermissionPrompt` 又被抹掉，
+> 见 §7.1），进程实际已退出、`worker-stop` 后带 `--retry-of` 重派成功。
+> **本波起的新约定**：Worker **不得**改 `tests/react-suite-manifest.mjs` / `tests/run-react-suite.mjs`，
+> 新测试的登记由 Coordinator 在合并后统一做——彻底消除 D11 那类「多 Worker 同改清单」的必然冲突。
+
+> W19–W22 的 spec 均在 `outputs/`（未跟踪）：`_spec-m2-3.txt`、`_spec-m3r.txt`、`_spec-m4r.txt`、`_spec-m6r.txt`。
+> 只读审计的交付物按约定写入 `outputs/research-*-2026-09-16.md`。
+> **观察**：4 个 Worker 并发时出现 provider **429 限流重试**，各自 backoff 后仍在推进；
+> 后续波次的并发度建议控制在 3 以内，或错峰派遣。
 
 > W18 报告：`test-run/m2-2-regression-report.md`（worktree `m2-runtime-services` 内，`test-run/` 为 gitignore）。
 > **注意基线口径**：该 worktree 基于 `930f189c`（M2-1 合入前的分叉点），其 `REACT_SUITE` 为 **73 项**、
@@ -172,6 +190,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | D12 | **跑 `dist-entry-check` 前必须先在主工作区 `npm run build`** | 该门禁读的是 **gitignored 的构建产物 `dist/frontend`**（`checkDist` 默认 `root = projectRoot/dist/frontend`），不是源码。M5-1 改的是源 shell（`src/app/react/tools/workbench/index.html` 等），主分支 `dist` 未重建，于是 4 项报「没有 module 入口脚本」（workbench/roadmap/media-viewer audio+video，产物 mtime 分别停在 Aug 3 / Aug 28 / Sep 15 12:27）。**重建后 FAIL 0（303 文件）**，源 shell 确有 `<script type="module">`——属假失败，非回归 |
 | D13 | **`JsonRestServerStub.start()` 的失败通道由 rejected Promise 改为同步抛出** | 两个真实调用点（`bundleGlobals._startAPIServer` 的 try/catch + noop、`miscDomain` power-resume 的 try/catch + `electronLog.error`）**都只接得住同步抛错**；`Promise.reject` 两者都接不住 → unhandled rejection 被 CDP 记为 `Runtime.exceptionThrown`，把「能力缺口」淹没成未捕获异常。失败语义**未放宽**：`capabilityGap` 照旧登记缺口、成功回调照旧不触发、不退回修前那个「无条件 `Promise.resolve` 调 callback」的假成功。契约测试相应**加严**（1 → 3 条断言） |
 | D14 | **M2-2 的能力取舍裁决：`http`/`https` 与 `JsonRestServer` 保持显式失败；`archiver`/`fast-glob` 维持 no-op** | 三者均经消费者取证：`http`/`https` 唯一消费者 `urlEnlarger.#checkURLByEagle` 被 `isRunningInEagleApp` 门控且**无 try/catch**（贸然给真实实现会重新引入「抛点落在无保护表达式上」）；`JsonRestServer` 真实实现 `src/my_modules/json-rest-light` 首行即 `require('http')`，browser-connected 态确无该能力（41595 的 API 面由后端承担，见 `installBrowserFetchRewrite`）；`archiver` 仅见于**从不被加载**的 `src/app/js/plugin/index.js` 与渲染层 0 消费者的 `src/my_modules/zip-folder`，`fast-glob` 唯一消费者在独立后端进程。两者已登记进 `capabilities.gaps`，不是静默成功。**待证项：Electron 下 `nativeRequire('http')` 可能可用（`nodeIntegration: true`），两条接线均未做，是推测不是结论** |
+| D15 | **套件之外的测试等于长期未跑——两个孤儿测试已登记，且登记时立刻抓到一个真回归** | M4-R 审计发现 `preload-subscriptions.mjs`(F15) 与 `preview-entry-subscriptions.mjs`(F13-preview) **从未登记进任何套件**（只有本文件的手工运行记录）。登记前实测：前者 43/43 通过，**后者在主分支 12/12 全红**——`F04`(`257ebd1c`) 给 `preview-window/entry.tsx` 加了 `import { assertPreviewBootInstalled } from './boot'`，而该测试的隔离加载器只接受白名单依赖，报「禁止加载未隔离的依赖：./boot」。**因为文件不在套件里，此前每次全量回归都没覆盖到它**。修法（只加严）：imports 表补 `./boot` 受控替身 + **新增**断言 `order === ['boot','createRoot']`（把 F04 的顺序不变式变成可执行断言，负向自证过：移除该调用即 12 红）。两项并入 `REACT_SUITE`、`TEST_CLASSES(static)`、`REQUIRED_TESTS`；`REACT_SUITE` **77 → 79**。**教训：验收前必须先核对"仓库里的测试是否都进了套件"** |
 
 ---
 

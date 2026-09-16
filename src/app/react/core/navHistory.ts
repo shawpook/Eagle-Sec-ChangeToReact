@@ -24,7 +24,12 @@ export function machineryBack(): void {
 
 export function machineryNextHistory(event?: any): void {
   const w = window as any;
-  if (useMiscRawState.getState().UrlStateService.canGoForward) {
+  // M4-A：原写法 `if (…UrlStateService.canGoForward)` 读的是**函数对象**——恒 truthy，
+  // guard 恒真 ≡ 无条件 `goForward()`。改为与 store/toolbarState.ts:107-112 同一口径：
+  // **真正调用**（带括号）+ try/catch 兜住「服务未就绪」。
+  let canGoForward = false;
+  try { canGoForward = !!useMiscRawState.getState().UrlStateService.canGoForward(); } catch (err) { canGoForward = false; }
+  if (canGoForward) {
     w.currentWindow.webContents.goForward();
   }
 }
@@ -69,7 +74,10 @@ export function machineryOpenPrevQuickAccess(): void {
 
 export function machineryPrevHistory(event?: any): void {
   const w = window as any;
-  if (useMiscRawState.getState().UrlStateService.canGoBack) {
+  // M4-A：同上（原 `if (…UrlStateService.canGoBack)` 恒真 ≡ 无条件 `goBack()`）。
+  let canGoBack = false;
+  try { canGoBack = !!useMiscRawState.getState().UrlStateService.canGoBack(); } catch (err) { canGoBack = false; }
+  if (canGoBack) {
     w.currentWindow.webContents.goBack();
   }
 }

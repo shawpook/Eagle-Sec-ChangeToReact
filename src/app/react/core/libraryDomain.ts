@@ -613,6 +613,82 @@ export function takeoverLibraryDomain(): void {
     if (useMiscRawState.getState().UrlStateService && useMiscRawState.getState().UrlStateService.clearState) useMiscRawState.getState().UrlStateService.clearState();
     // lastProcessedUrlState = null —— controller 闭包 guard（bundle 20539），另一写入方（watcher）仍在，略去
 
+    // ── M4-A：URL→状态 的消费端（地址栏回退/前进 → 应用状态）────────────────────────
+    // 旧版 url-state-service.js:54 显式移除 popstate/hashchange 监听，触发面全寄托于
+    // Angular `$locationChangeSuccess`；去 Angular 后无人接管 → goBack/goForward 只回退
+    // hash、不改任何应用状态（M4 缺陷本体）。触发面本体补在 bundleGlobals 的
+    // UrlStateService（hash 变化 → onChange 分发）；此处是消费端。
+    //
+    // **单一真相**：applyUrlStateView 就是启动期读点原先那段 inline switch 的逐字搬运，
+    // 启动期读点改为调用它——同一套字段、同一套编码、同一套 open* 入参，不存在第二条真相。
+    //
+    // **防回环**：本路径一律以 ignoreHistory=true 调用 open*，不产生新的 URL←状态 写入；
+    // 服务侧另有「自写回显抑制」与「同 hash 去重」两道闸（见 bundleGlobals 的
+    // usDispatchNavigation）。**滚动语义**由 open* 自身承载（"恢复…滚动语义"）：
+    // 例如 openFolder 在 ignoreReload 为假时走到 `ScrollbarSaver.restoreScrollPosition()`
+    // + `reload()`（folderCoreService.ts:851-854），与启动期读点走的是同一条路径。
+    function applyUrlStateView(urlState: any): boolean {
+      let hasUrlState = false;
+
+      switch (urlState.view) {
+        case 'unfiled': machineryOpenUnfiled(true); hasUrlState = true; break;
+        case 'untagged': machineryOpenUntagged(true); hasUrlState = true; break;
+        case 'random': machineryOpenRandom(true); hasUrlState = true; break;
+        case 'recent': machineryOpenRecent(true); hasUrlState = true; break;
+        case 'community': machineryOpenCommunity(true); hasUrlState = true; break;
+        case 'alltags': machineryOpenAllTags(true); hasUrlState = true; break;
+        case 'trash': machineryOpenTrash(true); hasUrlState = true; break;
+        case 'folder':
+          if (urlState.folder && useItemState.getState().folderMappings && useItemState.getState().folderMappings[urlState.folder]) {
+            openFolder(useItemState.getState().folderMappings[urlState.folder], true);
+            hasUrlState = true;
+          }
+          break;
+        case 'smartfolder':
+          if (urlState.smartfolder && useItemState.getState().smartFolderMappings && useItemState.getState().smartFolderMappings[urlState.smartfolder]) {
+            openSmartFolder(useItemState.getState().smartFolderMappings[urlState.smartfolder], true);
+            hasUrlState = true;
+          }
+          break;
+        case 'color':
+          if (urlState.color) {
+            filterWithColor(urlState.color, true);
+            hasUrlState = true;
+          }
+          break;
+      }
+      return hasUrlState;
+    }
+
+    function applyUrlStateNavigation(urlState: any): void {
+      // page（页码语义）：folder 视图是唯一把 page 写进 URL 的写点
+      // （folderCoreService.ts:833 `page: useMiscRawState.getState().page`），消费面是
+      // `allData.slice(0, len * page)`（machineryInfra.ts:443-447 注释）。必须在**派发视图
+      // 之前**落位，使 open* 自身那一次 reload 直接按目标页码切片，避免「先按旧页加载、
+      // 再改页重载」的双次加载。page 在 UrlStateService.usStateOf 中恒为数字（缺省 1）。
+      const page = urlState && urlState.page;
+      if (typeof page === 'number' && isFinite(page) && page >= 1) {
+        useMiscRawState.setState({ page: Math.floor(page) });
+      }
+      // 'all' 是 URL 视图的默认值（usStateOf：`search.view || 'all'`），写点 11 亦显式写
+      // view:'all'（folderCoreService.ts:1053）。启动期读点不显式处理它（落到下方 viewMode
+      // 回退链），导航期必须处理——否则「回退到 all」无人接管。
+      if (urlState && urlState.view === 'all') {
+        machineryOpenAll(true);
+        return;
+      }
+      applyUrlStateView(urlState);
+    }
+
+    // 订阅只装一次：UrlStateService 每窗口仅建一次，幂等标记挂在**服务对象**上
+    // （而非模块级变量），故本文件被重复装载/本处理体被多次触发都不会叠加订阅。
+    try {
+      const urlService: any = useMiscRawState.getState().UrlStateService;
+      if (urlService && typeof urlService.onChange === 'function' && !urlService.__m4NavigationBound) {
+        urlService.__m4NavigationBound = urlService.onChange(applyUrlStateNavigation);
+      }
+    } catch (err) { /* UrlStateService 未就绪 */ }
+
     writeLibraryName(pathMod.basename(params.rootDir).replace('.library', ''));
     syncSidebarFromScope();
     writeLibraryPath(pathMod.normalize(params.rootDir));
@@ -819,35 +895,10 @@ export function takeoverLibraryDomain(): void {
       } else {
         let urlState: any = {};
         try { urlState = useMiscRawState.getState().UrlStateService.getState(); } catch (err) { urlState = {}; }
-        let hasUrlState = false;
-
-        switch (urlState.view) {
-          case 'unfiled': machineryOpenUnfiled(true); hasUrlState = true; break;
-          case 'untagged': machineryOpenUntagged(true); hasUrlState = true; break;
-          case 'random': machineryOpenRandom(true); hasUrlState = true; break;
-          case 'recent': machineryOpenRecent(true); hasUrlState = true; break;
-          case 'community': machineryOpenCommunity(true); hasUrlState = true; break;
-          case 'alltags': machineryOpenAllTags(true); hasUrlState = true; break;
-          case 'trash': machineryOpenTrash(true); hasUrlState = true; break;
-          case 'folder':
-            if (urlState.folder && useItemState.getState().folderMappings && useItemState.getState().folderMappings[urlState.folder]) {
-              openFolder(useItemState.getState().folderMappings[urlState.folder], true);
-              hasUrlState = true;
-            }
-            break;
-          case 'smartfolder':
-            if (urlState.smartfolder && useItemState.getState().smartFolderMappings && useItemState.getState().smartFolderMappings[urlState.smartfolder]) {
-              openSmartFolder(useItemState.getState().smartFolderMappings[urlState.smartfolder], true);
-              hasUrlState = true;
-            }
-            break;
-          case 'color':
-            if (urlState.color) {
-              filterWithColor(urlState.color, true);
-              hasUrlState = true;
-            }
-            break;
-        }
+        // M4-A：原 inline switch 已逐字搬入 applyUrlStateView（本文件 app-status-library-loaded
+        // 开头的定义），启动期读点与导航期读点共用同一实现——杜绝「第二条真相」。
+        // hasUrlState 的置位规则与搬运前逐字一致（9 个 case + 各自的命中条件）。
+        let hasUrlState = applyUrlStateView(urlState);
 
         // 處理 imageFilter 參數
         // b1-9ba：原 OPEN_IMAGE_FILTER 廣播全樹無接收者（原接收者隨 bundle 摘除退役）

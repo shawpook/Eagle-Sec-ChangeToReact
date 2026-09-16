@@ -1586,6 +1586,15 @@ export function installBundleGlobals(): void {
   // $locationChangeStart preventDefault 语义；onChange = $locationChangeSuccess 分发）
   if (!w.UrlStateService) {
     const usListeners: Function[] = [];
+    // M4-A：URL→状态 的回环防护账（完整说明见本块末尾 addEventListener 处）
+    //  - usSelfWritten：本服务**程序化写入**过的 hash 集合。`window.location.hash = next`
+    //    会真实抛出 hashchange，事件到达时命中此集合即认领并丢弃（自己写的回显）。
+    //    用集合而非单变量：同一轮里可能连写两次（先写 folder 再写 view），两个事件都必须被
+    //    认领；用「计数挂起」则 replaceState 分支（不抛事件）会留下永不消费的悬账。
+    //  - usAppliedHash：最近一次**由外部导航**驱动并已应用过的 hash；一次浏览器前进/后退会
+    //    同时投递 popstate 与 hashchange，据此去重，保证只应用一次。
+    const usSelfWritten = new Set<string>();
+    let usAppliedHash: string | null = null;
     const usParseHash = () => {
       const hash = window.location.hash || '';
       const qi = hash.indexOf('?');
@@ -1633,9 +1642,12 @@ export function installBundleGlobals(): void {
         const prev = window.location.hash;
         if (next === prev) return;
         if (replace) {
-          try { history.replaceState(null, '', next); } catch (err) { window.location.hash = next; }
+          // replaceState 不产生 hashchange —— 无须登记回显（登记反而成为永不消费的悬账）。
+          try { history.replaceState(null, '', next); }
+          catch (err) { window.location.hash = next; usSelfWritten.add(window.location.hash || ''); }
         } else {
           window.location.hash = next;
+          usSelfWritten.add(window.location.hash || '');
         }
         const state = usStateOf(merged);
         usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
@@ -1644,6 +1656,7 @@ export function installBundleGlobals(): void {
         const s: any = getWindowScope();
         if (s && s.isDetailMode) return;
         window.location.hash = usComposeHash({});
+        usSelfWritten.add(window.location.hash || '');
       },
       onChange: function (fn: any) {
         usListeners.push(fn);
@@ -1655,6 +1668,40 @@ export function installBundleGlobals(): void {
         };
       }
     };
+
+    // ── M4-A：URL→状态 的触发面（旧版 url-state-service.js:54 被主动移除的监听在此补回）──
+    // 旧实现把所有触发面寄托于 Angular `$locationChangeSuccess`（hash 模式下 Angular 内部
+    // 即监听 hashchange），并在该行显式注释「Removed popstate and hashchange listeners」。
+    // 去 Angular 后无人接管 → 地址栏回退/前进只动 hash、不改任何应用状态（M4 缺陷本体）。
+    // 此处把面补回：hash 变化 → 解析 → 分发给 onChange 订阅者。
+    //
+    // 防回环三重（a/b 在本服务内，c 在消费端）：
+    //  a) 自写回显抑制：命中 usSelfWritten 即认领并丢弃——否则 setState 写 hash →
+    //     hashchange → 又被当成一次「用户导航」回灌，形成 URL←状态 → URL→状态 自激。
+    //  b) 同 hash 去重：popstate 与 hashchange 双投递只应用一次。
+    //  c) 消费端一律走 open*(…, ignoreHistory=true)：应用路径不产生新的 URL←状态 写入。
+    const usDispatchNavigation = () => {
+      const hash = window.location.hash || '';
+      if (usSelfWritten.has(hash)) {
+        // (a) 认领自写回显。**同时记为已应用**：同一轮里若连写两次，会留下两个排队事件，
+        // 而投递时 `location.hash` 已是最新值（事件不带载荷，处理时读的是当前值）——
+        // 只删不记的话第一个事件认领掉、第二个事件就会以同一个 hash 再分发一次。
+        // 记为已应用是准确的：该 hash 对应的状态早已由 setState 同步分发过。
+        usSelfWritten.delete(hash);
+        usAppliedHash = hash;
+        return;
+      }
+      if (hash === usAppliedHash) return;                                  // (b) 双投递去重
+      const s: any = getWindowScope();
+      if (s && s.isDetailMode) return; // 与 setState 同口径：detail 模式不改视图
+      usAppliedHash = hash;
+      const state = usStateOf(usParseHash());
+      usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
+    };
+    try {
+      window.addEventListener('popstate', usDispatchNavigation);
+      window.addEventListener('hashchange', usDispatchNavigation);
+    } catch (err) { /* 宿主无 window 事件面时不装 */ }
   }
 
   // c13（be2 退役）：eg/InfiniteGrid v3 UMD 懒执行已随 infinitegrid v4 renderer 交换移除——

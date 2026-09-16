@@ -14,9 +14,8 @@
 - **工作区**：`H:/dev/Eagle-Sec-development - 副本`，分支 `react-in-place`。
 - **执行方式**：Orca orchestration，Coordinator 不亲自写业务代码（合并/集成除外）。
   - **Worker 模型分档（D16，用户 2026-09-16 指示）**：同一波**第 1、2 个**用
-    `--agent claude --model deepseek-flash`；**第 3 个起**用 `--agent antigravity`
-    （**不传 `--model`**，其默认即 `Gemini 3.8 Flash (High)`）。antigravity 首次在某 worktree
-    启动需应答「工作区信任」（D18）。
+    `--agent claude --model deepseek-flash`；**第 3 个起**用 `--agent codex`（**默认配置**，
+    不传 `--model`/`--effort`）。
   - 编码 Worker：独立 worktree（`new-child`）；只读 Worker：`current` 亦可
   - 任何两个并行编码 Worker 不共享 worktree
   - **派单前必须把 `outputs/research-*.md` 复制进目标 worktree 的 `outputs/`**（D17）
@@ -227,7 +226,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | D13 | **`JsonRestServerStub.start()` 的失败通道由 rejected Promise 改为同步抛出** | 两个真实调用点（`bundleGlobals._startAPIServer` 的 try/catch + noop、`miscDomain` power-resume 的 try/catch + `electronLog.error`）**都只接得住同步抛错**；`Promise.reject` 两者都接不住 → unhandled rejection 被 CDP 记为 `Runtime.exceptionThrown`，把「能力缺口」淹没成未捕获异常。失败语义**未放宽**：`capabilityGap` 照旧登记缺口、成功回调照旧不触发、不退回修前那个「无条件 `Promise.resolve` 调 callback」的假成功。契约测试相应**加严**（1 → 3 条断言） |
 | D14 | **M2-2 的能力取舍裁决：`http`/`https` 与 `JsonRestServer` 保持显式失败；`archiver`/`fast-glob` 维持 no-op** | 三者均经消费者取证：`http`/`https` 唯一消费者 `urlEnlarger.#checkURLByEagle` 被 `isRunningInEagleApp` 门控且**无 try/catch**（贸然给真实实现会重新引入「抛点落在无保护表达式上」）；`JsonRestServer` 真实实现 `src/my_modules/json-rest-light` 首行即 `require('http')`，browser-connected 态确无该能力（41595 的 API 面由后端承担，见 `installBrowserFetchRewrite`）；`archiver` 仅见于**从不被加载**的 `src/app/js/plugin/index.js` 与渲染层 0 消费者的 `src/my_modules/zip-folder`，`fast-glob` 唯一消费者在独立后端进程。两者已登记进 `capabilities.gaps`，不是静默成功。**待证项：Electron 下 `nativeRequire('http')` 可能可用（`nodeIntegration: true`），两条接线均未做，是推测不是结论** |
 | D15 | **套件之外的测试等于长期未跑——两个孤儿测试已登记，且登记时立刻抓到一个真回归** | M4-R 审计发现 `preload-subscriptions.mjs`(F15) 与 `preview-entry-subscriptions.mjs`(F13-preview) **从未登记进任何套件**（只有本文件的手工运行记录）。登记前实测：前者 43/43 通过，**后者在主分支 12/12 全红**——`F04`(`257ebd1c`) 给 `preview-window/entry.tsx` 加了 `import { assertPreviewBootInstalled } from './boot'`，而该测试的隔离加载器只接受白名单依赖，报「禁止加载未隔离的依赖：./boot」。**因为文件不在套件里，此前每次全量回归都没覆盖到它**。修法（只加严）：imports 表补 `./boot` 受控替身 + **新增**断言 `order === ['boot','createRoot']`（把 F04 的顺序不变式变成可执行断言，负向自证过：移除该调用即 12 红）。两项并入 `REACT_SUITE`、`TEST_CLASSES(static)`、`REQUIRED_TESTS`；`REACT_SUITE` **77 → 79**。**教训：验收前必须先核对"仓库里的测试是否都进了套件"** |
-| D16 | **Worker 模型分档：同一波第 3 个起改用 `antigravity`（默认即 Gemini 3.8 Flash high）** | 用户 2026-09-16 指示。实测：**不能传 `--model`**（Orca 报 `Agent antigravity does not support launch-time model selection`），但该 agent **默认就是** `Gemini 3.8 Flash (High)`（启动横幅与右下角均确认）——不传模型恰好满足要求，无需回退。`turnStart` 对它是 `unsupported`，不能像 claude 那样用它判活性，**改读终端内容**。已记入项目记忆 `feedback-worker-model-tiering.md` |
+| D16 | **Worker 模型分档：同一波第 3 个起改用 `codex`（默认配置）** | 用户 2026-09-16 指示（**当前有效版本**）：第 1、2 个 `--agent claude --model deepseek-flash`；第 3 个起 `--agent codex`（**不传 `--model`/`--effort`**）。本机 `codex-cli 0.154.0`，Orca `account list` 报 `codex.systemDefault.hasAuth = true`（api-key）。**历史**：同日较早一版曾定为 antigravity 的 Gemini 3.8 Flash high——实测可用（不传 `--model`，默认即 `Gemini 3.8 Flash (High)`），但已被本次指示取代；其「工作区信任」坑见 D18。已记入项目记忆 `feedback-worker-model-tiering.md` |
 | D17 | **只读审计报告必须复制进编码 Worker 的 worktree** | `outputs/` 是**未跟踪**目录，`git worktree add` 不会带过去。M4-C 与 M4-B 都报告过「任务所述的 `outputs/research-m4-windows-scope-2026-09-16.md` 在工作树与 git 历史中均不存在」。**派单前必须 `cp outputs/research-*.md <worktree>/outputs/`**，否则 Worker 只能凭 spec 里的摘要干活。根治办法（待做）：把报告纳入 git 或改为随任务投递 |
 | D18 | **antigravity Worker 首次在某个 worktree 启动会卡在「工作区信任」提示** | 症状：`worker-start` 返回 `state: failed`、`lastError: "Agent startup blocked: agent-trust-workspace"`，**spec 尚未投递**。处置：读终端 → `orca terminal send --terminal <handle> --text "" --enter`（`Yes, I trust this folder` 默认选中）→ 再 `worker-start … --agent antigravity --retry-of <旧 dispatchId>`。未找到可预置的信任列表文件（`~/.gemini/antigravity*` 下只有 brain/logs） |
 

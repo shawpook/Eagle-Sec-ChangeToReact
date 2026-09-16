@@ -556,11 +556,29 @@ function CustomBranch() {
 let previewPluginWebView: any = null;
 let previewPluginWebViewInitialized = false;
 
-function PreviewPluginView({ item, url }: { item: any; url?: string }) {
+export function PreviewPluginView({ item, url }: { item: any; url?: string }) {
   const hostRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!item) return;
+
+    // M4-C：本分支的两处 setTimeout 都是「挂载期递延」，原实现无句柄、卸载后仍会触发：
+    //   (a) dom-ready 后 100ms 的 plugin-create/plugin-run —— 卸载后会对已销毁的 webview 调 send；
+    //   (b) 复用分支 50ms 的 setAttribute('src', url) —— 会盖掉下方 cleanup 刚清空的 src，
+    //       让一个已脱离文档的 webview 重新开始加载。
+    // 这里统一登记句柄，卸载时先取消再走原有的清空 src 语义（原 `$scope.$on('$destroy')`）。
+    const pendingTimeouts: any[] = [];
+    const defer = (fn: () => void, ms: number) => {
+      const handle: any = setTimeout(() => {
+        const index = pendingTimeouts.indexOf(handle);
+        if (index >= 0) pendingTimeouts.splice(index, 1);
+        fn();
+      }, ms);
+      pendingTimeouts.push(handle);
+    };
+    const cancelPending = () => {
+      while (pendingTimeouts.length > 0) clearTimeout(pendingTimeouts.pop());
+    };
 
     function init() {
       const preloadPath = req('url')
@@ -645,7 +663,7 @@ function PreviewPluginView({ item, url }: { item: any; url?: string }) {
                         `;
           wv.executeJavaScript(script);
         } catch (err) {}
-        setTimeout(() => {
+        defer(() => {
           wv.send('plugin-create', plugin);
           wv.send('plugin-run');
         }, 100);
@@ -659,12 +677,13 @@ function PreviewPluginView({ item, url }: { item: any; url?: string }) {
         hostRef.current.appendChild(previewPluginWebView);
       }
       previewPluginWebView.setAttribute('src', '');
-      setTimeout(() => {
+      defer(() => {
         previewPluginWebView?.setAttribute('src', url);
       }, 50);
     }
 
     return () => {
+      cancelPending();
       // 原 scope.$on('$destroy')：src 清空
       previewPluginWebView?.setAttribute('src', '');
     };
@@ -673,14 +692,39 @@ function PreviewPluginView({ item, url }: { item: any; url?: string }) {
   return <plugin-view id="plugin-viewer" ref={hostRef as any} />;
 }
 
+/**
+ * M4-C：摘除注册在主进程 BrowserWindow 上的监听。
+ *
+ * `remote.getCurrentWindow()` 是主进程窗口的 EventEmitter 代理（`on`/`off`/`removeListener`/
+ * `listenerCount` 均为标准 EventEmitter 面）。优先 `removeListener`（Electron 各版本都在），
+ * 新桥只暴露 `off` 时按后者兜底。摘除失败只告警——清理路径不得把预览窗拖崩。
+ */
+export function detachWindowListener(win: any, event: string, handler: any): void {
+  if (!win || typeof handler !== 'function') return;
+  try {
+    if (typeof win.removeListener === 'function') win.removeListener(event, handler);
+    else if (typeof win.off === 'function') win.off(event, handler);
+  } catch (err) {
+    console.warn('[eagle-preview] 主进程监听摘除失败', err);
+  }
+}
+
 /* ---------------- web-view 指令移植（js/directives/webview.js 预览窗版，port 阶段5 WebViewBranch） ---------------- */
 
-function PreviewWebViewBranch({ item, urlSrc }: { item: any; urlSrc?: string }) {
+export function PreviewWebViewBranch({ item, urlSrc }: { item: any; urlSrc?: string }) {
   const hostRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const element = hostRef.current;
     if (!element || !item || !urlSrc) return;
+
+    // M4-C：本 effect 依赖含 item?.id —— 每次切项都会重新注册主进程侧监听。
+    // 原实现用匿名回调且**无 cleanup**，摘除面为零：主进程 BrowserWindow 上的
+    // 'leave-full-screen' 监听随切项次数线性增长，且该对象归主进程所有，
+    // 不随渲染层 webview 元素回收而释放。回调与窗口句柄提到 effect 作用域，
+    // 使 cleanup 能精确摘除**本轮**这一个监听（不误伤同窗口其它消费者）。
+    let win: any = null;
+    let onLeaveFullScreen: (() => void) | null = null;
 
     function init() {
       const isVideo = item.medium !== undefined;
@@ -697,10 +741,11 @@ function PreviewWebViewBranch({ item, urlSrc }: { item: any; urlSrc?: string }) 
       if (!webview) return;
 
       const remote = req('@electron/remote');
-      const win = remote?.getCurrentWindow?.();
-      win?.on('leave-full-screen', function () {
+      win = remote?.getCurrentWindow?.();
+      onLeaveFullScreen = function () {
         webview.executeJavaScript(`document.exitFullscreen();`);
-      });
+      };
+      win?.on('leave-full-screen', onLeaveFullScreen);
 
       webview.addEventListener('enter-html-full-screen', () => {
         if (process.platform === 'darwin') {
@@ -732,6 +777,15 @@ function PreviewWebViewBranch({ item, urlSrc }: { item: any; urlSrc?: string }) 
     }
 
     init();
+
+    return () => {
+      // 只摘主进程监听。上面的 webview 事件监听挂在元素自身上，而元素由
+      // `element.innerHTML = ...` 整体替换 / 随 host 卸载被丢弃——guest 随之销毁，
+      // 无需也无法逐个摘除（元素已不可达）。
+      if (onLeaveFullScreen) detachWindowListener(win, 'leave-full-screen', onLeaveFullScreen);
+      onLeaveFullScreen = null;
+      win = null;
+    };
   }, [item?.id, urlSrc]);
 
   return <web-view id={`webview-${item?.id}`} src={urlSrc} ref={hostRef as any} />;

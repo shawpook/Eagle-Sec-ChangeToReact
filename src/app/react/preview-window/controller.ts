@@ -89,6 +89,48 @@ const URL_TYPES: Record<string, boolean> = {};
   URL_TYPES[ext] = true;
 });
 
+/* ================= M4-C：持续性开销登记表 =================
+ * 只登记「预览窗关掉后仍在真实消耗」的句柄——跨进程轮询定时器、自持重排定时器、
+ * 主进程侧监听。计数不减少的普通 DOM 委托（一次性注册、随进程结束）不入表。
+ * 注册面是纯补清理：登记与释放都不改变任何运行期可观察行为。
+ */
+
+const previewDisposers: Array<() => void> = [];
+let previewDisposed = false;
+
+/** M4-C：外壳行为装配守卫（见 initShellBehaviors 首段）。声明须先于构造函数调用点。 */
+let shellBehaviorsInstalled = false;
+
+/** 登记一个随预览窗生命周期结束而释放的资源。已 dispose 时立即释放——迟到的注册不得再泄漏。 */
+function registerPreviewDisposable(release: () => void): void {
+  if (previewDisposed) {
+    release();
+    return;
+  }
+  previewDisposers.push(release);
+}
+
+/**
+ * 预览窗 dispose：释放全部已登记资源，幂等。
+ *
+ * 驱动点（两条独立路径，任一到达即可）：
+ *   1. 渲染层 `window` 的 `beforeunload`——关窗时浏览器保证触发；
+ *   2. `scope.dispose`——供 CDP/闭环测试与主进程侧显式调用。
+ * 任一释放函数抛错都不阻断其余释放（单项失败不得让整批泄漏）。
+ */
+export function disposePreviewController(): void {
+  if (previewDisposed) return;
+  previewDisposed = true;
+  while (previewDisposers.length > 0) {
+    const release = previewDisposers.pop();
+    try {
+      release?.();
+    } catch (err) {
+      console.warn('[eagle-preview] dispose 释放失败', err);
+    }
+  }
+}
+
 /* ================= videojs SeekBar 覆写（41-79 逐字） ================= */
 
 (function initVideoJsOverrides() {
@@ -1659,6 +1701,9 @@ scope.gifViewer = {
       },
     });
 
+    // M4-C：先释放上一轮句柄再建新的。原实现只在 onProgress 里 clear——若 onFinished
+    // 连续到达（无中间进度回调），旧定时器句柄被覆盖后即无从取消，成为持续性开销。
+    clearInterval(scope.gifUpadteInterval);
     scope.gifUpadteInterval = setInterval(function () {
       try {
         let c = scope.gifPlayer.get_current_frame();
@@ -1989,6 +2034,9 @@ function runInitSequence(params: any) {
 // entry.tsx 的 'init' 监听经 applyController(s => s.runInitSequence(params)) 调用（单一注册点）
 scope.runInitSequence = runInitSequence;
 
+// M4-C：预览窗 dispose 入口（释放跨进程轮询/自持定时器/主进程监听）。幂等。
+scope.dispose = disposePreviewController;
+
 /* ---- 构造期（417-579 逐字） ---- */
 
 (function constructor() {
@@ -2051,12 +2099,26 @@ scope.runInitSequence = runInitSequence;
     });
   }
 
+  // M4-C：gif 播放进度轮询句柄挂在 scope 上反复覆盖 → 登记一次「读实时值」的释放函数。
+  registerPreviewDisposable(() => clearInterval(scope.gifUpadteInterval));
+
+  // M4-C：关窗释放。beforeunload 是渲染层关窗保证触发的事件（不设 returnValue，不拦截关闭）；
+  // scope.dispose 供 CDP/闭环测试与主进程侧显式驱动。
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('beforeunload', disposePreviewController);
+  }
+
   initShellBehaviors();
 })();
 
 /* ---- 壳级行为（660-819 逐字：拖拽模式/窗口控制/hide-toolbar/gif 工具列委托） ---- */
 
 function initShellBehaviors() {
+  // M4-C：外壳行为只装配一次。重复进入（双 init/热重载）不得叠加跨进程轮询与全局委托——
+  // 原实现无守卫，第二次进入会再建一个 500ms 轮询定时器且旧句柄丢失。
+  if (shellBehaviorsInstalled) return;
+  shellBehaviorsInstalled = true;
+
   // 持压著 Shift 直接拖拽图片窗口位置
   let isDragMode = false;
   dom(window).on('keydown.toggleDragMode', function (event: any) {
@@ -2171,8 +2233,14 @@ function initShellBehaviors() {
       lastPoint.y = currentPoint.y;
     } catch (err) {}
   }, 500);
+  // M4-C：本定时器是**跨进程**持续性开销——每 500ms 一次同步 IPC（remote.screen +
+  // getBounds）；主进程侧窗口以 backgroundThrottling:false 创建，后台不被节流。
+  // 关窗/dispose 后必须停止轮询，否则句柄丢失、定时器无从取消。
+  registerPreviewDisposable(() => clearInterval(cursorInterval));
 
   let autoHideToolbarTimeout: any;
+  // 同一句柄反复重排：登记一次读实时值的释放函数，避免每次重排都往登记表里塞一条。
+  registerPreviewDisposable(() => clearTimeout(autoHideToolbarTimeout));
   dom(window).on('blur', function () {
     clearTimeout(autoHideToolbarTimeout);
     dom('body').addClass('hide-toolbar');

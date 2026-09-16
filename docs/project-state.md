@@ -214,6 +214,10 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W37** | task_30c0a7fb77c4 | ctx_fe6d73d44011 | **M2-6 `desktopCapability.ts` 类型化 + 清 `ng-click` 死声明** | ✅ **已交付核验并集成(`f761c440`)**；`待撤销 4 → 3` |
 | **W38** | task_79c25c10868d | ctx_e53afa53c372 | **M4-E `detailHooks` jQuery 哑雷 + F11 晚注册 + 死声明** | ✅ **已交付核验并集成(`242e5618`)**；F11 探针坐实缺陷真实存在 |
 | **W39** | task_3af87fd55102 | ctx_a8c14395e5cd | **M5-2 非默认端口生产验收 + 等就绪再开窗** | ✅ **已交付核验并集成(`c987dfef`)**；`PRODUCTION_RUNTIME_PORTS_OK`（真实 Electron） |
+| **W40** | task_5d997ffff22d | ctx_e13631998354 | **M6-2 插件根统一到仓库内 `plugins/` + SDK 顺序与回调派发（F19）** | 🔄 进行中（worktree `m6-plugin-root`，claude/deepseek-flash） |
+| **W41** | task_8d1331bb9419 | ctx_6653e3718049 | **M7-2 tab-bar 退役 + 旧宿主入口隔离归档（F02/F20）** | 🔄 进行中（worktree `m7-tabbar`，claude/deepseek-flash） |
+| **W42** | task_984014a701ea | ctx_16e2a6cd099e | **F23 产物门禁加固（入口/生成资源缺失无条件失败）** | 🔄 进行中（worktree `f23-gate`，**codex**） |
+| **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | 🔄 进行中（worktree `m2-browser-runtime`，**codex**） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。

@@ -21,6 +21,12 @@
  *   EAGLE_ISOLATION_NEGATIVE=missing-asset node tests/isolated-deployment.mjs
  *       删掉隔离根里一个已登记的构建产物 ⇒ 启动/加载必须响亮失败，而不是静默降级。
  *
+ * M8-6（用户裁决 D34：固化部署根布局，零产品代码改动）：把上一轮只「打印登记」的 RUNTIME_ROOT_GAPS
+ * 升级成**会失败**的断言——部署根必须是 {backend, electron, src} 三段，src/ 必须**就是**发布清单的产出
+ * （判据见 assertDeploymentLayout），四处耦合点必须逐条在部署根内解析到存在的 file/dir。
+ * 契约文档：docs/deployment-layout.md。放在「构建隔离根」之后、「负向自证 A」之前：
+ * 布局不成立时立刻判红，且不必拖起 Electron 才失败。
+ *
  * 用法：npm run build && node tests/isolated-deployment.mjs
  */
 import assert from 'node:assert/strict';
@@ -30,6 +36,13 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { connect, delay, freePort, stop, waitFor } from './react-cdp-harness.mjs';
+// 部署根 `src/` 段必须来自发布清单的产出——判据直接取自清单本身（M8-6），
+// 不在这里另写一份名单，避免与 frontend/publish-asset-manifest.mjs 脱钩。
+import {
+  PUBLISH_ASSET_MANIFEST,
+  PUBLISH_OUT_DIR,
+  SRC_NODE_MODULE_PACKAGES,
+} from '../frontend/publish-asset-manifest.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distRoot = path.join(projectRoot, 'dist', 'frontend');
@@ -123,28 +136,89 @@ const DEPLOYMENT_TREE = [
   },
 ];
 
-// 已知的「解析根不一致」缺口：产品代码按 projectRoot/src 解析运行时资源。本批不改产品代码，
-// 只如实登记并由门禁把隔离根的 src 收敛到登记发布树；未登记的源工作区文件一律不得出现。
+// ---------------------------------------------------------------------------
+// 已知的「解析根不一致」耦合点：产品代码按 projectRoot/src（以及 preload 的 __dirname/../src）
+// 解析运行时资源，而发布清单的落点是 dist/frontend/src。
+//
+// M8-6（用户裁决 D34）：本批**不改产品代码**，改为**固化部署根布局**——只要部署根是
+// {backend, electron, src} 三段、且 src/ 就是发布树，这四处就自然解析到发布树。
+//
+// 因此本表从「打印登记」升级成**会失败的断言**：每条给出解析函数与期望类型，
+// 由 assertDeploymentLayout() 逐条断到「在部署根内解析到存在的 file/dir」。
+// 未登记在案的解析失败一律判红（硬约束：登记项必须能失败）。
+// 契约文档：docs/deployment-layout.md。
+// ---------------------------------------------------------------------------
 const RUNTIME_ROOT_GAPS = [
   {
-    where: 'electron/preload.cjs:15',
+    id: 'preload-format-extension',
+    where: 'electron/preload.cjs:14-16（锚点 :15）',
     detail: "path.join(__dirname, '..', 'src', 'app', 'js', 'plugin', 'api-format-extension.js')",
-    why: '格式插件 webview 的唯一磁盘 preload 来源',
+    why: '格式插件 webview 的唯一磁盘 preload 来源（消费者 preload.cjs:160/165-166，缺失静默降级）',
+    // 锚点：preload 模块作用域内 __dirname = <部署根>/electron ⇒ '..' = 部署根
+    resolve: (root) => path.join(root, 'src', 'app', 'js', 'plugin', 'api-format-extension.js'),
+    expect: 'file',
   },
   {
+    id: 'library-default-icon',
     where: 'backend/src/server.js:1489 / 2483',
     detail: "path.join(projectRoot, 'src/app/collect-window/assets/images/base/icons/default-library-icon.png')",
-    why: '/api/library/icon 与 /api/v2/library/icon 的图标文件',
+    why: '/api/library/icon 与 /api/v2/library/icon 的图标文件（缺失回落 404）',
+    resolve: (root) => path.join(
+      root, 'src', 'app', 'collect-window', 'assets', 'images', 'base', 'icons', 'default-library-icon.png',
+    ),
+    expect: 'file',
   },
   {
+    id: 'thumbnail-resolve-roots',
     where: 'backend/src/server.js:3264-3267',
-    detail: "resolveThumbnailPath 的 roots 含 path.join(projectRoot, 'src')",
-    why: '虚拟路径 /src/... 的缩略图解析根',
+    detail: "resolveThumbnailPath 的 roots = [projectRoot/frontend/public, projectRoot/src]",
+    why: '虚拟路径 /mock-library/... 与 /src/... 的缩略图解析根（命中条件见 server.js:3272-3275）',
+    resolve: (root) => path.join(root, 'src'),
+    expect: 'dir',
+    also: [
+      {
+        label: 'roots[0] = path.join(projectRoot, "frontend/public")',
+        resolve: (root) => path.join(root, 'frontend', 'public'),
+        expect: 'dir',
+      },
+    ],
   },
   {
+    id: 'library-store-src-mapping',
     where: 'backend/src/library-store.js:110',
     detail: "resolveLibraryPath 把 '/src/...' 映射到 projectRoot/src/...",
     why: '库路径的 /src/ 虚拟前缀',
+    resolve: (root) => path.join(root, 'src'),
+    expect: 'dir',
+    also: [
+      {
+        label: "resolveLibraryPath('/src/package.json')",
+        resolve: (root) => path.join(root, 'src', 'package.json'),
+        expect: 'file',
+      },
+      {
+        label: "resolveLibraryPath('/src/node_modules/compare-versions/package.json')",
+        resolve: (root) => path.join(root, 'src', 'node_modules', 'compare-versions', 'package.json'),
+        expect: 'file',
+      },
+    ],
+  },
+];
+
+/** 运行时资源解析面：部署根必须有的三段（其余条目是「跑起来所必需」，见 DEPLOYMENT_TREE）。 */
+const DEPLOYMENT_ROOT_SEGMENTS = ['backend', 'electron', 'src'];
+
+// ---------------------------------------------------------------------------
+// 运行期会在「发布树」里做**存在性探测**的哨兵路径。
+//
+// 这类探测未命中是**预期语义**（探测本身用 404 表达结果），不是布局回归；登记在案，
+// 其余任何「部署根 src 下的读取未命中」一律判红——不然布局被破坏时会静默变绿。
+// ---------------------------------------------------------------------------
+const DEPLOY_SRC_EXISTENCE_SENTINELS = [
+  {
+    relative: path.join('src', '__production_ready__'),
+    where: 'scripts/start-production.mjs:108',
+    why: '健康检查用 /file/__production_ready__ 探缩略图服务是否就绪；服务以 404 表达「就绪但无此文件」，该 404 就是判据本身。',
   },
 ];
 
@@ -297,6 +371,118 @@ function copyTree(from, to) {
   return count;
 }
 
+/** 部署根布局的静态断言（构建后、启动前）——契约见 docs/deployment-layout.md。 */
+function assertDeploymentLayout(root) {
+  const describe = (absolute) => path.relative(root, absolute) || '.';
+  const typeOf = (absolute) => {
+    try {
+      const stat = fs.statSync(absolute);
+      if (stat.isFile()) return 'file';
+      if (stat.isDirectory()) return 'dir';
+      return 'other';
+    } catch { return 'missing'; }
+  };
+
+  // ---- A) 三段结构：{backend, electron, src} 必须存在，且在部署清单里被显式声明为 kind=tree。
+  for (const segment of DEPLOYMENT_ROOT_SEGMENTS) {
+    const absolute = path.join(root, segment);
+    assert.equal(typeOf(absolute), 'dir', `部署根缺少 ${segment}/ 段：${absolute}`);
+    const declared = DEPLOYMENT_TREE.find((entry) => entry.to === segment);
+    assert.ok(declared, `部署清单必须显式声明 ${segment}/ 段（DEPLOYMENT_TREE 里 to=${segment}）`);
+    assert.equal(declared.kind, 'tree', `${segment}/ 段必须以 kind=tree 落盘，实际 ${declared.kind}`);
+  }
+
+  // ---- B) src/ 段来自发布清单的产出（三批判据）。
+  const deploySrc = path.join(root, 'src');
+  const publishedSrc = path.join(root, PUBLISH_OUT_DIR, 'src');
+  const srcEntry = DEPLOYMENT_TREE.find((entry) => entry.to === 'src');
+  assert.equal(
+    srcEntry.from.split(path.sep).join('/'),
+    `${PUBLISH_OUT_DIR}/src`,
+    `src/ 段的复制源必须是 ${PUBLISH_OUT_DIR}/src（发布清单产出），实际 ${srcEntry.from}`,
+  );
+  assert.equal(typeOf(publishedSrc), 'dir', `发布树不存在：${publishedSrc}（先运行 npm run build，D12）`);
+
+  // 判据 (i)：清单每条 to 都落在 src/ 下，且在部署根内存在、类型与 kind 一致。
+  // 因为 <部署根>/src ≡ <部署根>/dist/frontend/src，清单的 to 直接就是部署根内的相对路径。
+  for (const [index, entry] of PUBLISH_ASSET_MANIFEST.entries()) {
+    assert.ok(
+      entry.to === 'src' || entry.to.startsWith('src/'),
+      `发布清单[${index}] 的落点不在 src/ 下，部署根的三段结构不成立：${entry.to}`,
+    );
+    const target = path.join(root, entry.to);
+    const actual = typeOf(target);
+    const expected = entry.kind === 'file' ? 'file' : 'dir';
+    assert.equal(actual, expected, `部署根 src 段缺少发布清单落点 ${entry.to}（期望 ${expected}，实际 ${actual}）`);
+  }
+
+  // 判据 (ii)：部署根 src/ 与发布树是**同一棵树**——相对路径集合 + 逐文件大小都必须相等。
+  // 读不进源工作区只是下限；这条保证「耦合点读到的就是发布清单产出的那份」。
+  const walk = (treeRoot) => {
+    const files = new Map();
+    const pending = [''];
+    while (pending.length) {
+      const relative = pending.pop();
+      const absolute = relative ? path.join(treeRoot, relative) : treeRoot;
+      for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) {
+        const childRelative = relative ? path.join(relative, entry.name) : entry.name;
+        if (entry.isDirectory()) pending.push(childRelative);
+        else if (entry.isFile()) files.set(childRelative, fs.statSync(path.join(treeRoot, childRelative)).size);
+      }
+    }
+    return files;
+  };
+  const deployed = walk(deploySrc);
+  const published = walk(publishedSrc);
+  const onlyDeployed = [...deployed.keys()].filter((key) => !published.has(key)).sort();
+  const onlyPublished = [...published.keys()].filter((key) => !deployed.has(key)).sort();
+  assert.deepEqual(onlyDeployed.slice(0, 10), [], `部署根 src/ 出现发布树里没有的文件（前 10 条）`);
+  assert.deepEqual(onlyPublished.slice(0, 10), [], `发布树里有文件没有落到部署根 src/（前 10 条）`);
+  const sizeMismatch = [...deployed.keys()]
+    .filter((key) => published.has(key) && deployed.get(key) !== published.get(key))
+    .sort()
+    .map((key) => `${key} (deployed ${deployed.get(key)} != published ${published.get(key)})`);
+  assert.deepEqual(sizeMismatch.slice(0, 10), [], `部署根 src/ 与发布树的同名文件大小不一致（前 10 条）`);
+
+  // 判据 (iii) 判别性证据：发布树是被清单裁剪过的，不是源工作区 src/ 的复制品。
+  // 源工作区 src/node_modules 是整棵 npm 树；发布树这里只允许有清单登记的裸模块包。
+  const deployedBareModules = fs.readdirSync(path.join(deploySrc, 'node_modules'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  assert.deepEqual(
+    deployedBareModules,
+    [...SRC_NODE_MODULE_PACKAGES].sort(),
+    '部署根 src/node_modules 必须恰好是发布清单登记的裸模块包（源工作区的整棵 npm 树若出现在这里，说明 src/ 段被指回了源目录）',
+  );
+
+  // ---- C) 四处已知耦合点：逐条在部署根内解析到存在的 file/dir。
+  const couplingPoints = [];
+  for (const gap of RUNTIME_ROOT_GAPS) {
+    const targets = [{ label: gap.detail, resolve: gap.resolve, expect: gap.expect }, ...(gap.also || [])];
+    for (const target of targets) {
+      const absolute = target.resolve(root);
+      const actual = typeOf(absolute);
+      assert.equal(
+        actual,
+        target.expect,
+        `耦合点 ${gap.where} 在部署根内解析不到存在的 ${target.expect}：${absolute}（实际 ${actual}）`,
+      );
+      couplingPoints.push({ id: gap.id, target: describe(absolute), expect: target.expect });
+    }
+  }
+
+  // ---- D) 代表路径的内容契约：④ 的 /src/package.json 是运行期读版本元数据的来源。
+  const publishedPackageJson = JSON.parse(fs.readFileSync(path.join(deploySrc, 'package.json'), 'utf8'));
+  assert.equal(
+    typeof publishedPackageJson.version,
+    'string',
+    '部署根 src/package.json 必须带 version——运行期 8+ 处 req(appRoot.path + "/package.json") 读的就是它',
+  );
+
+  return { couplingPoints, files: published.size, publishedPackageVersion: publishedPackageJson.version };
+}
+
 function spawnIn(cwd, command, args, env) {
   const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '';
@@ -328,6 +514,8 @@ const deployRoot = path.join(tempRoot, 'deploy');
 const harnessDir = path.join(tempRoot, 'harness');
 let page = null;
 let stack = null;
+/** assertDeploymentLayout() 的结论，跑完汇总进 ISOLATED_DEPLOYMENT_OK。 */
+let layout = null;
 // 本测试要在一次栈生命周期里连着导航四个页面并回溯每轮的请求，而 harness 的 `events`
 // 数组滚动封顶 1000 条、超限时从**头部**裁剪，绝对下标会被打乱且不可恢复。
 // 这里自挂一层只增不删的收集器（原 handler 照旧串下去），只按「本轮起点下标」切片。
@@ -353,6 +541,16 @@ try {
   for (const entry of copied) log(`COPY ${entry.to} (${entry.files} file(s)) <- ${entry.from}`);
   assert.ok(!fs.existsSync(path.join(deployRoot, 'tests')), '隔离根不得含 tests');
   log(`PASS isolated root built at ${deployRoot}`);
+
+  // 1b) 部署根布局的静态断言（M8-6 / D34）：契约见 docs/deployment-layout.md。
+  // 放在负向自证 A 之前——布局不成立时立刻判红，且不必拖起 Electron 才失败。
+  layout = assertDeploymentLayout(deployRoot);
+  log(`PASS deployment layout {${DEPLOYMENT_ROOT_SEGMENTS.join(',')}}; src == ${PUBLISH_OUT_DIR}/src `
+    + `(${layout.files} file(s), version ${layout.publishedPackageVersion})`);
+  for (const gap of RUNTIME_ROOT_GAPS) {
+    const resolved = layout.couplingPoints.filter((point) => point.id === gap.id);
+    for (const point of resolved) log(`PASS coupling ${gap.where} -> ${point.target} (${point.expect})`);
+  }
 
   // 2) 负向自证 A：删掉一个**已登记**的构建产物，启动/加载必须响亮失败。
   if (negativeMode === 'missing-asset') {
@@ -634,6 +832,15 @@ try {
     .map((record) => `${record.kind} <- ${record.path}`);
   const deploySrcReads = records.filter((record) => record.bucket === 'deploy-src').map((record) => record.path);
   const deploySrcMissing = deploySrcReads.filter((candidate) => !fs.existsSync(candidate));
+  const sentinelHits = [];
+  const unregisteredDeploySrcMisses = deploySrcMissing.filter((candidate) => {
+    const resolved = path.resolve(candidate);
+    const sentinel = DEPLOY_SRC_EXISTENCE_SENTINELS
+      .find((entry) => path.resolve(deployRoot, entry.relative) === resolved);
+    if (!sentinel) return true;
+    sentinelHits.push({ candidate, sentinel });
+    return false;
+  });
 
   log(`PROBE hellos=${hellos.length} records=${records.length}`);
   for (const hello of hellos) log(`PROBE process pid=${hello.pid} electron=${hello.electron} node=${hello.node} argv=${JSON.stringify(hello.argv)}`);
@@ -642,10 +849,37 @@ try {
   for (const candidate of new Set(deploySrcReads)) log(`PROBE deploy/src <- ${candidate}${fs.existsSync(candidate) ? '' : ' (不存在，仅是存在性探测)'}`);
   assert.deepEqual(violations, [], `部署副本读取了源工作区：${JSON.stringify(violations.slice(0, 20))}`);
 
+  // 发布树下的读取未命中：只放行登记在案的存在性探测哨兵，其余判红。
+  // （「未命中」既是探测的正常结果、也是布局被破坏时的表现形式，所以不能只打印。）
+  for (const hit of sentinelHits) {
+    log(`SENTINEL deploy/src existence probe missed :: ${path.relative(deployRoot, hit.candidate)} @ ${hit.sentinel.where}`);
+    log(`SENTINEL why: ${hit.sentinel.why}`);
+  }
+  assert.deepEqual(
+    unregisteredDeploySrcMisses,
+    [],
+    `运行期在部署根 src/ 下出现未登记的读取未命中（布局可能已被破坏）：${JSON.stringify(unregisteredDeploySrcMisses.slice(0, 10))}`,
+  );
+
+  // 口子说清楚：四处耦合点在本轮的**运行期**覆盖是有限的——四个页面只走 HTTP，
+  // preload.cjs:160 的磁盘存在性判断只在格式插件 webview 建立时执行，/api/library/icon
+  // 与本轮导航也不会命中 ③④ 的解析。所以这四条的判定依据是 §1b 的**静态**断言；
+  // 运行期只保证「实际发生过的、落在发布树下的读，没有一条未命中」。
+  const resolvedCouplingPoints = layout ? layout.couplingPoints.length : 0;
+  log(`PROBE coupling runtime coverage: 静态断言 ${resolvedCouplingPoints} 条全部解析成功；`
+    + `运行期 deploy/src 实测读取 ${new Set(deploySrcReads).size} 条（其中未命中哨兵 ${sentinelHits.length} 条）`);
+
   log(`PASS no reads under source workspace ${JSON.stringify([projectRoot, mainCheckoutRoot])} / tests / src/node_modules`);
   log(`ISOLATED_DEPLOYMENT_OK ${JSON.stringify({
     deployRoot,
     processes: hellos.map((hello) => hello.pid),
+    layout: {
+      segments: DEPLOYMENT_ROOT_SEGMENTS,
+      srcSource: `${PUBLISH_OUT_DIR}/src`,
+      srcFiles: layout ? layout.files : null,
+      srcPackageVersion: layout ? layout.publishedPackageVersion : null,
+      couplingPoints: layout ? layout.couplingPoints.map((point) => `${point.id}:${point.target}`) : null,
+    },
     deploySrcReads: new Set(deploySrcReads).size,
     deploySrcMissing,
     pages: observed.map((entry) => entry.label),

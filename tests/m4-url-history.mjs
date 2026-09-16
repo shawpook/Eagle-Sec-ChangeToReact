@@ -217,8 +217,10 @@ test('M4-A / 守卫：UrlStateService 缺席或抛错时不得抛穿、不得误
 
 /**
  * 造一个「会抛事件」的 window 桩：
- *  - `location.hash` 赋值 = 真实导航 → **排队** hashchange（不立即投递，与浏览器一致：
- *    hashchange/popstate 都在导航之后异步派发）。
+ *  - `location.hash` 赋值 = 真实导航 → **同步派发 popstate** + **排队** hashchange。
+ *    两条投递的时序都是实测所得（Electron 渲染进程里，`location.hash = next` 会在赋值
+ *    语句内同步派发 popstate，而 hashchange 异步到达）——桩必须照此建模，否则
+ *    「登记晚于 popstate」这类时序缺陷在单测里看不见（continuous-grid-scroll 的漏网正源于此）。
  *  - `location.__jump(v)` = 模拟浏览器已完成跳转（回退/前进），只改值不排队。
  *  - `flush()` 投递队列中的全部事件。
  */
@@ -237,7 +239,8 @@ function makeBrowserStub() {
       const next = value.startsWith('#') ? value : `#${value}`;
       if (next === hash) return; // 同值不触发（与浏览器一致）
       hash = next;
-      queued.push('hashchange');
+      fire('popstate');          // 同步（实测）
+      queued.push('hashchange'); // 异步（实测）
     },
     __jump(value) { hash = value.startsWith('#') ? value : `#${value}`; },
   };
@@ -412,8 +415,45 @@ test('M4-A / 触发面：getState 的解析口径不变（view 缺省 all、字�
 /* ==================== 丙：libraryDomain 的 URL→状态 映射（四条语义） ==================== */
 
 /**
- * 抽 `applyUrlStateView` / `applyUrlStateNavigation` 两个**真实函数**，配桩执行。
- * 记录每个 open 系 / filterWithColor 收到的一次调用实参，并按调用序给出流水线。
+ * 抽 `applyUrlStateView` / `applyUrlStateNavigation` 两个**真实函数**的源码文本。
+ * 丙（纯映射语义）与戊（与真实 UrlStateService 接线后的回灌语义）共用同一抽取面。
+ */
+function extractUrlStateMapperSource() {
+  const source = stripCR(read(LIBRARY_DOMAIN));
+  return {
+    source,
+    fnView: extractFunction(source, 'function applyUrlStateView(urlState: any): boolean {', 'applyUrlStateView'),
+    fnNav: extractFunction(source, 'function applyUrlStateNavigation(urlState: any, isSelfWrite?: boolean): void {', 'applyUrlStateNavigation'),
+  };
+}
+
+/** 把两个真实函数装进 vm 配桩执行；open 系 / filterWithColor 的每次调用经 `record` 上报。 */
+function buildUrlStateApi({ record, useMiscRawState, useItemState }) {
+  const { fnView, fnNav } = extractUrlStateMapperSource();
+
+  const wrappers = `
+    (function (machineryOpenUnfiled, machineryOpenUntagged, machineryOpenRandom, machineryOpenRecent,
+              machineryOpenCommunity, machineryOpenAllTags, machineryOpenTrash, machineryOpenAll,
+              openFolder, openSmartFolder, filterWithColor, useMiscRawState, useItemState) {
+      ${fnView}
+      ${fnNav}
+      return { applyUrlStateView, applyUrlStateNavigation };
+    })
+  `;
+
+  const factory = vm.runInNewContext(transpile(wrappers, LIBRARY_DOMAIN), { console }, { filename: `${LIBRARY_DOMAIN}#applyUrlState` });
+  return factory(
+    record('machineryOpenUnfiled'), record('machineryOpenUntagged'), record('machineryOpenRandom'),
+    record('machineryOpenRecent'), record('machineryOpenCommunity'), record('machineryOpenAllTags'),
+    record('machineryOpenTrash'), record('machineryOpenAll'),
+    record('openFolder'), record('openSmartFolder'), record('filterWithColor'),
+    useMiscRawState, useItemState
+  );
+}
+
+/**
+ * 丙的装载：抽真实函数 + 桩执行，记录每个 open 系 / filterWithColor 收到的一次调用实参，
+ * 并按调用序给出流水线。**不含 UrlStateService 接线**（那由戊覆盖）。
  */
 function loadUrlStateMapper() {
   const calls = [];
@@ -433,29 +473,7 @@ function loadUrlStateMapper() {
     }),
   };
 
-  const source = stripCR(read(LIBRARY_DOMAIN));
-  const fnView = extractFunction(source, 'function applyUrlStateView(urlState: any): boolean {', 'applyUrlStateView');
-  const fnNav = extractFunction(source, 'function applyUrlStateNavigation(urlState: any): void {', 'applyUrlStateNavigation');
-
-  const wrappers = `
-    (function (machineryOpenUnfiled, machineryOpenUntagged, machineryOpenRandom, machineryOpenRecent,
-              machineryOpenCommunity, machineryOpenAllTags, machineryOpenTrash, machineryOpenAll,
-              openFolder, openSmartFolder, filterWithColor, useMiscRawState, useItemState) {
-      ${fnView}
-      ${fnNav}
-      return { applyUrlStateView, applyUrlStateNavigation };
-    })
-  `;
-
-  const factory = vm.runInNewContext(transpile(wrappers, LIBRARY_DOMAIN), { console }, { filename: `${LIBRARY_DOMAIN}#applyUrlState` });
-  const api = factory(
-    record('machineryOpenUnfiled'), record('machineryOpenUntagged'), record('machineryOpenRandom'),
-    record('machineryOpenRecent'), record('machineryOpenCommunity'), record('machineryOpenAllTags'),
-    record('machineryOpenTrash'), record('machineryOpenAll'),
-    record('openFolder'), record('openSmartFolder'), record('filterWithColor'),
-    useMiscRawState, useItemState
-  );
-
+  const api = buildUrlStateApi({ record, useMiscRawState, useItemState });
   return { api, calls, pageWrites, useMiscRawState };
 }
 
@@ -612,7 +630,7 @@ test('M4-A / 结构：订阅注册幂等（标记挂在服务对象上，重复�
   const service = {
     onChange(fn) { registered.push(fn); return () => {}; },
   };
-  const fnNav = extractFunction(source, 'function applyUrlStateNavigation(urlState: any): void {', 'applyUrlStateNavigation');
+  const fnNav = extractFunction(source, 'function applyUrlStateNavigation(urlState: any, isSelfWrite?: boolean): void {', 'applyUrlStateNavigation');
   const sandbox = {
     console,
     useMiscRawState: { getState: () => ({ UrlStateService: service }) },
@@ -635,4 +653,61 @@ test('M4-A / 结构：订阅注册幂等（标记挂在服务对象上，重复�
   // 服务缺席时不得抛穿。
   const absent = vm.runInNewContext(transpile(code, LIBRARY_DOMAIN), { console, useMiscRawState: { getState: () => ({}) } }, { filename: `${LIBRARY_DOMAIN}#subscribe2` });
   assert.doesNotThrow(() => absent({ getState: () => ({}) }));
+});
+
+/* ============ 戊：自写回灌不得二次派发（continuous-grid-scroll 回归判据） ============ */
+
+/**
+ * 把**真实的** UrlStateService（乙的浏览器桩）与**真实的** applyUrlStateNavigation（丙的抽取）
+ * 按 `libraryDomain.ts:688` 的运行时接线接起来：`service.onChange(applyUrlStateNavigation)`。
+ *
+ * 回归本体（continuous-grid-scroll 的 `first folder visit starts at the top`，4500 !== 0）：
+ * 前端内打开文件夹时 `openFolder` 会走到 `UrlStateService.setState(…)`（ignoreHistory 为假，
+ * folderCoreService.ts:833），而 setState 写完 hash 后**同步**分发给 onChange 订阅者
+ * （bundleGlobals.ts 的 `usListeners.slice().forEach`）。该分发是**自写回显**——应用状态已由
+ * 调用方落位，URL 是结果而非原因。若消费端把它当成一次「外部导航」回灌，就会立刻二次派发
+ * openFolder：第二参 ignoreHistory 为真、第三参 ignoreReload 缺席（即假）→ 落入
+ * folderCoreService.ts:851-854 的 `restoreScrollPosition() + reload()`，把**进入前视图**的
+ * 滚动位置（例如「全部」视图的 4500）带进刚打开的文件夹。
+ */
+function loadWiredNavigation() {
+  const { service, browser, scope } = loadUrlStateService();
+
+  const calls = [];
+  const record = (name) => (...args) => { calls.push({ name, args }); };
+  const useMiscRawState = { getState: () => ({ page: 1 }), setState: () => {} };
+  const useItemState = {
+    getState: () => ({
+      folderMappings: { 'f-1': { id: 'f-1', name: 'Alpha' } },
+      smartFolderMappings: { 's-1': { id: 's-1', name: 'Smart' } },
+    }),
+  };
+  const api = buildUrlStateApi({ record, useMiscRawState, useItemState });
+
+  // 与 libraryDomain.ts:688 同形：消费端挂在服务的 onChange 上。
+  service.onChange((state, meta) => api.applyUrlStateNavigation(state, meta));
+
+  return { service, browser, scope, calls };
+}
+
+test('M4-A 回归 / 自写回灌：前端内导航写 URL 不得二次派发视图（首次进文件夹须停在顶部）', () => {
+  const { service, browser, calls } = loadWiredNavigation();
+
+  // folderCoreService.ts:833 的真实写点：前端内打开文件夹（ignoreHistory 为假）→ 状态写进 URL。
+  service.setState({ view: 'folder', folder: 'f-1', smartfolder: null, tag: null, color: null, page: 1 });
+  browser.flush(); // 浏览器随后投递本次写入引发的 hashchange
+
+  assert.deepEqual(
+    calls, [],
+    '自写回灌必须被消费端忽略：二次 openFolder 会走 ignoreReload 为假的分支（restoreScrollPosition + reload），把进入前视图的滚动位置带进新文件夹'
+  );
+
+  // 空洞防护：证明该通道本身是通的——外部导航仍必须派发，否则上面的「没涨」不具判别力。
+  browser.navigate('#!/?view=recent');
+  assert.deepEqual(calls.map((c) => c.name), ['machineryOpenRecent'], '外部导航必须派发');
+
+  // 且回退到**文件夹**视图时确实派发 openFolder —— M4 的验收能力未被削弱。
+  browser.navigate('#!/?view=folder&folder=f-1');
+  assert.deepEqual(calls.map((c) => c.name), ['machineryOpenRecent', 'openFolder']);
+  assert.deepEqual(calls[1].args, [{ id: 'f-1', name: 'Alpha' }, true], '仍须以 (folder, ignoreHistory=true) 派发');
 });

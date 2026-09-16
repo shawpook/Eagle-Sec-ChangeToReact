@@ -1642,20 +1642,39 @@ export function installBundleGlobals(): void {
         const prev = window.location.hash;
         if (next === prev) return;
         if (replace) {
-          // replaceState 不产生 hashchange —— 无须登记回显（登记反而成为永不消费的悬账）。
+          // replaceState 不产生 hashchange/popstate —— 无须登记回显（登记反而成为永不消费的悬账）。
           try { history.replaceState(null, '', next); }
-          catch (err) { window.location.hash = next; usSelfWritten.add(window.location.hash || ''); }
+          catch (err) {
+            // 退化路径是**赋值**，与 else 分支同险：登记必须先于赋值（赋值会同步派发 popstate）。
+            usSelfWritten.add(next);
+            window.location.hash = next;
+            usSelfWritten.add(window.location.hash || '');
+          }
         } else {
+          // **登记必须先于赋值**：本宿主（Electron 渲染进程）里 `location.hash = next` 会在
+          // **赋值语句内同步派发 popstate**（实测时序：SET-BEFORE → DISPATCH(popstate) →
+          // SET-AFTER），异步到达的是 hashchange。若沿用「赋值后再登记」，popstate 处理时
+          // usSelfWritten 还是空的（known=[]）→ 自写被当成外部导航 → 消费端立刻二次派发
+          // open* → openFolder 走 ignoreReload 为假的分支（restoreScrollPosition + reload）
+          // → 把进入前视图的滚动位置带进新视图（continuous-grid-scroll 回归）。
+          usSelfWritten.add(next);
           window.location.hash = next;
+          // 赋值后 location.hash 可能被宿主规范化（编码等），把实际值一并登记，
+          // 使随后**异步**到达的 hashchange 也能被认领。
           usSelfWritten.add(window.location.hash || '');
         }
         const state = usStateOf(merged);
-        usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
+        // M4-A 回归修复：本次分发是**自写回显**（应用状态已由调用方落位，URL 是结果而非原因），
+        // 与随后到达的 hashchange 回显同源。第二参把来源标给订阅者：导航消费端必须忽略它，
+        // 否则前端内每次 open* 写 URL 都会立刻回灌一次 open*（见 libraryDomain 消费端的收口）。
+        usListeners.slice().forEach((fn) => { try { fn(state, true); } catch (err) { /* noop */ } });
       },
       clearState: function () {
         const s: any = getWindowScope();
         if (s && s.isDetailMode) return;
-        window.location.hash = usComposeHash({});
+        const next = usComposeHash({});
+        usSelfWritten.add(next); // 同上：登记先于赋值（赋值会同步派发 popstate）
+        window.location.hash = next;
         usSelfWritten.add(window.location.hash || '');
       },
       onChange: function (fn: any) {
@@ -1696,7 +1715,8 @@ export function installBundleGlobals(): void {
       if (s && s.isDetailMode) return; // 与 setState 同口径：detail 模式不改视图
       usAppliedHash = hash;
       const state = usStateOf(usParseHash());
-      usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
+      // 第二参 false：这是**外部导航**（浏览器后退/前进带来的 hash 变化），导航消费端应当应用它。
+      usListeners.slice().forEach((fn) => { try { fn(state, false); } catch (err) { /* noop */ } });
     };
     try {
       window.addEventListener('popstate', usDispatchNavigation);

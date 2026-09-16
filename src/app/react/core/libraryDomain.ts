@@ -660,7 +660,15 @@ export function takeoverLibraryDomain(): void {
       return hasUrlState;
     }
 
-    function applyUrlStateNavigation(urlState: any): void {
+    function applyUrlStateNavigation(urlState: any, isSelfWrite?: boolean): void {
+      // isSelfWrite：本次分发来自**应用自己刚把状态写进 URL** 之后的同步回显（地址栏是结果，
+      // 不是原因），不是一次外部导航。必须忽略——否则前端内每次 open* 都会被自己写出的 URL
+      // 立刻回灌一次 open*：openFolder 在 ignoreHistory 为假时写 URL（folderCoreService.ts:833），
+      // 回灌时第二参 ignoreHistory 为真而第三参 ignoreReload 缺席（即假）→ 落入
+      // folderCoreService.ts:851-854 的 `restoreScrollPosition() + reload()`，把**进入前视图**
+      // 的滚动位置带进刚打开的视图（continuous-grid-scroll「首次进文件夹须停在顶部」即此回归）。
+      // 外部导航（该参为 false / 未标）照常派发，M4 的 URL→状态 能力不受影响。
+      if (isSelfWrite) return;
       // page（页码语义）：folder 视图是唯一把 page 写进 URL 的写点
       // （folderCoreService.ts:833 `page: useMiscRawState.getState().page`），消费面是
       // `allData.slice(0, len * page)`（machineryInfra.ts:443-447 注释）。必须在**派发视图

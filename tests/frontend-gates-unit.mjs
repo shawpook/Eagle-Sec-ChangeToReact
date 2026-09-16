@@ -184,13 +184,34 @@ test('CLI --root 指向隔离目录，缺失必需入口退出 1', (t) => {
 });
 
 const records = (text, file = 'scope.ts') => scanTypeDirectives(text, file).map((record) => ({ ...record, file }));
-test('8 个 nocheck（包括 shim）都计入实际免检台账', () => {
-  assert.equal(NOCHECK_LEDGER.length, 8);
-  const found = NOCHECK_LEDGER.flatMap(({ file }) => records('// @ts-nocheck\nexport {};', file));
-  const audit = auditNoCheck(found);
-  assert.equal(audit.files.length, 8);
+
+/**
+ * 实扫 `src/` 下全部自有脚本，返回「文件头带**有效**整文件 @ts-nocheck」的真实记录。
+ * **不读台账**——期望值必须由源码本身得出，否则台账与源码可以一起漂移而无人察觉。
+ * 路径经 fileURLToPath 还原（`.pathname` 会把空格与非 ASCII 目录名百分号编码）。
+ */
+function scanSrcNoCheckRecords() {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const found = [];
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(?:[cm]?js|tsx?)$/.test(entry.name)) continue;
+      const file = path.relative(root, full).split(path.sep).join('/');
+      found.push(...records(fs.readFileSync(full, 'utf8'), file));
+    }
+  })(path.join(root, 'src'));
+  return found;
+}
+
+test('台账与源码里真实的整文件 nocheck 集合逐一对应（双向，均不得漂移）', () => {
+  // 期望值由真实扫描得出而非写死数字：台账多一行、少一行，或源码多一个、少一个整文件
+  // @ts-nocheck，都会让 unlisted / stale 至少一侧非空而变红。撤销免检时须同步删除台账条目。
+  const audit = auditNoCheck(scanSrcNoCheckRecords());
   assert.deepEqual(audit.unlisted, []);
   assert.deepEqual(audit.stale, []);
+  assert.deepEqual(audit.files, NOCHECK_LEDGER.map(({ file }) => file).sort());
 });
 
 test('超过 40 行的有效文件头 nocheck 仍被检测', () => {

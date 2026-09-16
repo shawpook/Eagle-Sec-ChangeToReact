@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * R2 环境层：窗口类判据 + 显式运行模式 + 原生桥探针。
  *
@@ -6,20 +5,102 @@
  * `nativeRequire` / `isElectronRuntime` / `nativeFs` / `nativePath` / `desktopApi`
  * 与三个扩展名集合逐字保留；新增的只有「显式运行模式」与「窗口类」两个**只读判据**，
  * 用于取代原先散落各处的 `!window.eagleDesktop` 判定。
+ *
+ * M2-3 类型化：本文件已撤销整文件 `// @ts-nocheck`。宿主装在 `window` 上的运行期扩展字段
+ * 一律经 {@link hostWindow} 的**具名窄面** {@link ShimHostWindow} 读取（`global/globals.d.ts`
+ * 只声明了其中一部分，且不属本批 ownership），本文件不新增 `any`、不放宽门禁。
  */
 
-// b1-9bz-E5-3：本窗 scope 面访问器——优先显式驱动面 window.__eagleDriver
-// （main.tsx 的 core/driverApi.ts 安装：数据 getter + 动作 + $evalAsync no-op），
-// 过渡期回落 window.$bodyScope（子窗/预览窗自有面）。E5-4 主窗别名退役后仍可工作。
-export function bodyScope() {
-  return window.__eagleDriver || window.$bodyScope || null;
+/**
+ * 宿主窗口上的**运行期扩展面**（由 `electron/preload.cjs`、`frontend/public/shims.js`
+ * 与测试 harness 装上）。
+ *
+ * 说明：这些字段在 `global/globals.d.ts` 里只声明了一部分（`$bodyScope` / `eagleDesktop`），
+ * 其余（`require` / `__eagleDriver` / `__EAGLE_SHIM_MODE` / `__EAGLE_BROWSER_CONNECTED` /
+ * `__mockWrittenFiles`）在全局声明里缺席。此处用**具名 interface** 声明本模块实际读写的字段，
+ * 并统一经 {@link hostWindow} 取用——不借助 `any` 传播。
+ */
+interface ShimHostWindow {
+  /** Electron 渲染层的裸 `require`（`moduleRegistry` 亦按同一全局取用）。 */
+  require?: (id: string) => unknown;
+  /** 跨边界驱动面（`core/driverApi.ts` 的 `installDriverApi()` 装配）。 */
+  __eagleDriver?: unknown;
+  /** 子窗/预览窗自有 scope 面（见 {@link bodyScope}）。 */
+  $bodyScope?: unknown;
+  /** 桌面桥（preload 暴露）。 */
+  eagleDesktop?: unknown;
+  /** 显式运行模式标记（测试夹具/启动器可强制；见 {@link resolveRuntimeMode}）。 */
+  __EAGLE_SHIM_MODE?: unknown;
+  /** 真后端探测结论（{@link probeRuntimeMode} 写入）。 */
+  __EAGLE_BROWSER_CONNECTED?: unknown;
+  /** 演示态内存写存储（见 {@link demoFileStore}）。 */
+  __mockWrittenFiles?: unknown;
 }
 
-export const nativeRequire = typeof window.require === 'function' ? window.require : null;
-export const isElectronRuntime =
+/** 宿主窗口视图（**纯类型窄化**，运行期即 `window` 本身，不做任何包装/代理）。 */
+function hostWindow(): ShimHostWindow {
+  return window as ShimHostWindow;
+}
+
+/**
+ * 本窗 scope 面。
+ *
+ * 运行期形状由**驱动面**（`core/driverApi.ts` 的 `__eagleDriver`）或**子窗自有控制器**
+ * （`preview-window/controller.ts`）供给，shim 层不持有其类型定义，故按**不透明面**处理：
+ * 成员读取结果一律为 `unknown`，由调用方自行窄化。
+ */
+export type ShimScopeFace = Record<string, unknown>;
+
+/** 真值即面——与修前 `window.__eagleDriver || window.$bodyScope || null` 的 `||` 链**逐字同义**。 */
+function truthyScopeFace(value: unknown): ShimScopeFace | null {
+  return value ? (value as ShimScopeFace) : null;
+}
+
+/**
+ * b1-9bz-E5-3：本窗 scope 面访问器——优先显式驱动面 `window.__eagleDriver`
+ * （main.tsx 的 `core/driverApi.ts` 安装：数据 getter + 动作 + `$evalAsync` no-op），
+ * 过渡期回落 `window.$bodyScope`（子窗/预览窗自有面）。E5-4 主窗别名退役后仍可工作。
+ *
+ * ── F01 取证结论（M2-3，2026-09-16）：**`$bodyScope` 后备保留，不删** ──
+ * 全仓取证（`grep -rn '\$bodyScope'`，2026-09-16）显示该后备**仍有活消费者**，删除即回归：
+ *  1. **测试 harness 写入方**：`tests/react-cdp-harness.mjs:230` 用 `Object.defineProperty`
+ *     把 `$bodyScope` 装成惰性访问器（Proxy → `__eagleScopeRegistry`）；同 harness 的探针面
+ *     `window.__eagleProbe` 与它同源。52 个既有套件经 `window.$bodyScope` 观测（见
+ *     `docs/plan-2026-09-15-full-workspace-legacy-audit.md:348`、F25）。
+ *  2. **子窗/预览窗写入方**：`src/app/react/preview-window/controller.ts:2394`
+ *     `window.$bodyScope = scope`（本窗 controllerScope；gif-viewer iframe 与 detailHooks 的既有通道）。
+ *  3. **演示态写入方**：`src/app/react/core/shim/demoSeed.ts:864` 为 font/text/gif viewer 页
+ *     造 `window.$bodyScope` mock 面。
+ *  4. **同为回落后备的兄弟路径**：`core/scopeFace.ts:78`、`core/lazyLoadManager.ts:407,489`、
+ *     `viewers/shared/parentChannel.ts:32`、`viewers/text-editor/entry.tsx:231,333`、
+ *     `frontend/public/vendor/eagle-match-rules.js:57` 都写着同一条
+ *     `__eagleDriver || $bodyScope` 链——只删本处不会减少任何契约，只会让本模块与它们不一致。
+ * **移除以何为先决条件**：任务书 M4 的验收项「不依赖 harness 补 `$bodyScope` 也能完成用户操作」
+ * 达成（harness 注入退役 + 子窗/演示态写入方各自改走 `__eagleDriver`）之后，本后备才可删。
+ * 在此之前保留，且本节即删除前提的登记处。
+ */
+export function bodyScope(): ShimScopeFace | null {
+  const host = hostWindow();
+  return truthyScopeFace(host.__eagleDriver) || truthyScopeFace(host.$bodyScope);
+}
+
+export type NativeRequireFn = (id: string) => unknown;
+
+const hostRequire = hostWindow().require;
+export const nativeRequire: NativeRequireFn | null = typeof hostRequire === 'function' ? hostRequire : null;
+
+/**
+ * 是否运行在 Electron 进程内（读全局 `process` 的 `versions.electron`）。
+ *
+ * 类型注记：`process` 由 `global/globals.d.ts` 声明为 `any`，该表达式的取值域为
+ * `true | false | undefined`（仅当 `process` 存在而 `process.versions` 缺席时为 `undefined`）；
+ * 它在**全部现有消费点**都是布尔上下文（`if (isElectronRuntime && …)`）。此处只补类型标注、
+ * 不改表达式，故不引入 `Boolean()` 归一以免改变取值。
+ */
+export const isElectronRuntime: boolean =
   typeof process !== 'undefined' && process.versions && typeof process.versions.electron === 'string';
-export let nativeFs = null;
-export let nativePath = null;
+export let nativeFs: unknown = null;
+export let nativePath: unknown = null;
 if (isElectronRuntime && nativeRequire) {
   try {
     nativeFs = nativeRequire('node:fs');
@@ -28,7 +109,26 @@ if (isElectronRuntime && nativeRequire) {
     console.warn('[eagle-shim] native filesystem bridge unavailable', err);
   }
 }
-export const desktopApi = window.eagleDesktop || null;
+
+/**
+ * 桌面桥的**本模块实际消费面**（只声明 shim 层调用到的成员，不做全量镜像）。
+ *
+ * `global/globals.d.ts` 把 `window.eagleDesktop` 声明为 `any`；此处用具名 interface 取代
+ * `any` 传播。`library.setHistory` 的契约来自 `electron/preload.cjs:82`
+ * （`(history) => ipcRenderer.invoke('library:set-history', history)`，恒返回 Promise）。
+ */
+export interface DesktopLibraryFace {
+  setHistory(history: unknown): Promise<unknown>;
+}
+
+export interface DesktopBridgeFace {
+  readonly library?: DesktopLibraryFace | null;
+}
+
+const hostDesktopBridge = hostWindow().eagleDesktop;
+export const desktopApi: DesktopBridgeFace | null = hostDesktopBridge
+  ? (hostDesktopBridge as DesktopBridgeFace)
+  : null;
 export const hasDesktopApi = Boolean(desktopApi);
 /** 当前文档确实由 Electron 承载（preload 已暴露桌面桥）。 */
 export const isElectronWindow = hasDesktopApi;
@@ -102,23 +202,50 @@ export class RuntimeCapabilityError extends Error {
   }
 }
 
+/**
+ * 任意值的**具名成员读取**（运行期形状未知时的唯一读口，返回值仍是 `unknown`）。
+ *
+ * 这是本模块唯一的「动态形状」窄化点：与修前的裸属性访问同义
+ * （`null`/`undefined` 返回 `undefined`，原始值取成员亦为 `undefined`），
+ * 只是把读到的值留在 `unknown` 上，迫使调用方显式判定。
+ */
+function readMember(value: unknown, key: string): unknown {
+  if (value === null || value === undefined) return undefined;
+  return (value as Record<string, unknown>)[key];
+}
+
 /** 稳定的能力错误判定（不依赖 `instanceof`——vm/iframe 隔离下原型链不同）。 */
-export function isRuntimeCapabilityError(err) {
-  return Boolean(err) && err.name === 'RuntimeCapabilityError' && err.code === RUNTIME_CAPABILITY_ERROR_CODE;
+export function isRuntimeCapabilityError(err: unknown): boolean {
+  // 判据逐字保留修前的 `Boolean(err) && err.name === … && err.code === …`（短路顺序亦相同）。
+  return Boolean(err)
+    && readMember(err, 'name') === 'RuntimeCapabilityError'
+    && readMember(err, 'code') === RUNTIME_CAPABILITY_ERROR_CODE;
+}
+
+/** 显式不可用结果（任务书允许的第二种形态：抛错 **或** 返回带 unavailable 标记的结果）。 */
+export interface UnavailableResult {
+  ok: false;
+  unavailable: true;
+  capability: string;
+  reason: string;
 }
 
 /**
- * 显式不可用结果对象（任务书允许的第二种形态：抛错 **或** 返回带 unavailable 标记的结果）。
  * 仅用于**同步查询型**能力——返回值必须自带 `ok:false`/`unavailable:true`，
  * 使调用方无法把它当作成功结果继续推进。
  */
-export function unavailableResult(capability, detail?) {
+export function unavailableResult(capability: string, detail?: string): UnavailableResult {
   return {
     ok: false,
     unavailable: true,
     capability: String(capability || 'unknown'),
     reason: String(detail || 'no implementation in current runtime'),
   };
+}
+
+/** 合法模式值判定（对 {@link SHIM_RUNTIME_MODES} 做同源成员测试）。 */
+function isShimRuntimeMode(value: unknown): value is ShimRuntimeMode {
+  return SHIM_RUNTIME_MODES.some((mode) => mode === value);
 }
 
 /**
@@ -136,13 +263,13 @@ export function unavailableResult(capability, detail?) {
  * 见 `demoSeed.startLifecycle()`，它先 await 探测再决定是否发演示生命周期。
  */
 export function resolveRuntimeMode(): ShimRuntimeMode {
-  const explicit = window.__EAGLE_SHIM_MODE;
-  if (SHIM_RUNTIME_MODES.indexOf(explicit) >= 0) return explicit;
+  const explicit = hostWindow().__EAGLE_SHIM_MODE;
+  if (isShimRuntimeMode(explicit)) return explicit;
   if (explicit !== undefined && explicit !== null && explicit !== '') {
     console.warn(`[eagle-shim] 未知 __EAGLE_SHIM_MODE=${String(explicit)}，按能力探测回落`);
   }
   if (hasDesktopApi) return 'electron';
-  if (window.__EAGLE_BROWSER_CONNECTED === true) return 'browser-connected';
+  if (hostWindow().__EAGLE_BROWSER_CONNECTED === true) return 'browser-connected';
   return 'demo';
 }
 
@@ -157,10 +284,10 @@ export function isRealRuntime(): boolean {
 }
 
 /** backend 的 `/api/library/current` 成功响应判据（探测真后端用，避免把任意 200 当后端）。 */
-function isBackendLibraryPayload(payload) {
+function isBackendLibraryPayload(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false;
-  if (payload.status === 'success') return true;
-  return typeof payload.rootDir === 'string' || typeof payload.libraryName === 'string';
+  if (readMember(payload, 'status') === 'success') return true;
+  return typeof readMember(payload, 'rootDir') === 'string' || typeof readMember(payload, 'libraryName') === 'string';
 }
 
 /**
@@ -173,14 +300,15 @@ function isBackendLibraryPayload(payload) {
  * 成功时写 `window.__EAGLE_BROWSER_CONNECTED = true`，使后续同步 `resolveRuntimeMode()` 一致。
  */
 export function probeRuntimeMode(timeoutMs = 1200): Promise<ShimRuntimeMode> {
+  const host = hostWindow();
   const sync = resolveRuntimeMode();
   // 已显式标记或已有桌面桥：无需探测，避免覆盖显式声明。
-  if (sync === 'electron' || window.__EAGLE_SHIM_MODE) return Promise.resolve(sync);
+  if (sync === 'electron' || host.__EAGLE_SHIM_MODE) return Promise.resolve(sync);
   if (typeof fetch !== 'function') return Promise.resolve('demo');
   const apiBase = String(window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
-  let timer = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
   const abort = typeof AbortController === 'function' ? new AbortController() : null;
-  const timeout = new Promise((resolve) => {
+  const timeout = new Promise<null>((resolve) => {
     timer = setTimeout(() => {
       if (abort) {
         try { abort.abort(); } catch (err) { /* 已结束 */ }
@@ -188,13 +316,16 @@ export function probeRuntimeMode(timeoutMs = 1200): Promise<ShimRuntimeMode> {
       resolve(null);
     }, timeoutMs);
   });
-  const request = fetch(`${apiBase}/api/library/current`, abort ? { signal: abort.signal } : {})
+  const request: Promise<unknown> = fetch(
+    `${apiBase}/api/library/current`,
+    abort ? { signal: abort.signal } : {},
+  )
     .then((response) => (response && response.ok ? response.json() : null))
     .catch(() => null);
   return Promise.race([request, timeout]).then((payload) => {
     if (timer) clearTimeout(timer);
     if (!isBackendLibraryPayload(payload)) return 'demo';
-    window.__EAGLE_BROWSER_CONNECTED = true;
+    host.__EAGLE_BROWSER_CONNECTED = true;
     return 'browser-connected';
   });
 }
@@ -204,7 +335,7 @@ export function probeRuntimeMode(timeoutMs = 1200): Promise<ShimRuntimeMode> {
  * （库数据从桌面桥 / backend / 演示种子哪来）必须看到**同一个**判定，否则「种子判定说 demo、
  * 生命周期判定说 browser-connected」这类自相矛盾会重现。首次调用即定型，后续调用复用。
  */
-let runtimeModeProbe = null;
+let runtimeModeProbe: Promise<ShimRuntimeMode> | null = null;
 
 export function probeRuntimeModeOnce(timeoutMs = 1200): Promise<ShimRuntimeMode> {
   if (!runtimeModeProbe) runtimeModeProbe = probeRuntimeMode(timeoutMs);
@@ -224,10 +355,13 @@ export function resetRuntimeModeProbe(): void {
  * 置于环境层（最低层，无反向依赖），供 `browserRuntime`/`desktopCapability` 共用**同一实例**。
  */
 export function demoFileStore(): Record<string, string> {
-  if (!window.__mockWrittenFiles || typeof window.__mockWrittenFiles !== 'object') {
-    window.__mockWrittenFiles = {};
+  const host = hostWindow();
+  const existing = host.__mockWrittenFiles;
+  if (!existing || typeof existing !== 'object') {
+    host.__mockWrittenFiles = {};
   }
-  return window.__mockWrittenFiles;
+  // 上一行保证该槽位此时是对象；此断言只做类型窄化，不产生任何运行期转换。
+  return host.__mockWrittenFiles as Record<string, string>;
 }
 
 /**
@@ -237,7 +371,7 @@ export function demoFileStore(): Record<string, string> {
  * demo 态 → 返回 `null`，表示调用方可以继续走**显式选择的**演示实现。
  * 集中一处判定，避免各 shim 模块各写一份 demo 判据（修前 40+ 个替身全都无条件生效）。
  */
-export function capabilityGap(capability: string, detail?: string) {
+export function capabilityGap(capability: string, detail?: string): RuntimeCapabilityError | null {
   if (isDemoRuntime()) return null;
   const reason = String(detail || 'no implementation in current runtime');
   markUnavailable(capability, reason);

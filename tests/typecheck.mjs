@@ -16,11 +16,9 @@ export const NOCHECK_LEDGER = [
   { file: 'src/app/react/core/shim/browserRuntime.ts', category: '浏览器运行兼容' },
   { file: 'src/app/react/core/shim/demoSeed.ts', category: '演示数据' },
   { file: 'src/app/react/core/shim/desktopCapability.ts', category: '桌面能力' },
-  { file: 'src/app/react/core/shim/environment.ts', category: '环境与启动装配' },
   { file: 'src/app/react/core/shim/install.ts', category: '环境与启动装配' },
   { file: 'src/app/react/core/shim/ipcBus.ts', category: 'IPC 总线' },
   { file: 'src/app/react/core/shim/moduleRegistry.ts', category: '动态模块加载' },
-  { file: 'src/app/react/core/shim/settingsI18n.ts', category: '设置与国际化' },
 ];
 
 export function scanTypeDirectives(text, file = 'source.ts') {

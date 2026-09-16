@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（93 项，顺序隔离执行）。
+ * React 全量回归套件（94 项，顺序隔离执行）。
  * 项数以 `react-suite-manifest.mjs` 的 `REACT_SUITE` 长度为准；合并各批次的登记项时
  * 必须重新数一遍长度再改这里——历史上多次出现注释与实际长度不同步（71/72/73/77/79 都写过）。
  * R8 起并入 F15 `preload-subscriptions` 与 F13-preview `preview-entry-subscriptions`
@@ -10,6 +10,8 @@
  * R12 起并入 M3-3 `worker-cancel-writeback` 与 `worker-protocol-contract`。
  * R13 起并入 M4-D `m4-ng-click-pairing` / `m4-engine-lifecycle` / `m4-domlite-containment`。
  * R14 起并入 M4-E `f11-scope-face-late-registration`。
+ * R16 起并入 M6-4 `webview-tag-enabled`（真机门禁：webviewTag 恢复后三处 <webview> 真的
+ * guest 化、M6-3 解析出的 file:// preload 真的在 guest 内执行；起真实 Electron + Vite dev）。
  * R15 起并入 M7-2 `tab-bar-closed-loop`（改造为 11 项负向门禁）与 M6-3 `plugin-format-preload`
  * （格式插件 preload 的唯一解析点：三处调用点原先各自内联的惯用式，在包括 Electron 生产态
  * 在内的任何运行态下都产出 http:// URL，而 <webview preload> 只接受文件系统路径）。

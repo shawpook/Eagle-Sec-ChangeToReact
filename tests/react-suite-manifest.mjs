@@ -191,6 +191,14 @@ export const REACT_SUITE = [
   // Electron 态返回真实磁盘 file:// 路径、非 Electron 态明确不可用、
   // 以及「解析函数在全输入域上绝不产出 http(s) 值」的硬闸门。含 3 项负向自证。
   'tests/plugin-format-preload.mjs',
+  // M6-4：webviewTag 恢复的**真机门禁**（起真实 Electron + Vite dev，约 13s）。
+  // 背景：Electron 22 的 webviewTag 默认 false，main.cjs 的 createWindow 此前未启用，
+  // 三处 <webview> 从不 guest 化、preload 属性根本不生效（格式插件视图实为死的）。
+  // 本项经 Vite import 真实的 pluginFormatPreload.ts，把其解析出的 file:// URL 喂进真实
+  // <webview>，再断言 guest 侧真的跑起了 api-format-extension.js —— 把 M6-3 与 M6-4 接上。
+  // 负向自证（Coordinator 独立实跑）：移除 webviewTag 后 constructorName=HTMLElement、
+  // 无 guest、零 attach 事件、guestProbe=null → 0/4 通过、4 红。
+  'tests/webview-tag-enabled.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -222,6 +230,8 @@ export const TEST_CLASSES = {
   'tests/f11-scope-face-late-registration.mjs': 'static',
   'tests/tab-bar-closed-loop.mjs': 'static',
   'tests/plugin-format-preload.mjs': 'static',
+  // 起 Vite dev（URL 为 /src/app/... 源码路径）并驱动真实 Electron 行为 → dev-probe。
+  'tests/webview-tag-enabled.mjs': 'dev-probe',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

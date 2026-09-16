@@ -2,9 +2,9 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（M1 全项完毕；M2 前三批、M3 前两批、M4 前三批、M5-1、M6-1 已集成；
-> **M4-A 回归已修**；验证口径改为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次，
-> 修复后只做了 L1/L2 定向核验，尚未重跑 L3**）
+> 最后更新：2026-09-16（M1 / M3 / M4 / M5 已全部集成；M2 待撤销 4→3；M6 扩展侧完成、插件侧待派；M7 第一批完成）
+> 验证口径为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次；此后各批只做 L1/L2 定向核验，
+> 尚未重跑 L3（当前套件 91 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
 
 ---
 
@@ -39,13 +39,13 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前四批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态）、**M2-2**（补真实裸模块登记）、**M2-3**（环境层/设置层类型化）、**M2-4/M7-1**（moduleRegistry 强类型化 + 截获契约化）、**M2-5**（install.ts 类型化 + 具名全局声明面，并收口 D20 的 3 处 cast）均已集成。**剩 3 个 shim 文件的 `@ts-nocheck`**（browserRuntime / demoSeed / desktopCapability） |
+| **M2** 替代万能 shim | 🔄 **前五批已集成** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 4 → 3，剩 2 个 shim 文件**（`browserRuntime` / `demoSeed`） |
 | M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
-| M4 窗口与 scope 收口 | ✅ **四批全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**遗留待派**：`detailHooks.ts:38` 的同族 `window.jQuery` 哑雷、F11 `scopeFace.ts` 晚注册潜伏缺陷、`globals.d.ts` 的 `'ng-click'` 死声明 |
-| M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边待派 |
+| M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
+| M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
 | M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；**插件侧（F19）待派**——注意 M6-R 标了 4 条需用户确认的产品/外部资源取舍 |
 | M7 最小产物与遗留隔离 | 🔄 **第一批已集成** | 退役审计（W5）已交付；**M7-1 已集成（`d59071d8`）**：四项低风险退役（`url-state-service.js` / `src/app/main.js` / `src/build/config.gypi` / `src/test/api-v2/test-snippets.js`），**全部先归档到 `docs/retired-2026-09-16/`**（内容零改动，可 `git mv` 回或 revert）。**tab-bar 与 src/run.js 明确未动**（前者需产品取舍，后者建议隔离归档不删） |
-| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前 **90 项**） |
+| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **91 项** + ARTIFACT **5 项**） |
 
 ### 各批次最新集成提交（2026-09-16 下午）
 
@@ -55,7 +55,10 @@
 | M3-3 | `55dc91ff` | 「取消任务不回写已关闭窗口」修复（负向自证）+ 四个自有 Worker 的协议契约 |
 | M4-D | `b5f9ab71` | ng-* 成对替换（实测命中集替换前后均为空 → 零外观变化）、jQuery 哑雷、引擎生命周期 adapter、domLite 收口 |
 | M7-1 | `d59071d8` | 四项低风险退役，先归档到 `docs/retired-2026-09-16/` |
-| 登记 | `ecfe83f4` | REACT_SUITE 87 → **90** |
+| M2-6 | `f761c440` | `desktopCapability.ts` 类型化；**待撤销 4 → 3**；清 `ng-click` 死声明 |
+| M4-E | `242e5618` | F11 晚注册缺陷（探针坐实）+ `detailHooks` 的 jQuery 同族哑雷 |
+| M5-2 | `c987dfef` | 生产启动等就绪再开窗 + 非默认端口生产验收（真实 Electron 实测） |
+| 登记 | `ecfe83f4` / `2d8dff9d` | REACT_SUITE 87 → 90 → **91**；ARTIFACT_TESTS 3 → **5** |
 
 > **M4-D 对审计报告的两条勘误**（由其交付时提出，我核对采纳）：
 > ① 审计说删 JSX 上的 `ng-click` 会静默改变无边框窗口拖拽区与 toast 间距——
@@ -208,9 +211,9 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W34** | task_21486b3c4d89 | ctx_0ee6165705f7 | **M4-D 引擎 adapter + domLite + ng-* 成对替换** | ❌ **codex 派单失败**：~90 分钟零产出（shell 通道全废，见 D23）。已停，**回退 claude 重派为 W36** |
 | **W35** | task_bc9de10cc760 | ctx_c9c8c7ce142e | **M7-1 低风险退役批次 1** | ✅ **已交付核验并集成(`d59071d8`)**。codex 完成但**检索不可信**——其「无消费者」前提由 W5 审计提供，我另行复核了四个文件名的可执行引用才合并 |
 | **W36** | task_21486b3c4d89 | ctx_0999764de948 | **M4-D（claude/deepseek-flash 重派）** | ✅ **已交付核验并集成(`b5f9ab71`)**；3 个新测试 28 用例 |
-| **W37** | task_30c0a7fb77c4 | ctx_fe6d73d44011 | **M2-6 `desktopCapability.ts` 类型化 + 清 `ng-click` 死声明** | 🔄 进行中（worktree `m2-desktop-cap`，claude/deepseek-flash） |
-| **W38** | task_79c25c10868d | ctx_e53afa53c372 | **M4-E `detailHooks` jQuery 哑雷 + F11 晚注册 + 死声明** | 🔄 进行中（worktree `m4-tail`，claude/deepseek-flash） |
-| **W39** | task_3af87fd55102 | ctx_a8c14395e5cd | **M5-2 非默认端口生产验收 + 等就绪再开窗** | 🔄 进行中（worktree `m5-prod-port`，**codex**，shell 已复测可用） |
+| **W37** | task_30c0a7fb77c4 | ctx_fe6d73d44011 | **M2-6 `desktopCapability.ts` 类型化 + 清 `ng-click` 死声明** | ✅ **已交付核验并集成(`f761c440`)**；`待撤销 4 → 3` |
+| **W38** | task_79c25c10868d | ctx_e53afa53c372 | **M4-E `detailHooks` jQuery 哑雷 + F11 晚注册 + 死声明** | ✅ **已交付核验并集成(`242e5618`)**；F11 探针坐实缺陷真实存在 |
+| **W39** | task_3af87fd55102 | ctx_a8c14395e5cd | **M5-2 非默认端口生产验收 + 等就绪再开窗** | ✅ **已交付核验并集成(`c987dfef`)**；`PRODUCTION_RUNTIME_PORTS_OK`（真实 Electron） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。

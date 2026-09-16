@@ -207,7 +207,14 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W33** | task_77b37af7755a | ctx_25153d2bed77 | **M3-3 Worker 协议类型化 + 取消写回守卫** | ✅ **已交付核验并集成(`55dc91ff`)**；两个新测试 5/5 与 13/13 |
 | **W34** | task_21486b3c4d89 | ctx_0ee6165705f7 | **M4-D 引擎 adapter + domLite + ng-* 成对替换** | ❌ **codex 派单失败**：~90 分钟零产出（shell 通道全废，见 D23）。已停，**回退 claude 重派为 W36** |
 | **W35** | task_bc9de10cc760 | ctx_c9c8c7ce142e | **M7-1 低风险退役批次 1** | ✅ **已交付核验并集成(`d59071d8`)**。codex 完成但**检索不可信**——其「无消费者」前提由 W5 审计提供，我另行复核了四个文件名的可执行引用才合并 |
-| **W36** | task_21486b3c4d89 | ctx_0999764de948 | **M4-D（claude/deepseek-flash 重派）** | 🔄 进行中（worktree 同 `m4-engine-adapter`） |
+| **W36** | task_21486b3c4d89 | ctx_0999764de948 | **M4-D（claude/deepseek-flash 重派）** | ✅ **已交付核验并集成(`b5f9ab71`)**；3 个新测试 28 用例 |
+| **W37** | task_30c0a7fb77c4 | ctx_fe6d73d44011 | **M2-6 `desktopCapability.ts` 类型化 + 清 `ng-click` 死声明** | 🔄 进行中（worktree `m2-desktop-cap`，claude/deepseek-flash） |
+| **W38** | task_79c25c10868d | ctx_e53afa53c372 | **M4-E `detailHooks` jQuery 哑雷 + F11 晚注册 + 死声明** | 🔄 进行中（worktree `m4-tail`，claude/deepseek-flash） |
+| **W39** | task_3af87fd55102 | ctx_a8c14395e5cd | **M5-2 非默认端口生产验收 + 等就绪再开窗** | 🔄 进行中（worktree `m5-prod-port`，**codex**，shell 已复测可用） |
+
+> W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
+> （两边都只删同一行，cherry-pick 冲突是平凡解）。
+> W39 是 codex 派单，已按 D23 的规则先探针确认其 shell 与检索可用后再派。
 
 > **D23 实测记录**：本机 codex worker 的 shell 通道**整体不可用**（所有命令经 WSL，
 > `/bin/bash` 缺失，输出恒为空却像正常执行）。所以它给的「无消费者/搜不到」类结论**必须自己复核**；

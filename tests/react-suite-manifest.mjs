@@ -275,6 +275,12 @@ export const ARTIFACT_TESTS = [
   // M5-2：非默认端口生产验收——四类页面（主窗/文档窗/工作台/路线图）的请求必须全部命中
   // **覆盖后**的端口，且 artifactDigest 不变（证明是「同一份产物换端口」而非重新构建）。
   'tests/production-runtime-ports.mjs',
+  // M8-1：**最小隔离部署副本**的启动验收（任务书 M7 验收第 3 条）。
+  // 仓库外隔离根 + 三层文件访问探针 + 四页非默认端口启动；核心判据是「实际发生了哪些读」，
+  // 不是「代码里 grep 不到路径」——正因如此才查出"没读源工作区、但发布内容本身漏拷"这两件事。
+  // 两条负向自证用普通调用跑红（EAGLE_ISOLATION_PROBE_DISABLE=1 / EAGLE_ISOLATION_NEGATIVE=missing-asset）。
+  // 依赖先 npm run build（故属产物层，与 M5-2 两项同段）。
+  'tests/isolated-deployment.mjs',
 ];
 
 /**

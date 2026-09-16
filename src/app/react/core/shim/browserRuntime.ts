@@ -1,34 +1,71 @@
-// @ts-nocheck
 /**
  * R2 浏览器/Node 适配层：shim 需要的 node 内置模块面、同步 XHR 读取、Buffer 兜底、
  * 浏览器 fetch/媒体 duration 补丁，以及 Electron 原生模块的浏览器回退实现。
  *
- * 迁移自 `core/shimsLegacy.ts` 的 IIFE（原 519-796、2305-2460 区间），函数体逐字保留。
+ * 迁移自 `core/shimsLegacy.ts` 的 IIFE（原 519-796、2305-2460 区间），运行期语义保留。
  * 跨模块依赖仅 `./environment`（原生桥探针）；模块装配表（bareModules）与 require 链
  * 在 `./moduleRegistry`（需要 Electron 能力面，避免此处引入反向依赖）。
+ *
+ * M2-7 类型化：本文件已撤销整文件类型免检。动态宿主面经具名 interface +
+ * `unknown` 收窄；未新增宽泛类型或 TypeScript 豁免指令，可观察行为零改动。
  */
 import {
   capabilityGap, demoFileStore, desktopApi, failCapability, isDemoRuntime, isElectronRuntime, markUnavailable, nativeFs,
   nativeRequire, RuntimeCapabilityError,
 } from "./environment";
+
+/**
+ * M2-7 类型化：宿主 `window` 上本模块实际读取的运行期扩展面。
+ *
+ * `global/globals.d.ts` 对 `EagleConfig` / `__mockLibraryCache` 等只给出宽泛或
+ * `unknown` 声明；此处用具名 interface 收窄本模块的消费面，动态值继续留在
+ * `unknown` 上，由调用点显式判定。类型化不产生运行期包装或转换。
+ */
+interface BrowserRuntimeHostWindow {
+  __EAGLE_API_BASE_URL?: string;
+  __EAGLE_EXTENSION_BASE_URL?: string;
+  __mockLibrary?: BrowserRuntimeMockLibrary;
+  __mockLibraryCache?: unknown[];
+  EagleConfig?: BrowserRuntimeEagleConfig;
+}
+
+interface BrowserRuntimeMockLibrary {
+  savedFilters?: unknown;
+}
+
+interface BrowserRuntimeEagleConfig {
+  SUPPORT_FORMATS: Record<string, unknown>;
+}
+
+function hostWindow(): BrowserRuntimeHostWindow {
+  return window as BrowserRuntimeHostWindow;
+}
+
+/** 任意值的具名成员读取；与裸属性访问同义，结果保持在 `unknown` 上。 */
+function readMember(value: unknown, key: string): unknown {
+  if (value === null || value === undefined) return undefined;
+  return (value as Record<string, unknown>)[key];
+}
+
 let browserFetchRewritten = false;
 let mediaDurationPatched = false;
 
-export function installBrowserFetchRewrite() {
+export function installBrowserFetchRewrite(): void {
   if (browserFetchRewritten) return;
   browserFetchRewritten = true;
   const browserFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
   if (browserFetch) {
-    window.fetch = function (input, init) {
-      let target = typeof input === 'string' ? input : input && input.url;
+    window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+      let target = typeof input === 'string' ? input : readMember(input, 'url');
       if (typeof target === 'string') {
         const apiBase = window.__EAGLE_API_BASE_URL || 'http://localhost:41695';
         const extensionBase = window.__EAGLE_EXTENSION_BASE_URL || 'http://localhost:41693';
-        target = target
+        const rewrittenTarget = target
           .replace(/^http:\/\/localhost:41595(?=\/|$)/i, apiBase.replace(/\/$/, ''))
           .replace(/^http:\/\/localhost:41593(?=\/|$)/i, extensionBase.replace(/\/$/, ''));
-        if (typeof input === 'string') input = target;
-        else input = new Request(target, input);
+        if (typeof input === 'string') input = rewrittenTarget;
+        // 原逻辑对非字符串输入直接交给 Request 构造器；此断言只消解 DOM 联合类型。
+        else input = new Request(rewrittenTarget, input as RequestInit);
       }
       return browserFetch(input, init);
     };
@@ -43,7 +80,7 @@ export function installBrowserFetchRewrite() {
  * 纯属污染，直接影响时长显示、进度条与 `vtt2srt` 字幕时间轴）。M2 验收明令「不全局伪造媒体原型」，
  * 故真实业务态一律不装；demo 态保留（Angular 时代的媒体元数据兼容，属显式选择的演示实现）。
  */
-export function installMediaDurationPatch() {
+export function installMediaDurationPatch(): void {
   if (mediaDurationPatched) return;
   mediaDurationPatched = true;
   if (!isDemoRuntime()) {
@@ -71,7 +108,7 @@ export function installMediaDurationPatch() {
   }
 }
 
-export function syncText(url) {
+export function syncText(url: string): string | null {
   try {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
@@ -83,33 +120,49 @@ export function syncText(url) {
   }
 }
 
-export function syncArrayBuffer(url) {
+export function syncArrayBuffer(url: string): ArrayBuffer | null {
   try {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.responseType = 'arraybuffer';
     xhr.send(null);
-    if (xhr.status >= 200 && xhr.status < 300) return xhr.response;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      const response: unknown = xhr.response;
+      return response instanceof ArrayBuffer ? response : null;
+    }
     return null;
   } catch (err) {
     return null;
   }
 }
 
-export function toFileUrl(p) {
+export function toFileUrl(p: unknown): string {
   const s = String(p || '').replace(/\\/g, '/');
   if (/^[a-z]+:\/\//i.test(s)) return s;
   if (s.startsWith('/')) return window.location.origin + s;
   return window.location.origin + '/' + s;
 }
 
-export function dirname(p) {
+export function dirname(p: unknown): string {
   const clean = String(p || '').replace(/\\/g, '/').replace(/\/+$/, '');
   const idx = clean.lastIndexOf('/');
   return idx <= 0 ? '/' : clean.slice(0, idx) || '/';
 }
 
-export const pathModule = {
+interface BrowserPathModule {
+  sep: string;
+  delimiter: string;
+  normalize(p: unknown): string;
+  join(...parts: unknown[]): string;
+  resolve(...parts: unknown[]): string;
+  basename(p: unknown, ext?: string): string;
+  dirname(p: unknown): string;
+  extname(p: unknown): string;
+  isAbsolute(p: unknown): boolean;
+  relative(...parts: unknown[]): string;
+}
+
+export const pathModule: BrowserPathModule = {
   sep: '/',
   delimiter: ';',
   normalize(p) {
@@ -146,7 +199,8 @@ export const pathModule = {
     return idx > 0 ? base.slice(idx) : '';
   },
   isAbsolute(p) {
-    return String(p || '').startsWith('/') || /^[a-zA-Z]:[\\/]/.test(p);
+    const value = String(p || '');
+    return value.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(value);
   },
   relative() {
     return '';
@@ -154,22 +208,22 @@ export const pathModule = {
 };
 
 export class BrowserBuffer extends Uint8Array {
-  static from(value, encoding) {
+  static from(value: unknown, encoding?: unknown): BrowserBuffer {
     if (value instanceof Uint8Array) return new BrowserBuffer(value);
     if (Array.isArray(value)) return new BrowserBuffer(value);
     const str = String(value == null ? '' : value);
     return new BrowserBuffer([...str].map((ch) => ch.charCodeAt(0) & 0xff));
   }
 
-  static alloc(size) {
+  static alloc(size: number): BrowserBuffer {
     return new BrowserBuffer(size);
   }
 
-  static isBuffer(value) {
+  static isBuffer(value: unknown): boolean {
     return value instanceof BrowserBuffer || value instanceof Uint8Array;
   }
 
-  toString(encoding) {
+  toString(encoding?: unknown): string {
     return Array.from(this).map((code) => String.fromCharCode(code)).join('');
   }
 }
@@ -203,7 +257,66 @@ function fsWriteCapability(op: string): boolean {
   return true; // demo 态：写入内存演示存储
 }
 
-export const fsModule = {
+type BrowserFsWriteCallback = (error: unknown) => void;
+type BrowserFsReadCallback = (error: Error | null, data?: unknown) => void;
+type BrowserFsExistsCallback = (exists: boolean) => void;
+type BrowserFsReaddirCallback = (error: Error | null, entries: unknown[]) => void;
+
+interface BrowserFsStats {
+  isDirectory(): boolean;
+  isFile(): boolean;
+  isSymbolicLink(): boolean;
+  size: number;
+  mtimeMs: number;
+}
+
+interface BrowserReadStream {
+  on(event: string, listener?: (...args: unknown[]) => void): BrowserReadStream;
+  pipe(...args: unknown[]): BrowserReadStream;
+}
+
+interface BrowserWriteStream {
+  on(event: string, listener?: (...args: unknown[]) => void): BrowserWriteStream;
+  end(...args: unknown[]): void;
+  write(...args: unknown[]): void;
+}
+
+/**
+ * 浏览器侧的 Node `fs` 兼容面。方法参数按**现有可接受输入**声明为 `unknown`；
+ * 返回值只在能确认形状时给出窄类型，避免把 shim 的动态实现伪装成完整 Node 契约。
+ */
+interface BrowserFsModule {
+  F_OK: number;
+  R_OK: number;
+  W_OK: number;
+  X_OK: number;
+  existsSync(path: unknown): boolean;
+  access(path: unknown, callback: (error: Error | null) => void): void;
+  accessSync(...args: unknown[]): void;
+  readFileSync(path: unknown, encoding?: string): string | BrowserBuffer;
+  exists(path: unknown, callback: BrowserFsExistsCallback): void;
+  writeFileSync(path: unknown, data: unknown): void;
+  writeFile(path: unknown, data: unknown, ...callbacks: unknown[]): void;
+  readFile(
+    path: unknown,
+    encoding?: string | BrowserFsReadCallback,
+    callback?: BrowserFsReadCallback,
+  ): void;
+  readdirSync(...args: unknown[]): string[];
+  readdir(...callbacks: unknown[]): unknown[];
+  statSync(path: unknown): BrowserFsStats;
+  lstatSync(path: unknown): BrowserFsStats;
+  renameSync(from: unknown, to: unknown): void;
+  unlinkSync(path: unknown): void;
+  mkdirSync(...args: unknown[]): void;
+  rmSync(path: unknown): void;
+  removeSync(path: unknown): void;
+  copyFileSync(from: unknown, to: unknown): void;
+  createReadStream(...args: unknown[]): BrowserReadStream;
+  createWriteStream(...args: unknown[]): BrowserWriteStream;
+}
+
+export const fsModule: BrowserFsModule = {
   F_OK: 0,
   R_OK: 4,
   W_OK: 2,
@@ -261,10 +374,10 @@ export const fsModule = {
     fsWriteCapability('writeFileSync');
     demoFileStore()[String(p || '')] = typeof data === 'string' ? data : String(data);
   },
-  writeFile(p, data, callback) {
+  writeFile(p, data, ...callbacks) {
     fsWriteCapability('writeFile');
     demoFileStore()[String(p || '')] = typeof data === 'string' ? data : String(data);
-    const cb = arguments[arguments.length - 1];
+    const cb = callbacks[callbacks.length - 1];
     if (typeof cb === 'function') setTimeout(() => cb(null), 0);
   },
   readFile(p, encoding, callback) {
@@ -308,8 +421,8 @@ export const fsModule = {
   readdirSync() {
     return [];
   },
-  readdir() {
-    const cb = arguments[arguments.length - 1];
+  readdir(...callbacks) {
+    const cb = callbacks[callbacks.length - 1];
     if (typeof cb === 'function') setTimeout(() => cb(null, []), 0);
     return [];
   },
@@ -364,7 +477,7 @@ export const fsModule = {
 };
 
 /** 演示态内存存储的重命名（与 `fsModule.renameSync` 同源）。 */
-function renameDemoEntry(from, to) {
+function renameDemoEntry(from: unknown, to: unknown): void {
   const store = demoFileStore();
   const source = String(from || '');
   if (Object.prototype.hasOwnProperty.call(store, source)) {
@@ -395,7 +508,7 @@ export const electronLog = {
  * try/catch 保护的属性读取上（如 `typeof w.junk.is`），直接把启动流程打断。见
  * {@link genericStub} 的说明。
  */
-function unavailableModuleError(name, detail) {
+function unavailableModuleError(name: unknown, detail: unknown): RuntimeCapabilityError {
   const capability = `require(${String(name || 'unknown')})`;
   const reason = String(detail || '该模块未登记真实实现，本运行态下不可用');
   markUnavailable(capability, reason);
@@ -412,7 +525,13 @@ function unavailableModuleError(name, detail) {
  *    （见下方实测说明）；
  *  - demo 态 → 保留原可链式假对象（**显式选择的**演示实现，不再是默认行为）。
  */
-export function genericStub(name, detail) {
+interface GenericStub {
+  (): GenericStub;
+  __mockName: string;
+  [key: string]: unknown;
+}
+
+export function genericStub(name: unknown, detail: unknown): GenericStub {
   if (!isDemoRuntime()) {
     // M2-1：**调用期抛错**（而不是返回一个「取值即抛」的替身）。
     //
@@ -427,7 +546,7 @@ export function genericStub(name, detail) {
     // （实测：`react-ipc-bridge-routing` grid boxes 超时、`react-stage-smoke` iframe 超时）。
     throw unavailableModuleError(name, detail);
   }
-  const stub = function () { return stub; };
+  const stub = function () { return stub; } as GenericStub;
   stub.__mockName = String(name || 'module');
   ['forEach', 'map', 'filter', 'reduce', 'then', 'catch', 'finally', 'on', 'once', 'off'].forEach((key) => {
     if (!stub[key]) stub[key] = function () { return stub; };
@@ -441,11 +560,18 @@ export function genericStub(name, detail) {
  * {@link RuntimeCapabilityError}；demo 态保留内存缓存读（显式选择的演示实现）。
  */
 export const lineByLineMock = class LineByLineMock {
-  constructor(filePath, options) {
-    let lines = [];
+  lines: Array<string | undefined>;
+  index: number;
+
+  constructor(filePath: unknown, options?: unknown) {
+    let lines: Array<string | undefined> = [];
     if (nativeFs) {
       try {
-        lines = nativeFs.readFileSync(filePath, 'utf8').split(/\r?\n/).filter(Boolean);
+        const readFileSync = readMember(nativeFs, 'readFileSync');
+        if (typeof readFileSync === 'function') {
+          const content = (readFileSync as (path: unknown, encoding: string) => unknown).call(nativeFs, filePath, 'utf8');
+          if (typeof content === 'string') lines = content.split(/\r?\n/).filter(Boolean);
+        }
       } catch (err) {
         lines = [];
       }
@@ -456,37 +582,56 @@ export const lineByLineMock = class LineByLineMock {
       );
     }
     if (lines.length === 0) {
-      const items = (window.__mockLibraryCache || []).slice();
+      const items = (hostWindow().__mockLibraryCache || []).slice();
       lines = items.map((item) => JSON.stringify(item));
     }
     this.lines = lines;
     this.index = 0;
   }
 
-  next() {
+  next(): string | undefined | false {
     if (this.index >= this.lines.length) return false;
     return this.lines[this.index++];
   }
 
-  close() {}
+  close(): void {}
 };
 
-export function localAssetUrl(value) {
+type BrowserStringTransform = (value: string) => string;
+
+function isStringTransform(value: unknown): value is BrowserStringTransform {
+  return typeof value === 'function';
+}
+
+function desktopThumbnailUrl(target: string): string | null {
+  if (!desktopApi) return null;
+  // 契约来源：`electron/preload.cjs:143` 固定构造字符串 URL。
+  const thumbnailUrl = readMember(desktopApi, 'thumbnailUrl');
+  if (!isStringTransform(thumbnailUrl)) return null;
+  return thumbnailUrl.call(desktopApi, target);
+}
+
+export function localAssetUrl(value: unknown): string {
   const target = String(value || '');
   if (/^https?:\/\//i.test(target)) return target;
   if (/^(?:[a-zA-Z]:[\\/]|\\\\)/.test(target)) {
     if (window.location && /^https?:$/.test(window.location.protocol)) {
       return `${window.location.origin}/file/${encodeURIComponent(target)}`;
     }
-    if (desktopApi && typeof desktopApi.thumbnailUrl === 'function') {
-      return desktopApi.thumbnailUrl(target);
-    }
+    const thumbnailUrl = desktopThumbnailUrl(target);
+    if (thumbnailUrl !== null) return thumbnailUrl;
     return `${window.location.origin}/file/${encodeURIComponent(target)}`;
   }
   return new URL(target.replace(/^file:\/\//, ''), window.location.origin).href;
 }
 
-export const urlModule = {
+interface BrowserUrlModule {
+  pathToFileURL(path: unknown): URL;
+  fileURLToPath(value: unknown): string | null;
+  format(value: unknown): string;
+}
+
+export const urlModule: BrowserUrlModule = {
   pathToFileURL(p) {
     return new URL(localAssetUrl(p));
   },
@@ -526,21 +671,93 @@ export const urlModule = {
  * 之所以是假成功，正是因为它无条件调用了 callback。
  */
 export class JsonRestServerStub {
-  constructor(options) {
+  options: unknown;
+
+  constructor(options?: unknown) {
     this.options = options || {};
   }
 
-  addAPI() {}
-  addHandler() {}
-  start(callback) {
+  addAPI(...args: unknown[]): void {}
+  addHandler(...args: unknown[]): void {}
+  start(callback?: unknown): Promise<this> {
     failCapability('JsonRestServer.start', '无本地 REST 服务实现（启动即「成功」但服务未起）');
     if (typeof callback === 'function') setTimeout(callback, 0);
     return Promise.resolve(this);
   }
-  stop() {}
+  stop(): void {}
 }
 
-export const pluginModule = {
+interface PluginPreviewExtensionFace {
+  inspectorPlugins: unknown[];
+  inspectorPluginsMap: Record<string, unknown>;
+  inspectorPluginPathMap: Record<string, unknown>;
+  thumbnailPluginMap: Record<string, unknown>;
+  thumbnailPath: Record<string, unknown>;
+  thumbnailOptions: Record<string, unknown>;
+  viewerPluginMap: Record<string, unknown>;
+  viewerURL: Record<string, unknown>;
+  getViewerPlugin(...args: unknown[]): unknown;
+  getViewerPluginExt(this: PluginPreviewExtensionFace, item: unknown): unknown;
+  allowZoom(...args: unknown[]): boolean;
+  getInspectorPluginURL(...args: unknown[]): string;
+  hasInspectorPlugin(...args: unknown[]): boolean;
+  getMultiSelectInspectorPlugin(...args: unknown[]): unknown[];
+}
+
+interface PluginModuleFace {
+  plugins: unknown[];
+  pinnedPlugins: unknown[];
+  pluginWindowIds: unknown[];
+  pluginShortcuts: Record<string, unknown>;
+  installedPluginMaps: Record<string, unknown>;
+  needUpdatePluginMaps: Record<string, unknown>;
+  servicePlugins: Record<string, unknown>;
+  disabledPluginMaps: Record<string, unknown>;
+  pluginMenu: { submenu: unknown[] };
+  previewExtension: PluginPreviewExtensionFace;
+  isPluginDisabled(...args: unknown[]): boolean;
+  loadDisabledPlugins(...args: unknown[]): void;
+  saveDisabledPlugins(...args: unknown[]): void;
+  init(...args: unknown[]): Promise<void>;
+  initIPC(...args: unknown[]): void;
+  initServicePlugins(...args: unknown[]): void;
+  initShortcuts(...args: unknown[]): void;
+  initMenu(...args: unknown[]): void;
+  checkAllDependencies(...args: unknown[]): void;
+  refresh(...args: unknown[]): Promise<void>;
+  refreshInstalledPlugins(...args: unknown[]): void;
+  checkPluginInstalled(...args: unknown[]): boolean;
+  showInstallPluginDialog(...args: unknown[]): void;
+  openPluginById(...args: unknown[]): void;
+  showPluginById(...args: unknown[]): void;
+  isOpen(...args: unknown[]): boolean;
+  isVisible(...args: unknown[]): boolean;
+  getLastOpenedPlugins(...args: unknown[]): unknown[];
+  addToLastOpenedPlugins(...args: unknown[]): void;
+  create(...args: unknown[]): Promise<void>;
+  open(...args: unknown[]): void;
+  openPreview(...args: unknown[]): void;
+  pinPlugin(...args: unknown[]): void;
+  unpinPlugin(...args: unknown[]): void;
+  reloadPlugin(...args: unknown[]): Promise<void>;
+  packPlugin(...args: unknown[]): Promise<void>;
+  enablePlugin(...args: unknown[]): void;
+  disablePlugin(...args: unknown[]): void;
+  destroyPlugin(...args: unknown[]): void;
+  destoryPlugin(...args: unknown[]): void;
+  localPlugin: {
+    load(...args: unknown[]): Promise<void>;
+    uninstall(...args: unknown[]): Promise<void>;
+  };
+  remotePlugin: {
+    install(...args: unknown[]): Promise<void>;
+    uninstall(...args: unknown[]): Promise<void>;
+  };
+  __unavailable?: boolean;
+  __unavailableReason?: string;
+}
+
+export const pluginModule: PluginModuleFace = {
   plugins: [],
   pinnedPlugins: [],
   pluginWindowIds: [],
@@ -562,15 +779,17 @@ export const pluginModule = {
     getViewerPlugin: () => undefined,
     getViewerPluginExt(item) {
       if (!item) return undefined;
-      if (this.viewerPluginMap && this.viewerPluginMap[item.ext]) return 'plugin';
-      const imageTypes = {
+      const ext = readMember(item, 'ext');
+      if (this.viewerPluginMap && this.viewerPluginMap[String(ext)]) return 'plugin';
+      const imageTypes: Record<string, boolean> = {
         jpg: true, jpeg: true, png: true, webp: true, avif: true, insp: true,
         jfif: true, jpe: true, jxl: true, bmp: true, tif: true, tiff: true,
         hif: true, heif: true, heic: true,
       };
-      if (imageTypes[item.ext]) return 'image';
-      if (item.customThumbnail && window.EagleConfig && !window.EagleConfig.SUPPORT_FORMATS[item.ext]) return 'custom';
-      return item.ext;
+      if (imageTypes[String(ext)]) return 'image';
+      const eagleConfig = hostWindow().EagleConfig;
+      if (readMember(item, 'customThumbnail') && eagleConfig && !eagleConfig.SUPPORT_FORMATS[String(ext)]) return 'custom';
+      return ext;
     },
     allowZoom: () => false,
     getInspectorPluginURL: () => '',
@@ -621,7 +840,7 @@ pluginModule.__unavailable = true;
 pluginModule.__unavailableReason = '插件系统无 preload/main IPC 实现（仅 openPlugin）；真实实现待 M2 后续批次';
 
 if (!isDemoRuntime()) {
-  markUnavailable('plugins.*', pluginModule.__unavailableReason);
+  markUnavailable('plugins.*', pluginModule.__unavailableReason!);
   markUnavailable('require(archiver)', 'eaglepack 导出无真实实现：链式 no-op 永不产出 zip（调研 §C-34）');
   markUnavailable('require(fast-glob)', '批量导入扫描无真实实现：恒返回空列表（调研 §C-35）');
   markUnavailable('require(auto-launch)', '开机自启无真实实现：仅把偏好写回 settings（调研 §C-33）');

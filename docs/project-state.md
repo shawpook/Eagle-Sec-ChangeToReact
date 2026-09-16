@@ -2,9 +2,9 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（M1 / M3 / M4 / M5 已全部集成；M2 待撤销 4→3；M6 扩展侧完成、插件侧待派；M7 第一批完成）
+> 最后更新：2026-09-16（M1 / M3 / M4 / M5 已全部集成；M2 待撤销 2；M6 只剩格式插件 preload 一项；M7 前两批完成）
 > 验证口径为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次；此后各批只做 L1/L2 定向核验，
-> 尚未重跑 L3（当前套件 91 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
+> 尚未重跑 L3（当前套件 92 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
 
 ---
 
@@ -39,13 +39,13 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前六批已集成，剩最后 1 个文件** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 3 → 2**（M2-6 `f761c440`、M2-7 `5d6c4311`）；**只剩 1 个 shim 文件**：`demoSeed.ts` |
+| **M2** 替代万能 shim | 🔄 **前七批已集成，剩最后 2 个文件（互相依赖，同一批）** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 3 → 2**（M2-6 `f761c440`、M2-7 `5d6c4311`）；**只剩 2 个 shim 文件**：`demoSeed.ts` 与 `ipcBus.ts`（二者**互为循环依赖**，必须同批同 Owner） |
 | M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
 | M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
 | M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
 | M6 扩展与插件专项 | 🔄 **扩展侧 + 插件侧已集成** | **M6-1**（扩展，`242a8663`）+ **M6-2**（插件根统一到仓库内 `plugins/` + SDK 顺序 + 回调真实派发，`c220af64`，依据用户决策 D24①）已集成。**剩一项**：格式插件 preload 把 HTTP `/src` 当原生文件根（`DetailViewer.tsx:159` / `Inspector.tsx:946` / `shell.tsx:566`） |
 | M7 最小产物与遗留隔离 | 🔄 **前两批已集成** | **M7-1**（`d59071d8`）：四项低风险退役；**M7-2**（`b923215c` 含我方修）：tab-bar 退出发布清单（脱钩测试改造为 **11 项负向门禁**）+ `src/run.js`/`run.jsc`/`main.jsc` 隔离归档（R100 零改动）。全部先归档到 `docs/retired-2026-09-16/`。**剩**：`src/package.json`（main 已悬空但无消费者解析它）、`src/my_modules/**`（硬前置是穷尽 `nativeRequire` 目标集） |
-| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **91 项** + ARTIFACT **5 项**） |
+| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前套件 **92 项** + ARTIFACT **5 项**） |
 
 ### 各批次最新集成提交（2026-09-16 下午）
 
@@ -218,6 +218,9 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W41** | task_8d1331bb9419 | ctx_6653e3718049 | **M7-2 tab-bar 退役 + 旧宿主入口隔离归档（F02/F20）** | ✅ **已交付核验并集成**；其负向门禁的**扫描口径有缺陷（我方修）**见 D25 |
 | **W42** | task_984014a701ea | ctx_16e2a6cd099e | **F23 产物门禁加固（入口/生成资源缺失无条件失败）** | ✅ **已交付核验并集成(`a436d3f1`)**；`frontend-gates-unit` **40 → 59**（+19 条负向用例） |
 | **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | ✅ **已交付核验并集成(`5d6c4311`)**；`待撤销 3 → 2`。其上报的写死台账断言由我方改造（`9febfb15`） |
+| **W44** | task_adcdfbccc219 | ctx_a511943eb8ae | **M2-8 `demoSeed.ts` + `ipcBus.ts` 类型化（M2 收官，待撤销 2 → 0）** | 🔄 进行中（worktree `m2-shim-pair`，claude/deepseek-flash） |
+| **W45** | task_c5922c0e3ca7 | ctx_e9636c5b0a65 | **M6-3 格式插件 preload 的原生根修正** | 🔄 进行中（worktree `m6-format-preload`，claude/deepseek-flash） |
+| **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | 🔄 进行中（worktree `m7r2-audit`，codex 默认配置） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。
@@ -350,7 +353,7 @@ e6f6383e docs(m0): 纳入总体任务书
 ## 8. 下一步计划（恢复时从这里继续）
 
 ### 进行中（等结果）
-**无**——W18 已交付、核验、集成并释放终端；主分支全量回归 ALL GREEN。下一步见上文「可立即派」。
+**W44 / W45 / W46 在跑**（2026-09-16 晚，见 §4 台账）。在此之前 W40–W43 四批已全部核验集成，主分支干净。
 
 ### 已完成（本轮新增）
 - ✅ **W11 F06 前端失败语义与写回收敛**（`25f84998`）：新增 `services/imageTransformWriteback.ts`
@@ -411,21 +414,27 @@ e6f6383e docs(m0): 纳入总体任务书
    缩略图服务路由不匹配返回 404——改为原样透传后 200。
 5. **F06 flaky 修复**（W17 / `1fc34443`）：见 D10。
 
-### 下一步（可立即派，无并行 Worker 阻塞）
+### 下一步（M7/M8 收口）
 
-M1 与 M2 第一批至此**全部闭环且主分支全绿**。后续按批次推进，可并行派遣（各 Worker 只跑自家定向测试，见 D9）：
+W40–W43 已全部集成；M2 只剩最后 2 个 shim 文件（`demoSeed.ts` + `ipcBus.ts`，**互为循环依赖**），
+M6 只剩格式插件 preload 一项，M7 剩 `src/package.json` 与 `src/my_modules/**`，随后进 M8。
 
-6. **M2 后续批次**：① 逐模块撤销 shim 的 8 个 `@ts-nocheck`（460 条类型债，`typecheck.mjs` 报「整文件免检 8，待撤销 8」）
-   —— 建议按文件切分、每个 Worker 一个文件，避免 shim 层互踩；② 清理 guarded Angular 分支（F01）；
-   ③ `http`/`https` 在 Electron 态的接线裁决（D14 的待证项，需先取证 `nativeRequire('http')` 是否真的可用）。
-7. **M3**（F03/F16 经典业务脚本与自有 Worker）
-8. **M4**（F11–F14 窗口与 scope 收口）
-9. **M6**（F18/F19 扩展与插件）—— 注意 F19 涉及工作区外资源（`H:/resources/plugin_templates`），可能需向用户确认
-10. **M7**（F02/F20/F24 遗留隔离）—— 退役审计（W5）已交付，可据其结论分条退役
-11. **M8 最终验收**
+本波（3 个 Worker，按 D16 分档：第 1、2 个 claude/deepseek-flash，第 3 个 codex 默认配置）：
 
-**文件所有权提示**：`tests/frontend-gate-manifest.mjs`（含 `DIST_POLICY`/`KNOWN_MISSING_ASSETS`）在 M5 与 M7 之间需切分；
-`src/app/react/core/shim/**` 的 8 个文件在 M2 后续批次中**一文件一 Worker**，不得两人同改。
+| 波次 ID | 任务 | 起草依据 |
+|---|---|---|
+| **W44** | **M2-8** 撤销 `demoSeed.ts` + `ipcBus.ts` 的 `@ts-nocheck`（**M2 收官：待撤销 2 → 0**） | 二者互为循环依赖，必须同 Owner |
+| **W45** | **M6-3** 格式插件 preload 的原生根修正（`DetailViewer.tsx:160` / `Inspector.tsx:947` / `preview-window/shell.tsx:585`） | W22 审计第 7 条 + Coordinator 本次行号级取证 |
+| **W46** | **M7-R2** 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json` | M7 剩余项的硬前置 |
+
+> **W45 的新取证（Coordinator 于派单前核实，已写进 spec）**：`bareModules['url'] = urlModule` 是**无条件**的
+> （`moduleRegistry.ts:570`），且 Electron 渲染进程是**以 HTTP 加载**的（`electron/main.cjs:8` 的
+> `previewUrl = http://localhost:5176/src/app/index.html`），因此三处算出的 preload 在**生产 Electron 下
+> 同样是 `http://localhost:5176/src/app/js/plugin/api-format-extension.js`** —— 这不是「浏览器态才有的
+> 假路径」，而是真实功能缺陷。审计原文只说「未做运行期验证」，此行号级推理补齐了它。
+
+M8 触发前必须先收掉：① M2 待撤销归零；② M6 该项闭合；③ M7 两项各有明确结论（退役或保留 + 退出条件）。
+M8 才跑 **L3 全量**（92 项 + ARTIFACT 5 项）。
 
 ### 尚未清理的中间产物
 - worktree `m2-runtime-services`（`shawpook/m2-runtime-services`，HEAD `e8b3d2b1`）已交付完毕，可回收。

@@ -139,6 +139,14 @@ export const REACT_SUITE = [
   // 该断言是本次登记时补的：F04 给 entry.tsx 加了 `./boot` 依赖，打断了本文件
   // 「禁止加载未隔离的依赖」的实测路径，而本文件不在套件里，全量回归从未暴露它。
   'tests/preview-entry-subscriptions.mjs',
+  // M3-1：vendor 里第一方规则函数的具名模块化——逐项对照 vendor 运行期导出（纯 Node、秒级）。
+  // 覆盖 26 个 isMatch*Rule / matchStringMethod 各分支 / zoomHelpers 全部导出，
+  // 并钉住新模块不得引入裸 require / @ts-nocheck / any。
+  'tests/match-rules-equivalence.mjs',
+  // M4-C：预览窗 dispose 收口——两处「关掉后仍在真实消耗」的开销（500ms 跨进程轮询、
+  // 主进程 leave-full-screen 监听随切项累积）。纯 Node（node:vm + EventEmitter 代表
+  // remote 代理面），无 Electron、秒级；含突变测试（逐个移除修复点必现 FAIL）。
+  'tests/m4-preview-dispose.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -157,6 +165,8 @@ export const TEST_CLASSES = {
   'tests/preview-boot-contract.mjs': 'static',
   'tests/preload-subscriptions.mjs': 'static',
   'tests/preview-entry-subscriptions.mjs': 'static',
+  'tests/match-rules-equivalence.mjs': 'static',
+  'tests/m4-preview-dispose.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };
 
@@ -164,6 +174,9 @@ export const TEST_CLASSES = {
 export const ARTIFACT_TESTS = [
   'tests/dist-entry-check.mjs',
   'tests/production-smoke.mjs',
+  // M6-1：扩展交付契约——端口单一来源与生产默认的漂移、权限面闭合性、popup 两加载环境、
+  // MV2 对照物仍在且确实不同、产物与源码逐字一致。读 dist/frontend，故先 npm run build。
+  'tests/browser-extension-delivery.mjs',
 ];
 
 /**
@@ -184,6 +197,10 @@ export const EXTRA_REGRESSION = [
   // 导入导出面的进度/取消闭环：此前只在 `npm run test:full` 的 test:export-progress 里，
   // 不在 `npm test`，故验收入口显式执行（矩阵「导入导出与库切换」必需项）。
   'tests/export-progress-closed-loop.mjs',
+  // M6-1：真实浏览器宿主里的 MV3 扩展端到端（自起后端 + fixture HTTP 服务，用**构建出的**
+  // MV3 产物，不以 MV2 fixture 替代交付对象）。宿主不可用时打印 `..._BLOCKED <原因>`
+  // 并 0 退出——环境缺失不得伪装成产品缺陷。本机实测（Edge 153）已通过。
+  'tests/browser-extension-mv3-e2e.mjs',
 ];
 
 /**

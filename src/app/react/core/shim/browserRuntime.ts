@@ -8,7 +8,7 @@
  * 在 `./moduleRegistry`（需要 Electron 能力面，避免此处引入反向依赖）。
  */
 import {
-  capabilityGap, demoFileStore, desktopApi, isDemoRuntime, isElectronRuntime, markUnavailable, nativeFs,
+  capabilityGap, demoFileStore, desktopApi, failCapability, isDemoRuntime, isElectronRuntime, markUnavailable, nativeFs,
   nativeRequire, RuntimeCapabilityError,
 } from "./environment";
 let browserFetchRewritten = false;
@@ -511,6 +511,19 @@ export const urlModule = {
 /**
  * M2-1（调研 §C-28）：修前 `start()` 恒 `Promise.resolve(this)`——**旧 REST 服务「启动成功」
  * 但根本没起**。真实业务态明确失败；demo 态保留演示语义。
+ *
+ * M2-2（回归修复）：失败**必须同步抛出**，不能返回 rejected Promise。
+ * 两个真实调用点都对同步抛错有处置：`bundleGlobals._startAPIServer` 把 `start(cb)` 包在
+ * try/catch 里、catch 体为 noop（bundle 18945-18968 逐字，作者本就把「起不来」当作可预期
+ * 失败，另有 5s 后的 XHR 探活走 `electronLog.info('[app] API server start fail[1].')` +
+ * `stopAPIServer()`）；`miscDomain` 的 power-resume 分支同样是 try/catch +
+ * `electronLog.error`。而 rejected Promise 两个 catch 都接不住 → 成为 unhandled rejection，
+ * 把「能力缺口」淹没成未捕获异常（实测：`continuous-grid-scroll` 的
+ * `Runtime.exceptionThrown` 断言）。
+ *
+ * 失败语义本身不变：`capabilityGap` 仍登记 `JsonRestServer.start` 缺口（`capabilities.gaps`
+ * 可查），且**成功回调照旧不触发**——不会退回「启动成功」的假象。修前那个 `Promise.resolve`
+ * 之所以是假成功，正是因为它无条件调用了 callback。
  */
 export class JsonRestServerStub {
   constructor(options) {
@@ -520,8 +533,7 @@ export class JsonRestServerStub {
   addAPI() {}
   addHandler() {}
   start(callback) {
-    const err = capabilityGap('JsonRestServer.start', '无本地 REST 服务实现（启动即「成功」但服务未起）');
-    if (err) return Promise.reject(err);
+    failCapability('JsonRestServer.start', '无本地 REST 服务实现（启动即「成功」但服务未起）');
     if (typeof callback === 'function') setTimeout(callback, 0);
     return Promise.resolve(this);
   }

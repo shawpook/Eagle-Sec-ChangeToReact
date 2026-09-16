@@ -29,6 +29,40 @@ export const appRootModule = {
   toString: () => '/src',
 };
 
+/**
+ * URL 形态的路径归一（`a/b/../c` → `a/c`；保留前导 `/`）。仅用于模块内**相对 require**。
+ */
+function normalizeUrlPath(input) {
+  const parts = String(input || '').split('/');
+  const out = [];
+  for (const part of parts) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') { out.pop(); continue; }
+    out.push(part);
+  }
+  return '/' + out.join('/');
+}
+
+/**
+ * 已装载模块内部**相对依赖**的真实解析（`./x` / `../x`）。
+ *
+ * M2-2（回归修复）：`new Function` 装载的模块此前拿到的 `require` 就是 `requireModule`
+ * 本身，相对路径在那里既不以 `/src/` 开头、也不在裸模块表里，于是落到 `genericStub`——
+ * 真实业务态下即「调用即抛」，使**带依赖的真实模块**（如 `stopword` 的
+ * `require('./stopwords_en.js')`）根本无法装载。此处按 Node 的解析顺序补上
+ * 扩展名与目录入口探测：`x` → `x.js` → `x.json` → `x/index.js`。
+ *
+ * 作用域仅限 `loadJsModule` 装载的模块内部；`requireModule` 顶层的 require 链语义不变。
+ */
+function resolveLocalRequest(request, fromUrl) {
+  const base = dirname(fromUrl);
+  const joined = normalizeUrlPath(`${base}/${request}`);
+  for (const candidate of [joined, `${joined}.js`, `${joined}.json`, `${joined}/index.js`]) {
+    if (syncText(candidate) !== null) return candidate;
+  }
+  return joined;
+}
+
 export function loadJsModule(urlPath) {
   if (moduleCache.has(urlPath)) return moduleCache.get(urlPath).exports;
   const source = syncText(urlPath);
@@ -38,6 +72,12 @@ export function loadJsModule(urlPath) {
     return stub;
   }
   const module = { exports: {} };
+  const localRequire = (request) => {
+    const spec = String(request == null ? '' : request);
+    return spec.startsWith('./') || spec.startsWith('../')
+      ? requireModule(resolveLocalRequest(spec, urlPath))
+      : requireModule(request);
+  };
   const fn = new Function(
     'module',
     'exports',
@@ -50,13 +90,44 @@ export function loadJsModule(urlPath) {
     source
   );
   try {
-    fn(module, module.exports, requireModule, window.process, window, window.Buffer, urlPath, dirname(urlPath));
+    fn(module, module.exports, localRequire, window.process, window, window.Buffer, urlPath, dirname(urlPath));
   } catch (err) {
     console.warn(`[eagle-shim] failed to load ${urlPath}`, err);
     module.exports = genericStub(urlPath);
   }
   moduleCache.set(urlPath, module);
   return module.exports;
+}
+
+/**
+ * 真实存在的裸模块装载（M2-2 回归修复）。
+ *
+ * 背景：`src/node_modules` / `src/my_modules` 下真实存在、且有真实消费者的裸模块，此前
+ * **未登记**在 `bareModules` 里，于是统一落到 `genericStub`——M2-1 把它从「静默替身」改成
+ * 「调用即抛」后，这些模块的消费者在启动路径上直接抛错（实测：`PluginCenter` 的
+ * `require('compare-versions')` 打断主窗就绪）。
+ *
+ * 修法是**补全真实登记**而不是放宽失败：磁盘上有真实实现的模块走真实加载；装载确实失败
+ * （源码取不到 / 其依赖在本运行态不可用）时回落 `genericStub`——真实业务态仍是同一处
+ * 可观测的 `RuntimeCapabilityError`，不会退回「静默成功」。
+ */
+const realModuleCache = new Map();
+function realBareModule(name, entryUrl) {
+  if (realModuleCache.has(name)) return realModuleCache.get(name);
+  let loaded;
+  try {
+    loaded = loadJsModule(entryUrl);
+  } catch (err) {
+    // 真实业务态：genericStub 抛出 RuntimeCapabilityError（含缺口登记），与未登记模块同一失败面。
+    loaded = genericStub(name);
+  }
+  realModuleCache.set(name, loaded);
+  return loaded;
+}
+
+/** 释放真实模块缓存（仅测试夹具使用）。 */
+export function resetRealBareModules() {
+  realModuleCache.clear();
 }
 
 export function loadOriginalModule(urlPath) {
@@ -74,6 +145,15 @@ export function requireModule(request) {
     return nativeRequire(req);
   }
   if (req === 'app-root-path') return appRootModule;
+  // M2-2：磁盘真实存在 + 有真实消费者的裸模块 → 走真实加载（见 realBareModule）。
+  // 差分依据：`tests/tmp-bare-diff.mjs` 对 `require('<裸模块>')` 与 bareModules 登记表取差集。
+  // 入口路径按各包 package.json 的 main 解析后硬编码（运行期不做 package.json 解析）。
+  if (req === 'compare-versions') return realBareModule(req, '/src/node_modules/compare-versions/index.js');
+  if (req === 'stopword') return realBareModule(req, '/src/node_modules/stopword/lib/stopword.js');
+  if (req === 'junk') return realBareModule(req, '/src/my_modules/junk/index.js');
+  // 注：`electron-referer` 的真实消费者经 `remote.require('electron-referer')`（主进程代理，
+  // 本仓 `remote` 已登记为缺口），不从本 require 链走；此处登记是让裸 require 也拿到真实模块。
+  if (req === 'electron-referer') return realBareModule(req, '/src/node_modules/electron-referer/index.js');
   if (bareModules[req] !== undefined) return bareModules[req];
   if (req === '/src/i18n' || req === '/src/i18n/index.js') return MockI18n;
   if (req.startsWith('/src/')) {
@@ -85,7 +165,9 @@ export function requireModule(request) {
     if (req.endsWith('/app/js/plugins/eagle-note-plugin')) return {};
     if (req.endsWith('/my_modules/n-readlines')) return lineByLineMock;
     if (req.endsWith('/my_modules/appdata-path')) return () => '/mock-user-data';
-    if (req.endsWith('/my_modules/junk')) return { not: () => true, is: () => false };
+    // M2-2：修前是恒真的 `{ not: () => true, is: () => false }` 假替身——`junk.is` 永不返回
+    // true，`walk()` 的垃圾文件过滤形同不存在。`src/my_modules/junk` 真实存在，改走真实加载。
+    if (req.endsWith('/my_modules/junk')) return realBareModule('junk', '/src/my_modules/junk/index.js');
     if (req.endsWith('/my_modules/is-hidden-file')) return { check: () => false };
     if (req.endsWith('/my_modules/file-icon')) return { getFileIcon: () => Promise.resolve({}), getFileIconSync: () => null };
     if (req.endsWith('/my_modules/is-directory')) return {

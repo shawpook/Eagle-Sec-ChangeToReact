@@ -471,7 +471,7 @@ test('无原生 fs 时的行读取：真实业务态构造即抛，不静默改�
   );
 });
 
-test('无本地 REST 服务实现：start() reject，不返回「已启动」', async () => {
+test('无本地 REST 服务实现：start() 同步明确失败，不返回「已启动」', async () => {
   const bc = browserConnectedScenario();
   const env = bc.load(ENV_MODULE);
   const runtime = bc.load(BROWSER_MODULE);
@@ -479,7 +479,29 @@ test('无本地 REST 服务实现：start() reject，不返回「已启动」', 
   assert.equal(env.resolveRuntimeMode(), 'browser-connected');
 
   const server = new runtime.JsonRestServerStub();
-  await expectRejects(server.start(), 'JsonRestServerStub.start');
+  let started = false;
+
+  // M2-2：失败必须是**同步抛出**而不是 rejected Promise。两个真实调用点
+  // （bundleGlobals._startAPIServer、miscDomain 的 power-resume）都只对同步抛错设了
+  // try/catch——rejected Promise 两者都接不住，会变成 unhandled rejection，把「能力缺口」
+  // 淹没成未捕获异常。这里同时钉住「同步抛出」与「回调不得触发」两件事。
+  assert.throws(
+    () => server.start(() => { started = true; }),
+    (err) => {
+      assertCapabilityError(err, 'JsonRestServerStub.start');
+      assert.equal(err.capability, 'JsonRestServer.start', '缺口名应稳定');
+      return true;
+    },
+    '真实业务态必须同步抛出 RuntimeCapabilityError',
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(started, false, '失败时「服务已启动」成功回调不得触发');
+  assert.equal(
+    env.unavailableCapabilities['JsonRestServer.start'] !== undefined,
+    true,
+    '缺口须登记到 capabilities.gaps，供诊断面板/门控消费',
+  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 /** M0 类型门禁：检查范围内零诊断不等于全工作区无类型债。
- * 保留现有 8 项整文件免检，完整扫描注释指令并显式报告类别和未覆盖范围。
+ * 整文件免检数量以 NOCHECK_LEDGER 台账为准（M2-8 收官后为 0 项）；
+ * 完整扫描注释指令并显式报告类别和未覆盖范围。
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

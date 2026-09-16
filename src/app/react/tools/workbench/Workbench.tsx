@@ -27,6 +27,14 @@ interface LibraryItem {
   star?: number
   tags?: string[]
   url?: string
+  /**
+   * M8-4：`/api/item/list` 原样返回库内条目（`backend/src/server.js` 的
+   * `readItems()`），而条目对象由 `backend/src/importer.js` 构造时显式带上该字段
+   * （同步缩略图生成失败置 true），缩略图任务提交成功后由
+   * `backend/src/thumbnail-task-service.js` 的 `commitThumbnail` 删除。
+   * 语义与主网格一致：**该条目没有可用缩略图**。
+   */
+  noThumbnail?: boolean
 }
 
 interface LibraryInfo {
@@ -92,7 +100,17 @@ export function Workbench() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropActive, setDropActive] = useState(false)
   const [imagesDir, setImagesDir] = useState('')
+  const [thumbFailed, setThumbFailed] = useState<Record<string, boolean>>({})
   const smartFolderId = useRef('')
+
+  /**
+   * M8-4：缩略图缺图的现场登记。`/api/item/thumbnail` 对取不到的条目返回
+   * 404（该路由的既有契约，本批不改后端），浏览器侧表现为破图 —— 故把
+   * `onError` 记进本表，渲染时与元数据的 `noThumbnail` **并集**判定占位。
+   */
+  const markThumbFailed = useCallback((id: string) => {
+    setThumbFailed((prev) => (prev[id] ? prev : { ...prev, [id]: true }))
+  }, [])
 
   const say = useCallback((id: string, text: string) => {
     setStatus((prev) => ({ ...prev, [id]: text }))
@@ -122,7 +140,11 @@ export function Workbench() {
   }, [mediaPath])
 
   const loadItems = useCallback(async () => {
-    setItems(await requestApi<LibraryItem[]>(apiBaseUrl(), '/api/item/list'))
+    const next = await requestApi<LibraryItem[]>(apiBaseUrl(), '/api/item/list')
+    // 重载即重新尝试：后台缩略图任务可能已补齐图片，失败登记不得跨轮次残留
+    // （否则 Refresh / 导入后的新列表会一直沿用上一轮的占位）。
+    setThumbFailed({})
+    setItems(next)
   }, [])
 
   const refreshLibrary = useCallback(async () => {
@@ -836,25 +858,42 @@ export function Workbench() {
             <div className={`grid${viewMode === 'list' ? ' list-view' : ''}`} id="itemGrid">
               {items.length === 0
                 ? <div className="muted">No items</div>
-                : items.map((item) => (
-                  <div
-                    className={`item-card${selectedId === item.id ? ' selected' : ''}`}
-                    data-id={item.id}
-                    key={item.id}
-                    onClick={() => selectItem(item)}
-                  >
-                    <img src={`${apiBaseUrl()}/api/item/thumbnail?id=${encodeURIComponent(item.id)}`} alt={item.name} loading="lazy" />
-                    <div className="meta">
-                      <div className="name">{item.name}</div>
-                      <div className="tags">
-                        <span className="pill">{mediaLabel(item)}</span>
-                        {' '}
-                        {(item.tags || []).map((tag) => <span className="pill" key={tag}>{tag}</span>)}
+                : items.map((item) => {
+                  // M8-4：缩略图缺图 → 占位，两条来源任一成立：
+                  //  1) 元数据 noThumbnail（经 /api/item/list 原样透传，见 LibraryItem 注释）；
+                  //  2) 本轮该条目请求过 /api/item/thumbnail 且加载失败（onError）。
+                  //     这一条覆盖「noThumbnail 为假、路由却 404」的既有缺口。
+                  // 占位只换渲染，src 的算法（apiBaseUrl() + 查询串）与后端契约均不变。
+                  const thumbUnavailable = item.noThumbnail === true || thumbFailed[item.id] === true
+                  return (
+                    <div
+                      className={`item-card${selectedId === item.id ? ' selected' : ''}`}
+                      data-id={item.id}
+                      key={item.id}
+                      onClick={() => selectItem(item)}
+                    >
+                      {thumbUnavailable
+                        ? <div className="thumb-placeholder"><span className="muted">{mediaLabel(item)}</span></div>
+                        : (
+                          <img
+                            src={`${apiBaseUrl()}/api/item/thumbnail?id=${encodeURIComponent(item.id)}`}
+                            alt={item.name}
+                            loading="lazy"
+                            onError={() => markThumbFailed(item.id)}
+                          />
+                        )}
+                      <div className="meta">
+                        <div className="name">{item.name}</div>
+                        <div className="tags">
+                          <span className="pill">{mediaLabel(item)}</span>
+                          {' '}
+                          {(item.tags || []).map((tag) => <span className="pill" key={tag}>{tag}</span>)}
+                        </div>
+                        <a href={mediaLink(item)} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Preview</a>
                       </div>
-                      <a href={mediaLink(item)} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Preview</a>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </section>
         </main>

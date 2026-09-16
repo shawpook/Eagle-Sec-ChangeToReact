@@ -12,10 +12,7 @@ import {
 } from './frontend-gate-manifest.mjs';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
-export const NOCHECK_LEDGER = [
-  { file: 'src/app/react/core/shim/demoSeed.ts', category: '演示数据' },
-  { file: 'src/app/react/core/shim/ipcBus.ts', category: 'IPC 总线' },
-];
+export const NOCHECK_LEDGER = [];
 
 export function scanTypeDirectives(text, file = 'source.ts') {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);

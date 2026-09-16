@@ -37,9 +37,9 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前两批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态 + 能力缺失即失败）、**M2-2**（补真实裸模块登记）、**M2-3**（撤销环境层/设置层 `@ts-nocheck`，待撤销 8→6）均已集成；M2-4（moduleRegistry 类型化 + 截获契约化）在跑（W29） |
-| M3 经典业务脚本进模块图 | 🔄 **第一批已集成，第二批在跑** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*` 具名模块化）已集成（`4c1fc124`）；M3-2（调用点切换 + 冷启动空快照修复）在跑（W26） |
-| M4 窗口与 scope 收口 | 🔄 **第一批已集成，第二批在跑** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose + 两处持续性开销）已集成（`553804f3`）；M4-A（URL/历史守卫）、M4-B（采集/偏好窗 dispose + store 订阅守卫）在跑（W27/W28） |
+| **M2** 替代万能 shim | 🔄 **前三批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态）、**M2-2**（补真实裸模块登记）、**M2-3**（撤销环境层/设置层 `@ts-nocheck`）、**M2-4/M7-1**（moduleRegistry 强类型化 + 截获契约化，待撤销 6→5）均已集成。剩 5 个 shim 文件的 `@ts-nocheck` 与 D20 的 `declare global` 待做 |
+| M3 经典业务脚本进模块图 | 🔄 **前两批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*` 具名模块化）、**M3-2**（调用点切换 + 冷启动空快照不自愈 + 等价性测试事实源迁移）均已集成（`4c1fc124` / `35675429`）。F16 的 Worker 协议类型化待派 |
+| M4 窗口与 scope 收口 | 🔄 **前三批已集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）均已集成（`553804f3` / `2502357f` / `ebf90c6d`）。F14（第三方引擎 adapter）与 domLite/ng-* 待派 |
 | M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边见 §8 |
 | M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；插件侧（F19）待派 |
 | M7 最小产物与遗留隔离 | ⏸ 待替代就位 | 退役审计已交付（§6） |
@@ -54,6 +54,9 @@
 已集成的提交（自下而上）：
 
 ```
+5f2d5518 test(suite): 登记 M3-2 的 m3-filter-cold-start 与 M4-B 的 m4-window-subscriptions，REACT_SUITE 83 → 85  [Coordinator]
+ebf90c6d fix(m4): 采集/偏好窗 dispose 收口 + 主窗 store 订阅整形  [W28]
+35675429 fix(m3): 调用点切到 core/rules/* + 治冷启动空快照不自愈 + 等价性测试事实源迁移  [W26+W30]
 325e8d0d test(suite): 登记 M4-A 的 m4-url-history，REACT_SUITE 82 → 83  [Coordinator]
 2502357f fix(m4): goBack/goForward 守卫修正 + 补回 URL→状态 触发面  [W27]
 d4f611a2 refactor(m2/m7): moduleRegistry 强类型化 + 隐式截获契约化为声明式截获表  [W29]
@@ -169,11 +172,11 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W23** | task_d185576cff1e | ctx_c2d358c25c93 | **M3-1 `core/rules/*` 具名模块化（不改调用点）** | ✅ **已交付核验并集成(`4c1fc124`)** |
 | **W24** | task_631ea410089d | ctx_c5af03659909 | **M4-C 预览窗 dispose 与两处持续性开销** | ✅ **已交付核验并集成(`553804f3`)** |
 | **W25** | task_cc246d9917e9 | ctx_e9d3a9ff65d5 | **M6-1 扩展端口单一来源 + MV3 交付契约** | ✅ **已交付核验并集成(`242a8663`)**；本机 Edge 153 实机 MV3 e2e 通过 |
-| **W26** | task_f4d7a4bbb60e | ctx_1516197a7789 | **M3-2 调用点切换与冷启动空快照修复** | ⚠️ 交付完成、8/9 绿，**自判 failed 等裁决**：`match-rules-equivalence.mjs` 的 `parseFilterDomainTable()` 用正则抓 `filterDomain.ts` 源码里的 26 对 `w.isMatchXxxRule`，调用点切走后抓到 0 对 → 该测试 4 条红。**属规范冲突不是代码缺陷**。已裁决 **授权改该测试且要求加严**，派 **W30** 收尾 |
+| **W26** | task_f4d7a4bbb60e | ctx_1516197a7789 | **M3-2 调用点切换与冷启动空快照修复** | ✅ **已交付核验并集成(`35675429`)**（与 W30 同批） |
 | **W27** | task_e362ada5c4cf | ctx_e3dc3e79b6ee | **M4-A URL 双向同步与历史守卫** | ✅ **已交付核验并集成(`2502357f`)**；`m4-url-history` 25/25 |
-| **W28** | task_7ed261ef6422 | ctx_b1de96b5d57e | **M4-B 采集/偏好窗 dispose 与 store 订阅守卫** | 🔄 进行中（worktree `m4-window-subs`，antigravity） |
+| **W28** | task_7ed261ef6422 | ctx_b1de96b5d57e | **M4-B 采集/偏好窗 dispose 与 store 订阅守卫** | ✅ **已交付核验并集成(`ebf90c6d`)**；`m4-window-subscriptions` 23/23。**存一处已登记偏差**（净增 3 处 `(window as any)`，见 D20） |
 | **W29** | task_6ddbc52ec73b | ctx_010830f11495 | **M2-4 moduleRegistry 类型化与截获契约化** | ✅ **已交付核验并集成(`d4f611a2`)**；`待撤销 6 → 5`，截获表契约 6/6 |
-| **W30** | task_da247f585fd6 | ctx_4c6460644027 | **M3-2fix 等价性测试事实源迁移（按裁决加严）** | 🔄 进行中（worktree `m3-callsites`，同 worktree 续做） |
+| **W30** | task_da247f585fd6 | ctx_4c6460644027 | **M3-2fix 等价性测试事实源迁移（按裁决加严）** | ✅ **已交付核验并集成(`35675429`)**；`match-rules-equivalence` 22/22（原 21 条全保留 +1b） |
 
 > W23–W25 **首次派单全部卡在 Bypass 确认框**（`skipDangerousModePermissionPrompt` 又被抹掉，
 > 见 §7.1），进程实际已退出、`worker-stop` 后带 `--retry-of` 重派成功。
@@ -234,6 +237,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | D17 | **只读审计报告必须复制进编码 Worker 的 worktree** | `outputs/` 是**未跟踪**目录，`git worktree add` 不会带过去。M4-C 与 M4-B 都报告过「任务所述的 `outputs/research-m4-windows-scope-2026-09-16.md` 在工作树与 git 历史中均不存在」。**派单前必须 `cp outputs/research-*.md <worktree>/outputs/`**，否则 Worker 只能凭 spec 里的摘要干活。根治办法（待做）：把报告纳入 git 或改为随任务投递 |
 | D18 | **antigravity Worker 首次在某个 worktree 启动会卡在「工作区信任」提示** | 症状：`worker-start` 返回 `state: failed`、`lastError: "Agent startup blocked: agent-trust-workspace"`，**spec 尚未投递**。处置：读终端 → `orca terminal send --terminal <handle> --text "" --enter`（`Yes, I trust this folder` 默认选中）→ 再 `worker-start … --agent antigravity --retry-of <旧 dispatchId>`。未找到可预置的信任列表文件（`~/.gemini/antigravity*` 下只有 brain/logs） |
 | D19 | **Worker 上报「规范冲突」时的裁决口径：授权改测试，但要求加严、不得只删断言** | W26（M3-2）的实例：批次 1 的 `match-rules-equivalence.mjs` 用**源码文本正则**抓 `filterDomain.ts` 里的 26 对 `w.isMatchXxxRule` 作为「表结构」判据；批次 2 的硬性要求正是把该函数体切走，于是探针必然抓到 0 对（`not ok 1` 及其下游 `not ok 3`/`not ok 8` 全属同一条多米诺）。**这类冲突要区分「测试在守护什么」**：它守护的是「规则表 = filterDomain 实际使用的那张表」，迁移后这个命题的**事实源变了**，应当随之重指向，而不是保留一个已失真的探针或直接删掉。裁决要求：① 把事实源重指向 `core/rules/matchRuleTable.ts`；② 把 26 键与顺序**冻结成测试内的字面清单**（防止「解析自己」自证）；③ **新增**「`filterDomain.ts` 里 `w.isMatch*Rule` 命中数为 0 且确实引用了 `getMatchRuleTable`」的迁移完成断言；④ 其余 17 条运行时等价性断言一字不改；⑤ 必须做负向自证 |
+| D20 | **M4-B 存一处已登记偏差：净增 3 处 `(window as any)`——不掩饰、留后续项** | W28 在 `collect-window/controller.ts`（14→15）与 `preferences/entry.tsx`（3→4）净增 3 行 `(window as any)`（`preferences?.theme`、`CollectItem`、`__eaglePreferencesEntryReady`）。核查结论：三者都是这两个文件**既有的**「读 window 动态全局」惯用式（同文件原本已有 14 处 / 3 处），**不是用来掩盖类型错误**——同批里它们反而**加强**了守卫（`?.`、`typeof` 判函数、失败回落）。但它确实踩了硬约束 1「不得新增 `any`」。**根治方式**：在 `global/globals.d.ts` 为这些 window 全局加 `declare global` 声明，届时这三处与同仓既有 85 处可一并消除。**已登记为 M2 类型化批次的后续项**，不在本批回退（回退会让那三处的空值防护一并丢失） |
 
 ---
 

@@ -835,6 +835,7 @@ function createWindow(options = {}) {
       contextIsolation: false,
       sandbox: false,
       backgroundThrottling: false,
+      webviewTag: true,
     },
   };
   if (process.platform === 'darwin' && currentPreferencesState().general.enableVibrancy !== 'false') {

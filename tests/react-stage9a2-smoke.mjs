@@ -176,7 +176,10 @@ try {
       && wrapper.closest('.detail-wrap').classList.contains('url')
       && webview.getAttribute('useragent') === window.EagleConfig.USER_AGENT
       && webview.getAttribute('allowpopups') !== null
-      && webview.src === 'https://www.eagle.cool';
+      // 原断言取的是普通/旧元素上的纯属性反射值；guest 化后的 WebViewElement.src
+      // 会按 URL 规范归一化。两条同时断言属性原值与归一化语义，避免放宽。
+      && webview.getAttribute('src') === 'https://www.eagle.cool'
+      && new URL(webview.src).href === 'https://www.eagle.cool/';
   })()`);
   await assertExprOn(pw, 'pw2a-webview-toolbar', `(() => {
     // url 工具列分支：webview-toolbar 存在（back/forward/refresh 控件由 React 接管）

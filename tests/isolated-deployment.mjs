@@ -237,13 +237,14 @@ const DEPLOY_SRC_EXISTENCE_SENTINELS = [
 //   交付闭环的持久门禁在 tests/publish-asset-manifest.mjs（整包对账 + 产物侧真实装载）。
 // ---------------------------------------------------------------------------
 const KNOWN_DEPLOYMENT_GAPS = [
-  {
-    id: 'api-item-thumbnail-404-for-document',
-    urls: (parsed) => parsed.pathname === '/api/item/thumbnail',
-    where: 'backend/src/server.js:2051-2065',
-    why: '命中的是 workbench.html 对刚导入的 .md 条目取缩略图；该条目磁盘上确有 *_thumbnail.png（主窗经 /file/ 成功取到），但此处 readItems()/ensureThumbnail 未命中而回落 404 "Thumbnail not found"。库状态与条目状态两次运行同构，与隔离无关。',
-    fix: '产品侧裁决：若「无缩略图」应以 200 + 占位表达，改后端；否则保留登记。',
-  },
+  // 空表是**当前正确状态**，不是待办：最后一条（/api/item/thumbnail 恒 404）已由 M8-5 修掉——
+  // 真因是 server.js:2056 调用了从未导入的 ensureThumbnail（8cf92c55 收窄 import 时漏改该调用点），
+  // ReferenceError 被该路由自己的 catch 吞成 404。修好后该路径再出现 404 就应当判红。
+  //
+  // 新增条目的门槛（写在这里，免得后来者随手加）：
+  //   必须能在**仓库自身的** dist/frontend 上复现（即发布内容/产品侧的真实缺口），
+  //   而不是隔离副本引入的；且必须写明 where / why / fix 三栏。
+  //   下面的反向校验会强制：登记了却没命中 ⇒ 判红（防豁免僵化，同 D4 口径）。
 ];
 
 /** 本轮命中的登记项（跑完汇总打印，避免绿跑把既有缺陷藏起来）。 */
@@ -811,6 +812,11 @@ try {
   // 既有缺口不许被绿跑掩盖：逐条打印本轮真正命中的登记项。
   const gapIds = [...new Set(gapHits.map((hit) => hit.id))];
   log(`GAPS_REGISTERED ${gapIds.length}/${KNOWN_DEPLOYMENT_GAPS.length} 项命中（${gapHits.length} 次），未登记的失败已按判红处理`);
+  // 反向校验（同 D4 口径「登记项若已存在会 FAIL，防僵化」）：登记了却一次都没命中，
+  // 说明该豁免多半已失效——留着它只会让**已修好的缺陷**在绿跑里被悄悄藏住。
+  const staleGaps = KNOWN_DEPLOYMENT_GAPS.map((gap) => gap.id).filter((id) => !gapIds.includes(id));
+  assert.deepEqual(staleGaps, [],
+    `登记表里的豁免本轮一次都没命中，应删除对应条目（回归即失效）：${JSON.stringify(staleGaps)}`);
   for (const id of gapIds) {
     const entry = KNOWN_DEPLOYMENT_GAPS.find((candidate) => candidate.id === id);
     for (const hit of gapHits.filter((candidate) => candidate.id === id)) log(`GAP ${id} :: ${hit.text}`);

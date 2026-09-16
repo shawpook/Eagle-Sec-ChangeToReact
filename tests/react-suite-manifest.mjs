@@ -154,6 +154,13 @@ export const REACT_SUITE = [
   // location.hash setter 排队投递 hashchange），无 Electron、秒级。覆盖守卫真值、
   // popstate/hashchange 触发面与三重防回环、URL→状态四类语义映射、结构守卫。
   'tests/m4-url-history.mjs',
+  // M3-2：调用点切换后的冷启动正确性——规则表缺席时**不得写空快照**（`[]` 在 JS 里是真值，
+  // 写进 contentFilterCache 后永不复算、不自愈）。纯 Node（node:vm + 桩化宿主），秒级。
+  // 含负向自证：把 `if (trustworthy)` 改成 `if (true)` 即 5 条红，红的恰是预期三条。
+  'tests/m3-filter-cold-start.mjs',
+  // M4-B：采集/偏好窗 dispose 收口 + 主窗 24 个 store 的 bind*Sync 幂等守卫与退订句柄。
+  // 纯 Node（node:vm + 真实 listener 计数桩驱动真实 bind/unbind 各 100 次），秒级。
+  'tests/m4-window-subscriptions.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -175,6 +182,8 @@ export const TEST_CLASSES = {
   'tests/match-rules-equivalence.mjs': 'static',
   'tests/m4-preview-dispose.mjs': 'static',
   'tests/m4-url-history.mjs': 'static',
+  'tests/m3-filter-cold-start.mjs': 'static',
+  'tests/m4-window-subscriptions.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

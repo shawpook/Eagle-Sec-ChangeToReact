@@ -39,13 +39,13 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前三批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态）、**M2-2**（补真实裸模块登记）、**M2-3**（撤销环境层/设置层 `@ts-nocheck`）、**M2-4/M7-1**（moduleRegistry 强类型化 + 截获契约化，待撤销 6→5）均已集成。剩 5 个 shim 文件的 `@ts-nocheck` 与 D20 的 `declare global` 待做 |
-| M3 经典业务脚本进模块图 | 🔄 **前两批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*` 具名模块化）、**M3-2**（调用点切换 + 冷启动空快照不自愈 + 等价性测试事实源迁移）均已集成（`4c1fc124` / `35675429`）。F16 的 Worker 协议类型化待派 |
-| M4 窗口与 scope 收口 | 🔄 **前三批已集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）均已集成（`553804f3` / `2502357f` / `ebf90c6d`）。F14（第三方引擎 adapter）与 domLite/ng-* 待派 |
+| **M2** 替代万能 shim | 🔄 **前四批已集成** | F07 能力矩阵调研已交付（§6）；**M2-1**（RuntimeServices + 三态）、**M2-2**（补真实裸模块登记）、**M2-3**（环境层/设置层类型化）、**M2-4/M7-1**（moduleRegistry 强类型化 + 截获契约化）、**M2-5**（install.ts 类型化 + 具名全局声明面，并收口 D20 的 3 处 cast）均已集成。**剩 3 个 shim 文件的 `@ts-nocheck`**（browserRuntime / demoSeed / desktopCapability） |
+| M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
+| M4 窗口与 scope 收口 | 🔄 **前三批已集成，第四批在跑（W36）** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）均已集成。M4-D（F14 引擎 adapter + domLite + ng-* 成对替换）因 codex 派单失败已回退 claude 重派 |
 | M5 外围工具 UI 与生产配置 | 🔄 **第一批已集成** | **M5-1 已集成**（工具页/媒体页进模块图 + 运行期地址单一来源）；F22 的第二个半边待派 |
 | M6 扩展与插件专项 | 🔄 **第一批已集成** | M6-R 审计已交付（§5）；**M6-1**（扩展端口单一来源 + 权限面收敛 + MV3 交付契约）已集成（`242a8663`）；**插件侧（F19）待派**——注意 M6-R 标了 4 条需用户确认的产品/外部资源取舍 |
-| M7 最小产物与遗留隔离 | 🔄 **第一批在跑（W35）** | 退役审计（W5）已交付；M7-1 = 低风险四项退役（url-state-service / config.gypi / test-snippets / src/app/main.js）。**tab-bar 与 src/run.js 明确不在本批**（前者需产品取舍，后者建议隔离归档不删） |
-| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量 85 项） |
+| M7 最小产物与遗留隔离 | 🔄 **第一批已集成** | 退役审计（W5）已交付；**M7-1 已集成（`d59071d8`）**：四项低风险退役（`url-state-service.js` / `src/app/main.js` / `src/build/config.gypi` / `src/test/api-v2/test-snippets.js`），**全部先归档到 `docs/retired-2026-09-16/`**（内容零改动，可 `git mv` 回或 revert）。**tab-bar 与 src/run.js 明确未动**（前者需产品取舍，后者建议隔离归档不删） |
+| M8 最终收官 | ⏸ | 触发条件见 D22 的 L3（这里才跑全量；当前 87 项） |
 
 ---
 
@@ -56,6 +56,10 @@
 已集成的提交（自下而上）：
 
 ```
+d59071d8 chore(m7): retire first low-risk legacy batch  [W35]
+6d4ee848 test(suite): 登记 M3-3 的两个新测试，REACT_SUITE 85 → 87  [Coordinator]
+55dc91ff fix(m3): 修「取消任务不回写已关闭窗口」+ Worker 自有协议类型化  [W33]
+6d51ac5a refactor(m2): install.ts 撤销 @ts-nocheck + 建立具名全局声明面（待撤销 5 → 4）  [W32]
 1c4214b9 fix(m4): 修 M4-A 引入的回归——自写回显被误判为外部导航，把旧视图滚动位置带进新视图  [W31]
 b608b851 docs(state): 新增 D22 分层验证口径（非必要不跑全量回归）
 ab465ecd docs(state): 记录 M4-A 引入的 continuous-grid-scroll 回归与二分定位（D21）
@@ -183,10 +187,15 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W29** | task_6ddbc52ec73b | ctx_010830f11495 | **M2-4 moduleRegistry 类型化与截获契约化** | ✅ **已交付核验并集成(`d4f611a2`)**；`待撤销 6 → 5`，截获表契约 6/6 |
 | **W30** | task_da247f585fd6 | ctx_4c6460644027 | **M3-2fix 等价性测试事实源迁移（按裁决加严）** | ✅ **已交付核验并集成(`35675429`)**；`match-rules-equivalence` 22/22（原 21 条全保留 +1b） |
 | **W31** | task_a7644295ccf7 | ctx_c892cf9860cf | **M4-Afix 修 `continuous-grid-scroll` 回归** | ✅ **已交付核验并集成(`1c4214b9`)**，终端已释放 |
-| **W32** | task_446c1cccd6cc | ctx_f3379bc2f123 | **M2-5 `install.ts` 类型化 + 具名全局声明面（含 D20 的 3 处 cast 收口）** | 🔄 进行中（worktree `m2-install-types`，claude/deepseek-flash） |
-| **W33** | task_77b37af7755a | ctx_25153d2bed77 | **M3-3 Worker 协议类型化 + 取消写回守卫** | 🔄 进行中（worktree `m3-workers`，claude/deepseek-flash） |
-| **W34** | task_21486b3c4d89 | ctx_0ee6165705f7 | **M4-D 引擎 adapter + domLite + ng-* 成对替换** | 🔄 进行中（worktree `m4-engine-adapter`，**codex 默认配置**） |
-| **W35** | task_bc9de10cc760 | ctx_c9c8c7ce142e | **M7-1 低风险退役批次 1** | 🔄 进行中（worktree `m7-retire1`，**codex 默认配置**） |
+| **W32** | task_446c1cccd6cc | ctx_f3379bc2f123 | **M2-5 `install.ts` 类型化 + 具名全局声明面（含 D20 的 3 处 cast 收口）** | ✅ **已交付核验并集成(`6d51ac5a`)**；`待撤销 5 → 4` |
+| **W33** | task_77b37af7755a | ctx_25153d2bed77 | **M3-3 Worker 协议类型化 + 取消写回守卫** | ✅ **已交付核验并集成(`55dc91ff`)**；两个新测试 5/5 与 13/13 |
+| **W34** | task_21486b3c4d89 | ctx_0ee6165705f7 | **M4-D 引擎 adapter + domLite + ng-* 成对替换** | ❌ **codex 派单失败**：~90 分钟零产出（shell 通道全废，见 D23）。已停，**回退 claude 重派为 W36** |
+| **W35** | task_bc9de10cc760 | ctx_c9c8c7ce142e | **M7-1 低风险退役批次 1** | ✅ **已交付核验并集成(`d59071d8`)**。codex 完成但**检索不可信**——其「无消费者」前提由 W5 审计提供，我另行复核了四个文件名的可执行引用才合并 |
+| **W36** | task_21486b3c4d89 | ctx_0999764de948 | **M4-D（claude/deepseek-flash 重派）** | 🔄 进行中（worktree 同 `m4-engine-adapter`） |
+
+> **D23 实测记录**：本机 codex worker 的 shell 通道**整体不可用**（所有命令经 WSL，
+> `/bin/bash` 缺失，输出恒为空却像正常执行）。所以它给的「无消费者/搜不到」类结论**必须自己复核**；
+> 删文件这类批次不能只信它。详见项目记忆 `env-codex-rg-wsl-broken.md`。
 
 > W32–W35 的 spec 均在 `outputs/`（未跟踪）：`_spec-m2-5.txt`、`_spec-m3-3.txt`、`_spec-m4-d.txt`、`_spec-m7-1.txt`。
 > 本波按 D16 分档：前两个 claude/deepseek-flash、后两个 **codex 默认配置**（实测 `--agent codex`
@@ -254,9 +263,10 @@ e6f6383e docs(m0): 纳入总体任务书
 | D17 | **只读审计报告必须复制进编码 Worker 的 worktree** | `outputs/` 是**未跟踪**目录，`git worktree add` 不会带过去。M4-C 与 M4-B 都报告过「任务所述的 `outputs/research-m4-windows-scope-2026-09-16.md` 在工作树与 git 历史中均不存在」。**派单前必须 `cp outputs/research-*.md <worktree>/outputs/`**，否则 Worker 只能凭 spec 里的摘要干活。根治办法（待做）：把报告纳入 git 或改为随任务投递 |
 | D18 | **antigravity Worker 首次在某个 worktree 启动会卡在「工作区信任」提示** | 症状：`worker-start` 返回 `state: failed`、`lastError: "Agent startup blocked: agent-trust-workspace"`，**spec 尚未投递**。处置：读终端 → `orca terminal send --terminal <handle> --text "" --enter`（`Yes, I trust this folder` 默认选中）→ 再 `worker-start … --agent antigravity --retry-of <旧 dispatchId>`。未找到可预置的信任列表文件（`~/.gemini/antigravity*` 下只有 brain/logs） |
 | D19 | **Worker 上报「规范冲突」时的裁决口径：授权改测试，但要求加严、不得只删断言** | W26（M3-2）的实例：批次 1 的 `match-rules-equivalence.mjs` 用**源码文本正则**抓 `filterDomain.ts` 里的 26 对 `w.isMatchXxxRule` 作为「表结构」判据；批次 2 的硬性要求正是把该函数体切走，于是探针必然抓到 0 对（`not ok 1` 及其下游 `not ok 3`/`not ok 8` 全属同一条多米诺）。**这类冲突要区分「测试在守护什么」**：它守护的是「规则表 = filterDomain 实际使用的那张表」，迁移后这个命题的**事实源变了**，应当随之重指向，而不是保留一个已失真的探针或直接删掉。裁决要求：① 把事实源重指向 `core/rules/matchRuleTable.ts`；② 把 26 键与顺序**冻结成测试内的字面清单**（防止「解析自己」自证）；③ **新增**「`filterDomain.ts` 里 `w.isMatch*Rule` 命中数为 0 且确实引用了 `getMatchRuleTable`」的迁移完成断言；④ 其余 17 条运行时等价性断言一字不改；⑤ 必须做负向自证 |
+| D20 | **M4-B 存一处已登记偏差：净增 3 处 `(window as any)`——不掩饰、留后续项** | W28 在 `collect-window/controller.ts`（14→15）与 `preferences/entry.tsx`（3→4）净增 3 行 `(window as any)`（`preferences?.theme`、`CollectItem`、`__eaglePreferencesEntryReady`）。核查结论：三者都是这两个文件**既有的**「读 window 动态全局」惯用式（同文件原本已有 14 处 / 3 处），**不是用来掩盖类型错误**——同批里它们反而**加强**了守卫（`?.`、`typeof` 判函数、失败回落）。但它确实踩了硬约束 1「不得新增 `any`」。**根治方式**：在 `global/globals.d.ts` 为这些 window 全局加 `declare global` 声明，届时这三处与同仓既有 85 处可一并消除。**已登记为 M2 类型化批次的后续项**，不在本批回退（回退会让那三处的空值防护一并丢失） |
 | D21 | **合并后必须跑全量回归；红了要用 git worktree 二分定位到具体提交，再派原 Worker 修** | 实例：85 项全量回归 `FAILED: 1: continuous-grid-scroll`（`first folder visit starts at the top`，`4500 !== 0`，首跑与重跑均红 → 确定性，非抖动）。定位手法：`git worktree add --detach <commit> <路径>` + 建 `node_modules` junction + 单独跑该测试 —— `d4f611a2`（M4-A 之前）**PASS**、`2502357f`（含 M4-A）**FAIL**，一次二分即锁定。**教训：单个 Worker 的定向测试全绿不等于合并后安全**——M4-A 自己的 `m4-url-history` 25/25 全绿，却在它没覆盖的既有闭环测试上打红了主分支。**另注**：`continuous-grid-scroll` 正是 M2-2 那次回归的同一项，它是本项目对「主窗启动/网格几何」最灵敏的哨兵 |
 | D22 | **分层验证口径：非必要不跑全量回归**（用户 2026-09-16 指示「非必要不跑全套了太慢了」） | 替代「每批合并后跑 85 项」的默认动作：**L1**（每次合并后必跑，秒级～分钟级）= `typecheck` + 改动覆盖到的定向 `tests/<域>-*.mjs`（改了 `core/shim/**` 再加 `shim-module-boundaries` 与 `runtime-services-contract`）；**L2**（改动共享面时）= L1 + 该域既有全部闭环测试（选测试的办法：`grep -l "<改动的源文件路径>" tests/*.mjs`，再补该域已知闭环）；**L3**（全量 85 项）= 只在 ① M8 最终验收 ② 出现无法归因的红 ③ 大范围重构（shim 装载链 / 启动序列 / 构建产物）时跑。**状态文件里必须写明本轮跑的是哪一层**，未跑 L3 不得让人误以为已全量验收。**注意**：L1/L2 必须真的选到受影响面——M4-A 的教训（D21）正是「定向测试全绿但横向打红」 |
-| D20 | **M4-B 存一处已登记偏差：净增 3 处 `(window as any)`——不掩饰、留后续项** | W28 在 `collect-window/controller.ts`（14→15）与 `preferences/entry.tsx`（3→4）净增 3 行 `(window as any)`（`preferences?.theme`、`CollectItem`、`__eaglePreferencesEntryReady`）。核查结论：三者都是这两个文件**既有的**「读 window 动态全局」惯用式（同文件原本已有 14 处 / 3 处），**不是用来掩盖类型错误**——同批里它们反而**加强**了守卫（`?.`、`typeof` 判函数、失败回落）。但它确实踩了硬约束 1「不得新增 `any`」。**根治方式**：在 `global/globals.d.ts` 为这些 window 全局加 `declare global` 声明，届时这三处与同仓既有 85 处可一并消除。**已登记为 M2 类型化批次的后续项**，不在本批回退（回退会让那三处的空值防护一并丢失） |
+| D23 | **本机 codex worker 的 shell 通道整体不可用——它的「无消费者」类结论必须自己复核** | 症状：所有命令（`rg`、PowerShell `Select-String` **都**含）经 WSL 转发，报 `execvpe(/bin/bash) failed`，**输出恒为空却像正常执行**。这会让 worker 把「搜不到」读成「不存在」。实测一波两个 codex worker：**M4-D ~90 分钟零产出**（worktree 无任何改动）→ 停掉回退 claude（W36）；**M7-1 完成了**（靠 Read/Edit 而非 shell），但其「无消费者」前提来自 W5 的审计，**我另行复核了四个文件名在主分支的可执行引用**（结果：只剩 docs/审计残留，`config.gypi` 命中的是 `native-mouse` 包自己的同名文件）才合并。**规则**：codex worker 只适合不依赖 shell 检索/跑测试的任务；它给的否定性结论一律自己复核；判「卡住」的判据是 worktree 长时间零改动 + 终端反复出现 execvpe 错误。已记入记忆 `env-codex-rg-wsl-broken.md` |
 
 ---
 

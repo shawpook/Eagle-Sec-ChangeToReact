@@ -219,6 +219,11 @@ export const REACT_SUITE = [
   // detailHooks 的原生→MPV 判据把可播放的夹具误判为不可播放。本项钉住注入器的字节级正确性、
   // TimecodeScale 换算、幂等与「解析失败必须抛错」，含恒等注入下的负向自证。
   'tests/video-fixture-duration.mjs',
+  // M8-4：工作台列表的缩略图缺图占位（依据 D33：保后端 404 契约、前端补占位）。
+  // 用 CDP 拦截 /api/item/thumbnail 造阳性对照，并对三组卡片做 DOM 快照：
+  // 正常图 / 取不到图（onError 兜底）/ 元数据 noThumbnail —— 两组占位盒与被替换的图片盒
+  // 必须同为 171x128（证明几何不塌）。含两条负向自证（onError 置空 / 占位逻辑整体摘除）。
+  'tests/workbench-thumbnail-placeholder.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -258,6 +263,8 @@ export const TEST_CLASSES = {
   // 起 Vite dev + 真实 Electron，但后端与端口都由本测试自己拉起 → dev-probe。
   'tests/source-mode-browse-closed-loop.mjs': 'dev-probe',
   'tests/video-fixture-duration.mjs': 'static',
+  // 起 Vite dev + 真实 Electron（CDP 驱动）→ dev-probe。
+  'tests/workbench-thumbnail-placeholder.mjs': 'dev-probe',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

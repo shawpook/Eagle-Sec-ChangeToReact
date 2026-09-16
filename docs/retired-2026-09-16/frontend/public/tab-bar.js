@@ -1,6 +1,13 @@
 /* ==========================================================================
    Eagle Browser Tab Bar — 浏览器/Figma 风格标签栏核心逻辑
-   注入路径: frontend/public/tab-bar.js（由 vite.preview.config.mjs 注入）
+   归档状态: 已退役（M7-2 / D24，2026-09-16）——本文件已退出发布清单与构建交付路径，
+             原路径 frontend/public/tab-bar.js 已不存在，本副本仅为存档，不是支持入口。
+   注释订正: 原此行写「注入路径: …（由 vite.preview.config.mjs 注入）」，属**失真注释**——
+             该注入逻辑早已不存在，vite.preview.config.mjs 全文 `tab-bar` 0 命中。
+             退役前当场复核：全仓无任何加载入口（HTML `<script src>`、ESM import、require、
+             importScripts、new Worker、import.meta.glob、字符串拼接、后端供给、electron/、
+             vite `rollupOptions.input` 逐项 0 命中）；且 window.angular 在当前产物中不会被
+             加载，即便手工注入，getScope() 也恒为 null。回滚方式见同目录 README.md。
    设计：
    - 不修改原版压缩 bundle（app.bundle.js），通过 Angular scope 公开方法完成状态
      快照的采集与恢复，与 shims.js 的既有注入模式一致。

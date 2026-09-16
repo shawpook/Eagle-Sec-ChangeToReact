@@ -1,382 +1,328 @@
 /* ==========================================================================
-   Tab Bar 闭环 UI 测试 — 浏览器/Figma 风格标签栏
-   验证：
-   1. 标签栏注入到主界面最顶层（Eagle 原生工具栏之上），布局整体下推 34px
-   2. 初始标签存在且带标签文案
-   3. 点击侧栏文件夹 → 活动标签文案跟随更新
-   4. + 新增标签 → 新标签导航到「全部图片」视图
-   5. 点击切换 → 文件夹视图被恢复
-   6. 滚动位置在切换往返后恢复
-   7. 关闭标签 → 剩余标签自动激活
-   8. Ctrl+T 新增标签
-   9. 双击重命名标签
-   10. 刷新后标签列表从 localStorage 恢复
+   tab-bar 退役负向门禁（M7-2 / F02 · D24，2026-09-16）
+   ---------------------------------------------------------------------------
+   文件名保留为 `tab-bar-closed-loop.mjs` 属历史沿革——本文件原先是一份标签栏
+   闭环 UI e2e，断言「主窗渲染出 #eagle-tab-bar」。但全仓从来没有加载入口，
+   该 `waitFor` 注定 30s 超时（`waitFor` 默认 30000ms），是一份与实现脱钩的
+   孤儿用例（未登记任何套件）。
+
+   M7-2 依 D24 把 `frontend/public/tab-bar.{js,css}` 移出发布清单后，本文件按
+   任务书要求**改造为负向门禁**——不是删除，也不是留下恒红用例：
+   让「已退役」这件事有测试守着，防止日后被无意加回。
+
+   检查面（**全部为负向断言**：命中即 FAIL）：
+     S1  `frontend/public/` 下不得出现任何 tab-bar 命名文件
+     S3  归档副本必须存在（回滚路径完好）
+     S4  归档副本指纹必须与 RETIRED_SOURCE 登记值逐字一致
+         （归档是冻结基线；改动归档必须同步改本文件的指纹，不允许悄悄漂移）
+     S5  除 `docs/` 与 `tests/` 外的全部可执行/页面文件不得出现 tab-bar
+     S6  门禁清单（FIRST_PARTY_SCRIPTS / ENGINE_SCRIPTS）不得重新登记 tab-bar
+     A1  产物中不得出现任何 tab-bar 命名资源
+     A2  产物中任何页面/脚本/样式不得引用 tab-bar
+
+   扫描面口径（写清边界，不做静默跳过）：
+     - S5 覆盖的扩展名 = 可被加载或引用的类型（html/js/mjs/cjs/ts/tsx/json/css）；
+       纯文档（`.md`）不在其中，因为注释不构成加载点。
+     - S5 **排除 `docs/`**：归档与台账是文档，其内容本身必须能提到 tab-bar。
+     - S5 **排除 `tests/`**：测试不随产物交付，不是交付向量；本文件自身也在其中。
+     - A1/A2 只在给定产物根（`--root=` 或默认 `dist/frontend`）存在时执行，
+       不执行时输出「范围说明」而不是 FAIL。
+
+   负向自证：`负向：…` 用例在临时目录里伪造「被加回」的若干形态（产物里出现
+   tab-bar.js、页面引用它、源位置复活、归档被改写），断言 audit **必须**报错，
+   同时用一棵干净隔离根断言 audit 不会恒红。故本门禁不是橡皮图章。
    ========================================================================== */
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
-import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
+import { ENGINE_SCRIPTS, FIRST_PARTY_SCRIPTS } from './frontend-gate-manifest.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const electronExecutable = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-tabbar-ui-'));
-const librariesRoot = path.join(tempRoot, 'libraries');
-const imagesRoot = path.join(tempRoot, 'images');
-const stateFile = path.join(tempRoot, 'library-state.json');
-fs.mkdirSync(librariesRoot, { recursive: true });
-fs.mkdirSync(imagesRoot, { recursive: true });
 
-async function freePort() {
-  while (true) {
-    const port = await new Promise((resolve, reject) => {
-      const server = http.createServer();
-      server.once('error', reject);
-      server.listen(0, '127.0.0.1', () => {
-        const address = server.address();
-        server.close(() => resolve(address.port));
-      });
-    });
-    if (port >= 12000) return port;
-  }
-}
+/** 退役对象的源路径 → 归档副本的 md5 指纹。改归档 = 必须同步改这里。 */
+export const RETIRED_SOURCE = {
+  'frontend/public/tab-bar.js': 'e36afeae6a484c7d0dd0273e26a16184',
+  'frontend/public/tab-bar.css': 'da01f6cd42e55e3ad06292e02c6e9036',
+};
 
-function spawnLogged(command, args, env) {
-  const child = spawn(command, args, { cwd: projectRoot, env, stdio: ['ignore', 'pipe', 'pipe'] });
-  let output = '';
-  child.stdout.on('data', (chunk) => { output += chunk.toString(); });
-  child.stderr.on('data', (chunk) => { output += chunk.toString(); });
-  return { child, output: () => output };
-}
+/** 与 M7-1 共用归档根；归档路径 = `${ARCHIVE_ROOT}/${退役源路径}`。 */
+export const ARCHIVE_ROOT = 'docs/retired-2026-09-16';
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+/** tab-bar / tab_bar / tabbar / tabBar / TabBar / TAB-BAR 一并命中。 */
+const TAB_BAR_NAME = /tab[-_]?bar/i;
 
-async function waitFor(check, label, timeout = 30000) {
-  const deadline = Date.now() + timeout;
-  let lastError;
-  while (Date.now() < deadline) {
+const SCAN_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.json', '.css']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'outputs', 'docs', 'tests', 'coverage']);
+
+function walkFiles(root, predicate, skipDirs = SKIP_DIRS) {
+  const found = [];
+  const visit = (dir) => {
+    let entries;
     try {
-      const value = await check();
-      if (value) return value;
-    } catch (err) {
-      lastError = err;
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
     }
-    await delay(100);
-  }
-  throw new Error(`${label} timeout${lastError ? `: ${lastError.message}` : ''}`);
-}
-
-async function stop(processInfo) {
-  const child = processInfo && processInfo.child;
-  if (!child || child.exitCode !== null) return;
-  const exited = new Promise((resolve) => child.once('exit', resolve));
-  child.kill();
-  await Promise.race([exited, delay(1000)]);
-  if (child.exitCode === null) {
-    if (process.platform === 'win32') {
-      const killed = new Promise((resolve) => {
-        const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-        killer.once('exit', resolve);
-        killer.once('error', resolve);
-      });
-      await Promise.race([killed, delay(1000)]);
-    } else {
-      try {
-        process.kill(child.pid, 'SIGKILL');
-      } catch (err) {
-        // Already exited.
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!skipDirs.has(entry.name)) visit(full);
+      } else if (entry.isFile() && predicate(full)) {
+        found.push(full);
       }
     }
-    await delay(200);
+  };
+  visit(root);
+  return found;
+}
+
+function allFiles(root) {
+  return walkFiles(root, () => true, new Set(['.git']));
+}
+
+function readTextIfAny(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
   }
 }
 
-async function connect(wsUrl) {
-  const ws = new WebSocket(wsUrl);
-  let id = 0;
-  const pending = new Map();
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (message.id && pending.has(message.id)) {
-      const entry = pending.get(message.id);
-      pending.delete(message.id);
-      message.error ? entry.reject(new Error(JSON.stringify(message.error))) : entry.resolve(message.result);
+function md5Of(file) {
+  return crypto.createHash('md5').update(fs.readFileSync(file)).digest('hex');
+}
+
+function statIsFile(full) {
+  try {
+    return fs.statSync(full).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 只读审计：命中任何一条即产出 failures。不写仓库、不构建、不起浏览器。
+ * `registry` 可注入，用于负向自证「清单被重新登记」这一条。
+ */
+export function auditTabBarRetirement({
+  repoRoot = projectRoot,
+  distRoot = null,
+  registry = null,
+} = {}) {
+  const failures = [];
+  const notes = [];
+  const rel = (full) => path.relative(repoRoot, full).split(path.sep).join('/');
+
+  /* ---- S1：源位置不得复活 ---- */
+  for (const source of Object.keys(RETIRED_SOURCE)) {
+    if (statIsFile(path.join(repoRoot, source))) {
+      failures.push(`S1 已退役文件重新出现在源位置：${source}（tab-bar 已退出发布清单，不得回到 frontend/public）`);
     }
-  };
-  await new Promise((resolve, reject) => {
-    ws.onopen = resolve;
-    ws.onerror = reject;
-  });
-  return {
-    ws,
-    send(method, params = {}) {
-      return new Promise((resolve, reject) => {
-        const messageId = ++id;
-        pending.set(messageId, { resolve, reject });
-        ws.send(JSON.stringify({ id: messageId, method, params }));
-      });
-    },
-  };
-}
-
-const [apiPort, thumbnailPort, extensionPort, vitePort, debugPort] = await Promise.all([
-  freePort(), freePort(), freePort(), freePort(), freePort(),
-]);
-const baseEnv = { ...process.env };
-delete baseEnv.ELECTRON_RUN_AS_NODE;
-const backendEnv = {
-  ...baseEnv,
-  EAGLE_API_PORT: String(apiPort),
-  EAGLE_THUMBNAIL_PORT: String(thumbnailPort),
-  EAGLE_EXTENSION_PORT: String(extensionPort),
-  EAGLE_LIBRARY_STATE_FILE: stateFile,
-  EAGLE_USER_DATA_DIR: path.join(tempRoot, 'user-data'),
-};
-const viteEnv = {
-  ...baseEnv,
-  EAGLE_API_URL: `http://localhost:${apiPort}`,
-  EAGLE_THUMBNAIL_URL: `http://localhost:${thumbnailPort}`,
-  EAGLE_EXTENSION_URL: `http://localhost:${extensionPort}`,
-};
-
-const backend = spawnLogged(process.execPath, ['backend/src/server.js'], backendEnv);
-const vite = spawnLogged(process.execPath, [
-  'node_modules/vite/bin/vite.js',
-  '--config',
-  'frontend/vite.preview.config.mjs',
-  '--port',
-  String(vitePort),
-  '--strictPort',
-], viteEnv);
-let electron;
-let page;
-
-try {
-  await waitFor(() => backend.output().includes(`localhost:${apiPort}`), 'backend startup');
-  await waitFor(async () => (await fetch(`http://127.0.0.1:${vitePort}/src/app/index.html`)).ok, 'Vite main UI');
-
-  /* 准备一个有内容的资源库：建库 + 生成并导入 20 张图片，让网格可滚动 */
-  const post = async (route, body) => {
-    const response = await fetch(`http://127.0.0.1:${apiPort}${route}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const payload = await response.json();
-    if (!response.ok || payload.status !== 'success') throw new Error(`${route} failed: ${JSON.stringify(payload)}`);
-    return payload.data;
-  };
-  await post('/api/library/create', { name: 'Tab Bar UI', savePath: librariesRoot });
-  const imagePaths = [];
-  for (let i = 0; i < 20; i += 1) {
-    const width = 420 + ((i * 131) % 640);
-    const height = 360 + ((i * 89) % 520);
-    const file = path.join(imagesRoot, `tabbar-sample-${String(i).padStart(2, '0')}.png`);
-    await sharp({
-      create: { width, height, channels: 4, background: { r: (i * 40) % 256, g: (i * 90) % 256, b: (i * 160) % 256, alpha: 1 } },
-    }).png().toFile(file);
-    imagePaths.push(file);
   }
-  const imported = await post('/api/item/addFromPaths', { paths: imagePaths });
-  if (!Array.isArray(imported) || imported.length !== imagePaths.length) throw new Error('image import failed');
-  // 建两个文件夹，并把图片全部移入第一个文件夹（保证文件夹视图也有内容、可滚动）
-  const folderOne = await post('/api/folder/create', { name: '设计参考' });
-  await post('/api/folder/create', { name: '欢迎素材' });
-  for (const item of imported) {
-    await post('/api/item/update', { id: item.id, folders: [folderOne.id] });
-  }
-
-  electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--regression-host'], {
-    ...backendEnv,
-    EAGLE_API_URL: `http://localhost:${apiPort}`,
-    EAGLE_THUMBNAIL_URL: `http://localhost:${thumbnailPort}`,
-    EAGLE_PREVIEW_URL: `http://127.0.0.1:${vitePort}/src/app/index.html`,
-    EAGLE_DEBUG_PORT: String(debugPort),
-    EAGLE_ELECTRON_USER_DATA_DIR: path.join(tempRoot, 'electron-user-data'),
-  });
-  await waitFor(async () => (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).ok, 'Electron CDP');
-  await waitFor(() => electron.output().includes('REGRESSION_HOST_READY'), 'Electron host');
-
-  const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
-  const target = targets.find((entry) => entry.type === 'page' && entry.url.includes(String(vitePort)));
-  if (!target) throw new Error(`Main page target not found: ${JSON.stringify(targets)}`);
-  page = await connect(target.webSocketDebuggerUrl);
-  await page.send('Runtime.enable');
-
-  async function evaluate(expression) {
-    const result = await page.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) {
-      throw new Error(`evaluate failed: ${JSON.stringify(result.exceptionDetails)}`);
+  const publicDir = path.join(repoRoot, 'frontend/public');
+  for (const file of walkFiles(publicDir, () => true, new Set())) {
+    if (TAB_BAR_NAME.test(path.basename(file))) {
+      failures.push(`S1 产物源目录出现 tab-bar 命名文件：${rel(file)}`);
     }
-    return result.result && result.result.value;
   }
 
-  /* ---- 1. 标签栏注入 + 初始标签 ---- */
-  await waitFor(() => evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab').length >= 1`), 'tab bar rendered');
-  const initialLabel = await evaluate(`document.querySelector('#eagle-tab-bar .eagle-tab-label').textContent`);
-  if (!initialLabel || !initialLabel.trim()) throw new Error('initial tab label is empty');
-  console.log(`[tab-bar] initial label: ${initialLabel}`);
-
-  /* ---- 2. 布局下推：Eagle 原生顶部空间下沉 34px ---- */
-  const sidebarTop = await evaluate(`(function(){ const el = document.querySelector('#sidebar'); return el ? getComputedStyle(el).top : null; })()`);
-  if (sidebarTop !== '34px') throw new Error(`sidebar top should be pushed to 34px, got ${sidebarTop}`);
-  const tabBarTop = await evaluate(`getComputedStyle(document.querySelector('#eagle-tab-bar')).top`);
-  if (tabBarTop !== '0px') throw new Error(`tab bar top should be 0px, got ${tabBarTop}`);
-  console.log('[tab-bar] layout pushed down: sidebar top =', sidebarTop);
-
-  /* ---- 3. 点击侧栏文件夹 → 活动标签文案跟随更新 ---- */
-  const folderName = await evaluate(`
-    (function(){
-      const item = document.querySelector('.sidebar-folder-item');
-      if (!item) return null;
-      const name = (item.querySelector('.name') || {}).textContent.trim();
-      item.click();
-      return name;
-    })()
-  `);
-  if (!folderName) throw new Error('no sidebar folder item found');
-  await waitFor(() => evaluate(`
-    (function(){
-      const s = window.angular ? angular.element(document.body).scope() : null;
-      return Boolean(s && s.currentFolder && s.currentFolder.name === ${JSON.stringify(folderName)});
-    })()
-  `), 'folder opened');
-  await waitFor(() => evaluate(`
-    document.querySelector('#eagle-tab-bar .eagle-tab.active .eagle-tab-label').textContent === ${JSON.stringify(folderName)}
-  `), 'active tab label follows folder');
-  console.log(`[tab-bar] folder opened: ${folderName}, tab label synced`);
-
-  /* ---- 4. + 新增标签 → 新标签导航到「全部图片」 ---- */
-  await evaluate(`document.querySelector('#eagle-tab-bar .eagle-tab-add').click(); true`);
-  await waitFor(() => evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab').length === 2`), 'two tabs after add');
-  await waitFor(() => evaluate(`
-    (function(){
-      const s = window.angular ? angular.element(document.body).scope() : null;
-      return Boolean(s && s.viewMode === 'all' && !s.currentFolder);
-    })()
-  `), 'new tab at All view');
-  const activeTabIndex = await evaluate(`
-    Array.from(document.querySelectorAll('#eagle-tab-bar .eagle-tab')).findIndex(function(el){ return el.classList.contains('active'); })
-  `);
-  if (activeTabIndex !== 1) throw new Error(`new tab should be active, active index = ${activeTabIndex}`);
-  console.log('[tab-bar] + added new tab at All view');
-
-  /* ---- 5. 点击切换 → 文件夹视图恢复 ---- */
-  await evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab')[0].click(); true`);
-  await waitFor(() => evaluate(`
-    (function(){
-      const s = window.angular ? angular.element(document.body).scope() : null;
-      return Boolean(s && s.currentFolder && s.currentFolder.name === ${JSON.stringify(folderName)});
-    })()
-  `), 'tab 1 folder restored');
-  console.log('[tab-bar] switch back restored folder view');
-
-  /* ---- 6. 滚动位置恢复 ---- */
-  // 等待网格真实渲染出条目
-  await waitFor(() => evaluate(`
-    (function(){
-      const list = document.querySelector('#box-container .box-list');
-      return Boolean(list && list.children.length > 0);
-    })()
-  `), 'grid items rendered');
-  // 若默认尺寸下网格不可滚动，通过工具栏放大按钮（真实用户路径：zoomIn → adjustLayoutWidth）放大
-  const scrollableCheck = `
-    (function(){
-      const c = document.querySelector('#box-container');
-      return Boolean(c && c.scrollHeight > c.clientHeight);
-    })()
-  `;
-  for (let i = 0; i < 8 && !(await evaluate(scrollableCheck)); i += 1) {
-    await evaluate(`
-      (function(){
-        const buttons = Array.from(document.querySelectorAll('#box-list-slider .zoom-btn'));
-        const zoomIn = buttons.find(function(b){ return b.querySelector('img[src*="ic-toolbar-zoom-in"]'); });
-        if (!zoomIn) return false;
-        zoomIn.click();
-        return true;
-      })()
-    `);
-    await delay(250);
+  /* ---- S3 / S4：归档完整性（回滚路径） ---- */
+  for (const [source, digest] of Object.entries(RETIRED_SOURCE)) {
+    const archived = path.join(repoRoot, ARCHIVE_ROOT, source);
+    if (!statIsFile(archived)) {
+      failures.push(`S3 归档副本缺失，回滚路径断裂：${ARCHIVE_ROOT}/${source}`);
+      continue;
+    }
+    const actual = md5Of(archived);
+    if (actual !== digest) {
+      failures.push(
+        `S4 归档副本指纹漂移：${ARCHIVE_ROOT}/${source} 期望 ${digest}，实得 ${actual}；`
+        + '归档是冻结的回滚基线，若确实要改归档，必须同步更新本文件的 RETIRED_SOURCE 指纹',
+      );
+    }
   }
-  if (!(await evaluate(scrollableCheck))) throw new Error('grid not scrollable after zoom');
-  await evaluate(`
-    (function(){
-      const c = document.querySelector('#box-container');
-      c.scrollTop = 400;
-      return c.scrollTop;
-    })()
-  `);
-  await delay(500); // 等待采集轮询记录滚动位置
-  await evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab')[1].click(); true`);
-  await delay(700);
-  await evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab')[0].click(); true`);
-  await waitFor(() => evaluate(`
-    (function(){
-      const c = document.querySelector('#box-container');
-      return Boolean(c && c.scrollTop >= 300);
-    })()
-  `), 'scroll position restored');
-  console.log('[tab-bar] scroll position restored after tab round-trip');
 
-  /* ---- 7. 关闭活动标签 → 剩余标签激活 ---- */
-  await evaluate(`document.querySelector('#eagle-tab-bar .eagle-tab.active .eagle-tab-close').click(); true`);
-  await waitFor(() => evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab').length === 1`), 'tab closed');
-  await waitFor(() => evaluate(`
-    (function(){
-      const s = window.angular ? angular.element(document.body).scope() : null;
-      return Boolean(s && s.viewMode === 'all' && !s.currentFolder);
-    })()
-  `), 'remaining tab (All view) active after close');
-  console.log('[tab-bar] close tab ok, remaining tab activated');
+  /* ---- S5：源码树零加载引用 ---- */
+  for (const file of walkFiles(repoRoot, (full) => SCAN_EXTENSIONS.has(path.extname(full).toLowerCase()))) {
+    const text = readTextIfAny(file);
+    if (text === null) continue;
+    const line = text.split(/\r?\n/).find((candidate) => TAB_BAR_NAME.test(candidate));
+    if (line !== undefined) {
+      failures.push(`S5 退役对象仍被可执行/页面文件提到：${rel(file)} → ${line.trim().slice(0, 120)}`);
+    }
+  }
 
-  /* ---- 8. Ctrl+T 新增标签 ---- */
-  await evaluate(`document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 't', ctrlKey: true, bubbles: true, cancelable: true })); true`);
-  await waitFor(() => evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab').length === 2`), 'ctrl+t adds tab');
-  console.log('[tab-bar] ctrl+t adds tab');
+  /* ---- S6：门禁清单不得重新登记 ---- */
+  const registered = registry
+    ?? [...FIRST_PARTY_SCRIPTS, ...ENGINE_SCRIPTS.map(([file]) => file)];
+  for (const entry of registered) {
+    if (TAB_BAR_NAME.test(entry)) {
+      failures.push(`S6 门禁清单仍登记 tab-bar 条目：${entry}（退役后该条目必须一并删除）`);
+    }
+  }
+  for (const source of Object.keys(RETIRED_SOURCE)) {
+    if (registered.includes(source)) {
+      failures.push(`S6 门禁清单登记了已退役源路径：${source}`);
+    }
+  }
 
-  /* ---- 9. 双击重命名 ---- */
-  await evaluate(`
-    (function(){
-      const label = document.querySelector('#eagle-tab-bar .eagle-tab.active .eagle-tab-label');
-      label.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-      return true;
-    })()
-  `);
-  await waitFor(() => evaluate(`Boolean(document.querySelector('#eagle-tab-bar .eagle-tab-rename'))`), 'rename input shown');
-  await evaluate(`
-    (function(){
-      const input = document.querySelector('#eagle-tab-bar .eagle-tab-rename');
-      input.value = '我的标签';
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      return true;
-    })()
-  `);
-  await waitFor(() => evaluate(`
-    document.querySelector('#eagle-tab-bar .eagle-tab.active .eagle-tab-label').textContent === '我的标签'
-  `), 'tab renamed');
-  console.log('[tab-bar] rename ok');
+  /* ---- A1 / A2：产物负向断言 ---- */
+  if (distRoot === null) {
+    notes.push('A1/A2 未执行：未提供产物根（用 --root=<dist> 指定，或先 npm run build 生成 dist/frontend）');
+  } else if (!fs.existsSync(distRoot)) {
+    failures.push(`A0 产物根不存在：${distRoot}`);
+  } else {
+    for (const file of allFiles(distRoot)) {
+      if (TAB_BAR_NAME.test(path.basename(file))) {
+        failures.push(`A1 产物中仍交付 tab-bar 资源：${path.relative(distRoot, file).split(path.sep).join('/')}`);
+      }
+    }
+    for (const file of allFiles(distRoot)) {
+      if (!SCAN_EXTENSIONS.has(path.extname(file).toLowerCase())) continue;
+      const text = readTextIfAny(file);
+      if (text === null) continue;
+      const line = text.split(/\r?\n/).find((candidate) => TAB_BAR_NAME.test(candidate));
+      if (line !== undefined) {
+        failures.push(`A2 产物中有文件引用 tab-bar：${path.relative(distRoot, file).split(path.sep).join('/')} → ${line.trim().slice(0, 120)}`);
+      }
+    }
+  }
 
-  /* ---- 10. 刷新后标签列表恢复 ---- */
-  await page.send('Page.enable');
-  await page.send('Page.reload');
-  await waitFor(() => evaluate(`document.querySelectorAll('#eagle-tab-bar .eagle-tab').length === 2`), 'tabs restored after reload');
-  const renamedRestored = await evaluate(`
-    (function(){
-      return Array.from(document.querySelectorAll('#eagle-tab-bar .eagle-tab-label'))
-        .some(function(label){ return label.textContent === '我的标签'; });
-    })()
-  `);
-  if (!renamedRestored) throw new Error('renamed tab not restored after reload');
-  console.log('[tab-bar] tabs persisted across reload');
-
-  page.ws.close();
-  console.log('TAB_BAR_UI_OK');
-} finally {
-  if (page && page.ws && page.ws.readyState === WebSocket.OPEN) page.ws.close();
-  await stop(electron);
-  await stop(vite);
-  await stop(backend);
-  try { fs.rmSync(tempRoot, { recursive: true, force: true }); } catch (err) { /* best effort */ }
+  return { ok: failures.length === 0, failures, notes };
 }
+
+/* =========================== 真实仓库断言 =========================== */
+
+test('真实仓库：tab-bar 源码侧已完成退役（无源文件、无加载引用、无清单登记）', () => {
+  const result = auditTabBarRetirement();
+  assert.deepEqual(result.failures, [], result.failures.join('\n'));
+});
+
+test('真实仓库：归档副本存在且指纹逐字一致（回滚路径完好）', () => {
+  for (const [source, digest] of Object.entries(RETIRED_SOURCE)) {
+    const archived = path.join(projectRoot, ARCHIVE_ROOT, source);
+    assert.ok(statIsFile(archived), `归档副本缺失：${ARCHIVE_ROOT}/${source}`);
+    assert.equal(md5Of(archived), digest, `归档副本指纹漂移：${ARCHIVE_ROOT}/${source}`);
+  }
+});
+
+test('真实产物：dist/frontend 不存在或已构建，均不得交付 tab-bar', () => {
+  const defaultDist = path.join(projectRoot, 'dist/frontend');
+  if (!fs.existsSync(defaultDist)) {
+    // 未构建时不伪装成通过：显式登记为范围说明，由 --dist 子命令或构建后复跑补齐。
+    const result = auditTabBarRetirement();
+    assert.deepEqual(result.failures, [], result.failures.join('\n'));
+    assert.ok(result.notes.some((note) => /A1\/A2 未执行/.test(note)), '未构建时必须显式声明产物断言未执行');
+    return;
+  }
+  const result = auditTabBarRetirement({ distRoot: defaultDist });
+  assert.deepEqual(result.failures, [], result.failures.join('\n'));
+});
+
+/* =========================== 负向自证 =========================== */
+
+function makeFixture(t, { files = {}, dist = null, registry = null } = {}) {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-tabbar-gate-repo-'));
+  const distDir = dist === null ? null : fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-tabbar-gate-dist-'));
+  const plant = (root, relative, contents) => {
+    const full = path.join(root, relative);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, contents);
+  };
+  for (const [relative, contents] of Object.entries(files)) plant(repo, relative, contents);
+  for (const [relative, contents] of Object.entries(dist || {})) plant(distDir, relative, contents);
+  // 归档基线：默认把真实归档副本复制进隔离根，保证「干净根不恒红」这条前提成立。
+  for (const source of Object.keys(RETIRED_SOURCE)) {
+    const archived = path.join(repo, ARCHIVE_ROOT, source);
+    fs.mkdirSync(path.dirname(archived), { recursive: true });
+    fs.copyFileSync(path.join(projectRoot, ARCHIVE_ROOT, source), archived);
+  }
+  t.after(() => {
+    fs.rmSync(repo, { recursive: true, force: true });
+    if (distDir !== null) fs.rmSync(distDir, { recursive: true, force: true });
+  });
+  return { repoRoot: repo, distRoot: distDir, registry };
+}
+
+test('负向自证：干净的隔离根必须零失败（门禁不是恒红橡皮章）', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, { dist: { 'index.html': '<html></html>' }, registry: [] });
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.deepEqual(result.failures, [], result.failures.join('\n'));
+});
+
+test('负向自证：源位置复活 frontend/public/tab-bar.js 必须变红', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, {
+    files: { 'frontend/public/tab-bar.js': '(function(){})();' },
+    registry: [],
+  });
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.ok(result.failures.some((failure) => failure.startsWith('S1')), result.failures.join('\n'));
+});
+
+test('负向自证：把 tab-bar.js 放回产物必须变红', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, {
+    dist: { 'tab-bar.js': '(function(){})();', 'index.html': '<html></html>' },
+    registry: [],
+  });
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.ok(result.failures.some((failure) => failure.startsWith('A1')), result.failures.join('\n'));
+});
+
+test('负向自证：产物页面引用 tab-bar 必须变红', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, {
+    dist: { 'index.html': '<html><script src="/tab-bar.js"></script></html>' },
+    registry: [],
+  });
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.ok(result.failures.some((failure) => failure.startsWith('A2')), result.failures.join('\n'));
+});
+
+test('负向自证：源码里重新引入加载语句必须变红', (t) => {
+  const cases = {
+    'script 标签': { 'src/app/loader.html': '<script src="/tab-bar.js"></script>' },
+    'link 标签': { 'src/app/loader.html': '<link rel="stylesheet" href="/tab-bar.css">' },
+    'ESM import': { 'src/app/loader.mjs': "import './tab-bar.js';" },
+    'require': { 'src/app/loader.cjs': "require('./tab-bar.js');" },
+    'importScripts': { 'src/app/js/loader.js': "importScripts('/tab-bar.js');" },
+    'new Worker': { 'src/app/js/loader.js': "new Worker('/tab-bar.js');" },
+    'import.meta.glob': { 'src/app/loader.ts': "import.meta.glob('./tab-bar.css');" },
+  };
+  for (const [label, files] of Object.entries(cases)) {
+    const { repoRoot, distRoot, registry } = makeFixture(t, { files, registry: [] });
+    const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+    assert.ok(result.failures.some((failure) => failure.startsWith('S5')), `${label} 形态应被 S5 捕获：${result.failures.join('\n')}`);
+  }
+});
+
+test('负向自证：清单被重新登记必须变红', (t) => {
+  const { repoRoot, distRoot } = makeFixture(t, { registry: [] });
+  const result = auditTabBarRetirement({
+    repoRoot,
+    distRoot,
+    registry: ['frontend/public/tab-bar.js'],
+  });
+  assert.ok(result.failures.some((failure) => failure.startsWith('S6')), result.failures.join('\n'));
+});
+
+test('负向自证：归档被改写（指纹漂移）必须变红', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, { registry: [] });
+  fs.writeFileSync(path.join(repoRoot, ARCHIVE_ROOT, 'frontend/public/tab-bar.js'), '/* 被改写 */');
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.ok(result.failures.some((failure) => failure.startsWith('S4')), result.failures.join('\n'));
+});
+
+test('负向自证：归档副本缺失（回滚路径断裂）必须变红', (t) => {
+  const { repoRoot, distRoot, registry } = makeFixture(t, { registry: [] });
+  fs.rmSync(path.join(repoRoot, ARCHIVE_ROOT, 'frontend/public/tab-bar.css'));
+  const result = auditTabBarRetirement({ repoRoot, distRoot, registry });
+  assert.ok(result.failures.some((failure) => failure.startsWith('S3')), result.failures.join('\n'));
+});
+
+/* =========================== 运行方式 ===========================
+   与 `tests/frontend-public-policy.mjs` 同一约定：纯 node:test，无 CLI 参数，
+   `node tests/tab-bar-closed-loop.mjs` 即全部用例（真实仓库 + 真实产物 + 负向自证）。
+   */

@@ -148,7 +148,11 @@ export const FIRST_PARTY_SCRIPTS = [
   'frontend/public/browser-extension/popup.js',
   // M5-1（F22）：`/eagle-runtime-config.js` 的静态兜底副本（正常由服务进程按启动环境生成）。
   'frontend/public/eagle-runtime-config.js',
-  'frontend/public/tab-bar.js',
+  // M7-2（F02/D24，2026-09-16）：`frontend/public/tab-bar.js` 已退役，登记条目随之删除。
+  // 该文件曾登记于此，退役前当场复核「无现役加载入口」（逐项 0 命中，见
+  // `docs/retired-2026-09-16/README.md`），归档于 `docs/retired-2026-09-16/frontend/public/`。
+  // 该文件若被重新引入 `frontend/public`，`tests/tab-bar-closed-loop.mjs` 的负向门禁会变红，
+  // 且此处必须同时恢复登记，否则 `tests/typecheck.mjs` 的 `图外运行脚本未登记` 会失败。
   'frontend/public/vendor/eagle-match-rules.js',
   'frontend/public/vendor/eagle-zoom-helpers.js',
   ...[

@@ -171,7 +171,7 @@ node tests/typecheck.mjs
 | `js/vendors/{tga,libtga,wavesurfer.min,videojs/**,sweetalert2/sweetalert2.min.css,bignumber}.js` | 保留 | `commentHooks.ts`/`detailHooks.ts`/`preview-window.html` 现役 require、标签或 CSS；bignumber 被生产 vendor `eagle-match-rules.js` 使用 |
 | `js/vendors/lodash.js`、`html2canvas.min.js`、`Typr.js`、`colorpicker/**` | **已删除** | 均已退役或零引用（lodash b1-9bc 摘标签、colorpicker b1-9bj 自研化）|
 | `js/debug-reporter.js`、`thumbnail.html`、`js/scroll to top button 效能優化.md` | **已删除** | 零引用 |
-| `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` | 保留待定 `⚠M0 订正 F26-4` | 未接入构建链的候选功能（PROGRESS b1-9al 登记为「仅注释残留」）；删除属产品取舍，未在本批处理 |
+| `frontend/public/tab-bar.{js,css}` + `tests/tab-bar-closed-loop.mjs` | **已退役** `⚠M7-2（D24）` | 原判「保留待定」，措辞另经 M0 订正 F26-4；**2026-09-16 由用户决策 D24 拍板退出发布清单**。两文件以 `git mv` 归档至 `docs/retired-2026-09-16/frontend/public/`；脱钩的 `tests/tab-bar-closed-loop.mjs` **改造为负向门禁**（不是删除，也不是留下恒红用例）。措辞订正见下方 M7-2 条目 |
 | `@egjs/react-infinitegrid`（package.json + lockfile）| **已移除** | 全仓零 import；`window.ig` 是主窗自建 v4 facade（`boxGridEngine`），与该包无关（由 `m1-A8-eg-infinitegrid` 断言 `typeof w.ig.getItems === 'function' && !w.eg` 守护）|
 
 > **M0 订正 F26-3（§8 第 4–7 行｜`js/plugin/**`、`eagle-note-plugin`、`api-server-v2`、`js/utils/*`）｜原表述 → 现口径**
@@ -203,6 +203,16 @@ node tests/typecheck.mjs
 > ③ **无现役加载点**：`src/**`、`frontend/**` 的全部 HTML 中检索 `tab-bar` **零命中**；亦不在 `rollupOptions.input`。
 > ④ **闭环测试存在但未登记执行**：`tests/tab-bar-closed-loop.mjs` 在 `package.json`、`run-react-suite.mjs`、`run-attached-nonsuite.mjs`、`frontend-acceptance` 的任一清单中**均无引用**（仅本文档与 `src/app/react/PROGRESS.md` 的历史记录提到它）；其断言依赖主窗渲染出 `#eagle-tab-bar`（`:217-226`）。**该测试当前能否通过属代码链推导，未运行验证。**
 > 正确标签：**闲置但交付**（主标签）。「仅注释残留」与代码事实相反。
+> **本行行号订正**：F26-4 与 M0 台账把本条目写作 `:137`；文件随后增补，**现实际位于 §8 表格的 `:174`**。引用行号一律以本行导语所标的 §8 表格条目为准。
+
+> **M7-2 订正（§8 表格 tab-bar 行｜退役落账）｜原表述 → 现口径**
+> 原表述（经 F26-4 订正后仍为「保留待定」）：「未接入构建链的候选功能……删除属产品取舍，未在本批处理」。
+> **现口径（2026-09-16，用户决策 D24 拍板）**：本条**已结案为「已退役」**，不再是「保留待定」：
+> ① **退役动作**：`frontend/public/tab-bar.js`、`frontend/public/tab-bar.css` 以 `git mv` 移入 `docs/retired-2026-09-16/frontend/public/`，退出发布清单与交付路径。回滚基线指纹由门禁守着（见 ④）。
+> ② **失真注释已订正**：两文件原第 3 行「注入路径: …（由 `vite.preview.config.mjs` 注入）」与事实不符（该注入逻辑早已不存在）；订正写进归档副本，指纹随之更新，一并在 M7-2 提交中逐字可核。
+> ③ **零加载入口的当场复核**（M7-2 重做，未照抄本文）：全仓 `tab-bar`/`tab_bar`/`tabbar`/`tabBar`/`TabBar`/`eagle-tab-bar` 检索；`<script src>`/`<link>`/ESM import/`require(`/`importScripts`/`new Worker`/`import.meta.glob`/字符串拼接/后端供给/`electron/`/`vite rollupOptions.input` 逐项 0 命中。`bundleGlobals.ts` 的 fetch→`createElement('script')` 动态通道只有 3 个 vendor 目标，不含 tab-bar。**未发现 F26-4/W5 漏掉的入口。**
+> ④ **测试不是被删掉，而是被加严**：`tests/tab-bar-closed-loop.mjs` 改造为**负向门禁**（真实仓库 + 真实产物 + 8 项负向自证），断言「tab-bar 不再被交付」。文件名为历史沿革，文件头已注明。
+> ⑤ **余留**：`tests/tab-bar-closed-loop.mjs` 仍**未登记任何套件**（登记由 Coordinator 按 D11 执行）；文件名与职能已不匹配（建议后续重命名为 `tab-bar-retired-gate.mjs`），本批未改以免越出文件所有权。
 
 > **M0 订正 F26-6（全文｜源码注释不得当作行为证明）｜原表述 → 现口径**
 > 原表述：本文多处直接引用源码注释作为行为依据（如 §1「`shimsLegacy.ts` 退化为 5 行兼容入口」、§7.1 各行的「原状」）。

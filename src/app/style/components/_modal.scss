@@ -112,7 +112,10 @@
 			font-weight: var(--font-weight-bold);
 			color: var(--color-text-primary);
 		}
-        [ng-click] {
+        /* M4-D 成对替换：原 [ng-click]（Angular 属性已退役）→ [data-click]。
+           语义不变——header 内的可点击子元素不参与窗口拖拽（-webkit-app-region）。
+           本规则在编译产物 src/app/css/base.css 里同名存在，改一处必须同步另一处。 */
+        [data-click] {
             -webkit-app-region: no-drag;
         }
         .back, .close {

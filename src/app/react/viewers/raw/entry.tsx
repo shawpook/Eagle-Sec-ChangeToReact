@@ -4,11 +4,15 @@
  * （<480px 跳过）；方向/适配类同 exif。dcraw.js 为 vendored 引擎（壳内 classic script
  * 先行加载，window.dcraw 直用）；fs/os/app-root-path/my_modules/url 经 parent require
  * （iframe 继承 nodeIntegration，与原实现同通道）。window.parent.focus() 原样保留。
+ *
+ * M4-D：挂载期资源改由 `shared/engineLifecycle` 统一回收（原实现漏 revoke blob URL、
+ * 内层 rAF 未取消）——绘制语句与算法逐字未改。
  */
 import '../../core/shimsLegacy';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { viewerParent } from '../shared/parentChannel';
+import { useEngineLifecycle } from '../shared/engineLifecycle';
 
 function toArrayBuffer(buf: any): ArrayBuffer {
   const ab = new ArrayBuffer(buf.length);
@@ -24,7 +28,9 @@ function RawPlayer() {
   const [show, setShow] = useState(false);
   const [spec, setSpec] = useState<{ thumbUrl: string; className: string; rawPath: string } | null>(null);
 
-  useEffect(() => {
+  // M4-D：挂载期取得的一切（两帧 rAF、dcraw 定时器、内嵌缩略图 object URL）登记到同一
+  // 释放点；卸载后到达的回调就地放弃。
+  useEngineLifecycle((lc) => {
     try { viewerParent().focus(); } catch (err) { /* parent focus 失败不阻塞 */ }
     const params = new URLSearchParams(window.location.search);
     const dirPath = params.get('path') ?? '';
@@ -56,15 +62,17 @@ function RawPlayer() {
         parts.push(width > height ? 'fit-width' : 'fit-height');
     }
     setSpec({ thumbUrl, className: parts.join(' '), rawPath });
-    // 原实现：src 赋值后同 tick addClass("show")——保持两帧让 CSS opacity 过渡生效
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
+    // 原实现：src 赋值后同 tick addClass("show")——保持两帧让 CSS opacity 过渡生效。
+    // 原实现只取消了外层 rAF，内层那一帧会在卸载后仍触发 setShow；此处两帧都登记。
+    lc.raf(() => lc.raf(() => setShow(true)));
 
     // dcraw 内嵌缩略图抽取（原 setTimeout 100ms 逐字）
-    const timer = setTimeout(() => {
+    lc.timeout(() => {
       try {
         const parent = viewerParent();
         const fs = parent.require('fs');
         const buf = fs.readFileSync(rawPath);
+        if (lc.disposed) return;
         const jpegBuf = (window as any).dcraw(buf, { extractThumbnail: true });
         const arrayBuf = toArrayBuffer(jpegBuf);
         const blob = new Blob([arrayBuf], { type: 'image/jpg' });
@@ -73,19 +81,19 @@ function RawPlayer() {
         const ctx = canvas.getContext('2d');
         const img = new Image();
         img.onload = () => {
+          if (lc.disposed) return;
           if ((img as any).width < 480 || (img as any).height < 480) return;
           canvas.width = (img as any).width;
           canvas.height = (img as any).height;
           ctx && ctx.drawImage(img, 0, 0);
           canvas.classList.add('show');
         };
-        img.src = URL.createObjectURL(blob);
+        // 原实现每个挂载周期漏一个 blob URL（从不 revoke）；改由释放点回收。
+        img.src = lc.objectUrl(blob);
       } catch (err) {
         console.log(err);
       }
     }, 100);
-
-    return () => { clearTimeout(timer); cancelAnimationFrame(raf); };
   }, []);
 
   if (!spec) return null;

@@ -9,11 +9,18 @@
  * main → backend /api/item/nativePreview（ai→pdf.js worker / ppt 族→soffice→worker /
  * psd 族无引擎 UNSUPPORTED）成功落 finalFile 轮询自取，失败回发 native-preview-failed
  * 停轮询 + ready 优雅降级；darwin invoke 经 shim 直通 → main nativeImage 原生缩图。
+ *
+ * M4-D：两条 500ms 启动定时器、cache-buster 重试定时器、showCached 的 300ms ready 定时器、
+ * native-preview-failed 订阅、qlmanage 子进程的 close 监听、invoke 回程一律登记到
+ * `shared/engineLifecycle`；body.ready 类与卸载成对。轮询/退避/尺寸算法逐字未改。
+ * 未接管项（明写）：qlmanage 子进程本身不在卸载时 kill——kill 会改变产物语义（缓存图
+ * 不再生成），且原实现也不 kill；只回收它的监听与回程。
  */
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { viewerParent } from '../shared/parentChannel';
+import { useEngineLifecycle } from '../shared/engineLifecycle';
 
 const MAX_DIMENSION = 120000000;
 
@@ -34,7 +41,9 @@ function NativeViewer() {
     setSpec((prev) => (prev ? { ...prev, opacity: 0 } : prev));
     const src = el.getAttribute('src') || '';
     if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
-    errorTimeoutRef.current = setTimeout(function () {
+    const lc = lcRef.current;
+    if (!lc) return; // 已卸载：不再排程重试（原实现的重试定时器会跨越卸载继续跑）
+    errorTimeoutRef.current = lc.timeout(function () {
       console.log('文件不存在，继续轮询');
       setSpec((prev) => (prev ? { ...prev, src: src + '?d=' + Date.now() } : prev));
     }, 1000);
@@ -46,7 +55,8 @@ function NativeViewer() {
     console.log('文件已存在，停止轮询');
   }
 
-  useEffect(() => {
+  // M4-D：挂载期的定时器 / IPC 订阅 / 子进程监听 / 异步回程统一登记到同一释放点。
+  const lcRef = useEngineLifecycle((lc) => {
     const parent = viewerParent();
     const urlParams = window.location.search.substr(1).split('&').reduce(function (accumulator: any, currentValue: string) {
       const pair = currentValue
@@ -95,11 +105,11 @@ function NativeViewer() {
 
     function showCached() {
       setSpec({ src: previewLink });
-      setTimeout(function () { setReady(true); }, 300);
+      lc.timeout(function () { setReady(true); }, 300);
     }
 
     if (parent.process.platform === 'darwin') {
-      const timer = setTimeout(function () { initDarwin(); }, 500);
+      lc.timeout(function () { initDarwin(); }, 500);
 
       function initDarwin() {
         const tempPath = path.normalize(tempFolder + '/' + decodeURIComponent(fileName) + '.png');
@@ -153,6 +163,7 @@ function NativeViewer() {
                 maxHeight: Math.max(size, 10000),
               }).then(function (result: any) {
                 console.log(result);
+                if (lc.disposed) return; // invoke 不可取消：回程在卸载后到达就地放弃
                 if (fs.existsSync(tempPath)) {
                   fs.renameSync(tempPath, finalPath);
                   polling(previewLink, 1000);
@@ -166,12 +177,16 @@ function NativeViewer() {
 
               // 避免卡死，如果一个文件超过 30 秒仍无法处理，就触发 Timeout
               const task = spawn('qlmanage', params, { timeout: 20000 });
-              task.on('close', function () {
+              const onClose = function () {
+                if (lc.disposed) return;
                 if (fs.existsSync(tempPath)) {
                   fs.renameSync(tempPath, finalPath);
                   polling(previewLink, 1000);
                 }
-              });
+              };
+              task.on('close', onClose);
+              // 子进程本身不 kill（见文件头「未接管项」），只回收挂在它上面的监听。
+              lc.onDispose(function () { task.removeListener('close', onClose); });
             }
           }
         } else {
@@ -179,10 +194,10 @@ function NativeViewer() {
         }
       }
 
-      return () => clearTimeout(timer);
+      return; // darwin 分支到此为止；启动定时器已由释放点接管
     }
 
-    const timer = setTimeout(function () { initWin32(); }, 500);
+    lc.timeout(function () { initWin32(); }, 500);
 
     function initWin32() {
       const tempPath = path.normalize(tempFolder + '/' + decodeURIComponent(fileName) + '.png.tmp');
@@ -256,21 +271,15 @@ function NativeViewer() {
       console.log('预览制作失败，停止轮询');
       setReady(true);
     };
-    if (ipcRendererRef && typeof ipcRendererRef.on === 'function') {
-      ipcRendererRef.on('native-preview-failed', failedHandler);
-    }
-
-    return () => {
-      clearTimeout(timer);
-      if (ipcRendererRef && typeof ipcRendererRef.off === 'function') {
-        ipcRendererRef.off('native-preview-failed', failedHandler);
-      }
-    };
+    lc.subscribe(ipcRendererRef, 'native-preview-failed', failedHandler);
   }, []);
 
-  // ready 类挂 body（原 body.ready CSS 由壳承载，隐 #loader）
+  // ready 类挂 body（原 body.ready CSS 由壳承载，隐 #loader）。
+  // 原实现只加不减：卸载后 ready 残留在 body 上，同一文档再次挂载时 loader 会被提前隐掉。
   useEffect(() => {
-    if (ready) document.body.classList.add('ready');
+    if (!ready) return;
+    document.body.classList.add('ready');
+    return () => { document.body.classList.remove('ready'); };
   }, [ready]);
 
   if (!spec) {

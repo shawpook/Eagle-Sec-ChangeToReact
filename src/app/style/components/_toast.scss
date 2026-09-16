@@ -145,7 +145,10 @@
 			text-decoration: underline;
 			color: inherit;
             font-weight: normal;
-            &[ng-click] {
+            /* M4-D 成对替换：原 &[ng-click]（Angular 属性已退役）→ &[data-click]。
+               语义不变——通知模板里的动作链接左间距 12px。
+               本规则在编译产物 src/app/css/base.css 里同名存在，改一处必须同步另一处。 */
+            &[data-click] {
                 margin-left: 12px !important;
             }
 		}

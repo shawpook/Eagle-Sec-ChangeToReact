@@ -5,8 +5,13 @@
  * 与旧实现的差异只有一处：波形绘制改在 `useEffect` 里对 ref 持有的 canvas 执行，
  * 绘制语句（fillRect / beginPath / moveTo / lineTo / stroke、颜色、step 计算）逐字未改，
  * 因此画布像素结果与迁移前一致。
+ *
+ * M4-D：挂载期的 fetch 与 AudioContext 交由 `shared/engineLifecycle` 回收——原实现的
+ * `AudioContext` 从不 close，反复挂载会累积解码上下文；`cancelled` 标志改由释放点承担。
+ * 绘制语句与 step 计算仍未改一字。
  */
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useEngineLifecycle } from '../../shared/engineLifecycle'
 
 function readPathParam(): string | null {
   return new URLSearchParams(window.location.search).get('path')
@@ -17,17 +22,19 @@ export function AudioViewer() {
   const [label, setLabel] = useState(src ? decodeURIComponent(src) : 'No file')
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
-  useEffect(() => {
+  useEngineLifecycle((lc) => {
     if (!src) return
-    let cancelled = false
-    fetch(src)
+    const controller = new AbortController()
+    lc.onDispose(() => { controller.abort() })
+    fetch(src, { signal: controller.signal })
       .then((res) => res.arrayBuffer())
       .then((buffer) => {
-        const context = new AudioContext()
+        // 一经建立即登记：卸载（含「建立之后才发生的卸载」）必定 close。
+        const context = lc.own(new AudioContext(), (ctx) => { void ctx.close() })
         return context.decodeAudioData(buffer)
       })
       .then((audioBuffer) => {
-        if (cancelled) return
+        if (lc.disposed) return
         const canvas = canvasRef.current
         if (!canvas) return
         const data = audioBuffer.getChannelData(0)
@@ -56,10 +63,9 @@ export function AudioViewer() {
         ctx.stroke()
       })
       .catch((err: unknown) => {
-        if (cancelled) return
+        if (lc.disposed) return
         setLabel(`Waveform error: ${err instanceof Error ? err.message : String(err)}`)
       })
-    return () => { cancelled = true }
   }, [src])
 
   return (

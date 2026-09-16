@@ -19,9 +19,11 @@ import { getWindowScope } from './scopeFace';
 function bodyScopeOf(): any { return getWindowScope(); }
 
 import { makeDraggable } from '../components/interactions/draggable';
-import { dom } from '../utils/domLite';
-/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
-declare const jQuery: any;
+import { DomSet, dom } from '../utils/domLite';
+/* 原 `declare const jQuery: any;` 已移除：jQuery 随 b1-9bx-A 退役（index.html /
+   preview-window.html 不再加载），该声明仅有的两处引用（地标族 :3027/:3041）已改判为
+   `instanceof DomSet`，全仓零引用。地标族本身全仓零调用方，但按 W-D 约束「无消费者 ≠
+   可删」原样保留——本处只拆哑雷，不动缩放/指针/网格算法。 */
 
 
 import { machineryGetRatioNonExp } from '../services/viewOpsService';
@@ -3024,7 +3026,7 @@ if (!self._mousedown) return;
 			if (this.$loc_cont){
 				var total = loc.length;
 				for (var i=0; i<total; i++) {
-					this.setLocation( loc[i] instanceof jQuery ? loc[i] : dom('#'+loc[i]));
+					this.setLocation( loc[i] instanceof DomSet ? loc[i] : dom('#'+loc[i]));
 				}
 				if (total>0) {
 					this.updateLocations(this._x, this._y, this._sc, this.locations);
@@ -3038,7 +3040,7 @@ if (!self._mousedown) return;
 					var total = loc.length;
 					for (var i=0; i<total; i++) {
 						for (var j=0; j<this.locations.length; j++) {
-							if ((loc[i] instanceof jQuery && this.locations[j].ob[0] == loc[i][0]) || (!(loc[i] instanceof jQuery) && this.locations[j].ob.attr('id') == loc[i])) {
+							if ((loc[i] instanceof DomSet && this.locations[j].ob[0] == loc[i][0]) || (!(loc[i] instanceof DomSet) && this.locations[j].ob.attr('id') == loc[i])) {
 								this.locations[j].ob.remove ();
 								this.locations.splice(j,1);
 								j--;

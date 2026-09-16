@@ -13,11 +13,17 @@
  * 原实现 save 错误路径引用裸 ipcRenderer（iframe 内 ReferenceError 潜伏 bug）——此处经
  * window.parent.ipcRenderer 修正。
  * changeName（模板内 UI 已注释、全仓零调用方）为死代码不移植。
+ *
+ * M4-D：三处 effect 的 window/document 监听、refresh 的重试定时器统一登记到
+ * `shared/engineLifecycle`（原 keydown 与 init 两处本就成对摘除，形状归一）。
+ * 未接管项（明写）：文件内联 debounce/throttle 的**内部** timer 属逐字移植的算法本体
+ * （本文件头即以此为据），M4-D 不改其实现——其待决 trailing 定时器在卸载时可能各余一个。
  */
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { viewerParent } from '../shared/parentChannel';
+import { useEngineLifecycle } from '../shared/engineLifecycle';
 
 // HTML 内联 debounce 逐字（func, wait, immediate）
 function debounce(func: any, wait: number, immediate?: boolean) {
@@ -75,6 +81,11 @@ function throttle(fn: any, delay: number, immediate: boolean, isDebounce: boolea
 function TextEditor() {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // M4-D：释放点在此建立——它的 effect 先于下面所有 effect 执行，故后续 effect 与
+  // 渲染作用域里的回调都能通过 lcRef.current 拿到本挂载周期的生命周期。
+  const lcRef = useEngineLifecycle(() => {}, []);
+
   const stateRef = useRef<any>({
     isLoaded: false,
     title: '',
@@ -167,7 +178,8 @@ function TextEditor() {
       const path = parent.require('path');
       const title = path.basename(s.txtPath, '.txt');
       if (!fs.existsSync(s.txtPath)) {
-        setTimeout(() => {
+        // 重试链挂在释放点上：卸载后不再排下一轮（原实现会在卸载后继续重试并回写 state）
+        lcRef.current?.timeout(() => {
           s.retryCount--;
           if (s.retryCount > 0) {
             refreshRef.current();
@@ -259,7 +271,8 @@ function TextEditor() {
         checkForUpdate();
       }
     };
-    window.addEventListener('focus', onFocus);
+    // M4-D：三处监听改由释放点登记（原实现是成对手写 add/remove，形状归一后不会漏对）
+    lcRef.current?.listen(window, 'focus', onFocus);
 
     // a[target=_blank] 外开（text-editor.js 3-9 逐字）
     const onBodyClick = function (event: any) {
@@ -271,7 +284,7 @@ function TextEditor() {
         parent.require('electron').shell.openExternal(link);
       }
     };
-    document.body.addEventListener('click', onBodyClick);
+    lcRef.current?.listen(document.body, 'click', onBodyClick);
 
     // ctrl/cmd+滚轮缩放（text-editor.js 213-234 逐字；吞默认行为 + throttle 200 immediate）
     const zoomByWheel = throttle(function (e: any) {
@@ -292,15 +305,8 @@ function TextEditor() {
         e.stopPropagation();
       }
     };
-    document.body.addEventListener('wheel', zoomByWheel, { passive: false });
-    document.body.addEventListener('wheel', swallowZoom, { passive: false });
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.body.removeEventListener('click', onBodyClick);
-      document.body.removeEventListener('wheel', zoomByWheel as any);
-      document.body.removeEventListener('wheel', swallowZoom);
-    };
+    lcRef.current?.listen(document.body, 'wheel', zoomByWheel, { passive: false });
+    lcRef.current?.listen(document.body, 'wheel', swallowZoom, { passive: false });
   }, []);
 
   // ── 缩放（text-editor.js 236-258 逐字；preview-size input 状态化为 React state）──
@@ -408,8 +414,7 @@ function TextEditor() {
           break;
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    lcRef.current?.listen(window, 'keydown', onKeyDown);
   }, []);
 
   const autoSaveRef = useRef<any>(null);

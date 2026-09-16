@@ -19,7 +19,7 @@ import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
 import { eagleBus } from '../../global/bus';
-import { dom } from '../../utils/domLite';
+import { qaHasEl, addClassEl, removeClassEl } from '../../utils/domQuery';
 import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { toggleSourceMode, handleSourceAdd } from '../../core/sourceMode';
@@ -727,14 +727,18 @@ function LibraryIcon({ libraryPath }: { libraryPath: string }) {
     const iconUrl = URL_MODULE.pathToFileURL(iconPath).href;
     fs.exists(libraryPath, (libraryExists: boolean) => {
       if (!el) return;
-      const $item = dom(`.check-item`).has(el);
+      // M4-D：这里是普通 UI 的类名对账，不是受控引擎岛，从 domLite 收口到原生助手。
+      // `qaHasEl('.check-item', el)` 等价 `dom('.check-item').has(el)`：jQuery 的
+      // `.has()` 会剔除自身，而 `.library-icon` 与 `.check-item` 不同类、永不命中自身，
+      // 故两者命中集合一致。
+      const item = qaHasEl('.check-item', el);
       if (!libraryExists) {
-        $item.addClass('missing');
+        addClassEl(item, 'missing');
         el.innerHTML = `<img src="assets/images/base/icons/ic-library-missing-warning.svg" style="position: absolute; right: -2px; bottom: -2px;">`;
         el.style.backgroundImage = `url(assets/images/base/icons/ic-library-missing.svg)`;
         return;
       }
-      $item.removeClass('missing');
+      removeClassEl(item, 'missing');
       el.innerHTML = '';
       fs.exists(iconPath, (iconExists: boolean) => {
         if (!el) return;
@@ -811,6 +815,9 @@ export function Sidebar() {
       else btn.classList.remove('show');
     }, 333);
   }, []);
+  // M4-D：这个 333ms 去抖定时器原先没有释放点——卸载后它仍会触发，对已摘掉的 btn
+  // 调 classList，或在 DOM 复用后留下一个陈旧的 .show。行为不变，只补卸载时的取消。
+  useEffect(() => () => { clearTimeout(scrollTopTimeout.current); }, []);
 
   // #sidebar 宿主上的行为（原 ng-mouseleave / ng-mousedown / 宽度绑定）
   useEffect(() => {

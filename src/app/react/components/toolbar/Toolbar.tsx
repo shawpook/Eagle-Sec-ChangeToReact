@@ -61,7 +61,8 @@ const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: an
     else target(...args);
   });
 
-/** 多语句 ng-click 的逐字转写（如 resetKeyword(); resetFilter(); filterContent(); openAll()）。 */
+/** 多语句 data-click 的逐字转写（M4-D：原 Angular `ng-click` 属性成对替换为 `data-click`，
+ *  表达式逐字保留；如 resetKeyword(); resetFilter(); filterContent(); openAll()）。 */
 const callSeq = (...fns: Array<[string | ((...a: any[]) => any), any?]>) => (e: any) =>
   runInBodyScope((scope) => {
     for (const [fn, arg] of fns) {
@@ -145,11 +146,11 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
         </>
       )}
       <div className="windows-btns">
-        <div ng-click="minimize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-hide.svg')})` }} onClick={minimize} />
-        <div ng-click="maximize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-fullscreen.svg')})`, ...(isMaximize ? { display: 'none' } : null) }} onClick={maximize} />
-        <div ng-click="restore()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-restore.svg')})`, ...(!isMaximize ? { display: 'none' } : null) }} onClick={restore} />
+        <div data-click="minimize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-hide.svg')})` }} onClick={minimize} />
+        <div data-click="maximize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-fullscreen.svg')})`, ...(isMaximize ? { display: 'none' } : null) }} onClick={maximize} />
+        <div data-click="restore()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-restore.svg')})`, ...(!isMaximize ? { display: 'none' } : null) }} onClick={restore} />
         <div className="close-btn-wrap" onClick={close}>
-          <div ng-click="close()" id="close-btn" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-close.svg')})` }} onClick={close} />
+          <div data-click="close()" id="close-btn" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-close.svg')})` }} onClick={close} />
         </div>
       </div>
     </div>
@@ -179,7 +180,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
     <div className="search-wrap">
       <div
         className="scope-select"
-        ng-click="openSearchScopeMenu($event)"
+        data-click="openSearchScopeMenu($event)"
         tippy=""
         tippy-placement="bottom"
         tippy-content={t('Context.SearchScope.Label')}
@@ -299,11 +300,11 @@ export function Toolbar() {
       {/* 麵包削 */}
       <div className="breadcrumbs" onDoubleClick={(e) => e.stopPropagation()}>
         {snapshot.isHideSidebar ? (
-          <div className="ic-btn application-menu-btn" ng-click="openApplicationContextMenu($event)" onClick={call(openApplicationContextMenu)}>
+          <div className="ic-btn application-menu-btn" data-click="openApplicationContextMenu($event)" onClick={call(openApplicationContextMenu)}>
             <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
           </div>
         ) : null}
-        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call(openSidebarVisibleContextMenu)}>
+        <div id="toggle-all-btn" className="ic-btn" data-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call(openSidebarVisibleContextMenu)}>
           <img src={iconSrc(snapshot.theme, 'ic_toggle-sidebar.svg')} />
         </div>
         <div
@@ -311,7 +312,7 @@ export function Toolbar() {
           tippy=""
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>←</key>')}
-          ng-click="prevHistory($event)"
+          data-click="prevHistory($event)"
           onClick={call(machineryPrevHistory)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-prev.svg')} />
@@ -321,7 +322,7 @@ export function Toolbar() {
           tippy=""
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>→</key>')}
-          ng-click="nextHistory($event)"
+          data-click="nextHistory($event)"
           onClick={call(machineryNextHistory)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-next.svg')} />
@@ -334,7 +335,7 @@ export function Toolbar() {
           <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], [machineryFilterContent], [() => openView('openRecent')])}>{t('general.pages.recent')}</li>
 
           {viewMode === 'alltags' || snapshot.hasCurrentTag ? (
-            <li ng-click="openAllTags()" onClick={call(() => openView('openAllTags'))}>
+            <li data-click="openAllTags()" onClick={call(() => openView('openAllTags'))}>
               {snapshot.selectedTagsCount === 0 ? (
                 <span>{t('general.pages.allTags')} ({num0(snapshot.tagsCount)})</span>
               ) : (
@@ -351,7 +352,7 @@ export function Toolbar() {
           {!viewMode && snapshot.currentFolder && snapshot.selectedFoldersCount === 0 ? (
             <li
               className={snapshot.currentFolder.parent ? 'has-parent' : ''}
-              ng-click="openFolder(currentFolder)"
+              data-click="openFolder(currentFolder)"
               title={snapshot.currentFolderPath}
               onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], [machineryChangeSidebarIndex, liveCurrentFolder()])}
               onContextMenu={(e) => call('openFolderFullPathContextMenu', liveCurrentFolder())(e)}
@@ -361,7 +362,7 @@ export function Toolbar() {
           ) : null}
 
           {!viewMode && snapshot.currentSmartFolder && snapshot.selectedSmartFoldersCount === 0 ? (
-            <li ng-click="openSmartFolder(currentSmartFolder)" onClick={() => call(openSmartFolder, liveCurrentSmartFolder())()}>
+            <li data-click="openSmartFolder(currentSmartFolder)" onClick={() => call(openSmartFolder, liveCurrentSmartFolder())()}>
               {snapshot.currentSmartFolder.name}
             </li>
           ) : null}
@@ -383,7 +384,7 @@ export function Toolbar() {
         <div className="slider" style={viewMode === 'alltags' ? { display: 'none' } : undefined}>
           <div
             className="ic-btn zoom-btn"
-            ng-click="zoomOut($event);"
+            data-click="zoomOut($event);"
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('appmenu.view>zoomOut')} <key>-</key>`}
@@ -420,7 +421,7 @@ export function Toolbar() {
           </div>
           <div
             className="ic-btn zoom-btn"
-            ng-click="zoomIn($event);"
+            data-click="zoomIn($event);"
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('appmenu.view>zoomIn')} <key>+</key>`}
@@ -438,7 +439,7 @@ export function Toolbar() {
               <div
                 key={i}
                 className="ic-btn"
-                ng-click="pluginModule.open(plugin)"
+                data-click="pluginModule.open(plugin)"
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={plugin.name || ''}
@@ -456,7 +457,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={`${t('general.plugin')} <key>P</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-          ng-click="openPluginPanel($event)"
+          data-click="openPluginPanel($event)"
           onClick={call(machineryOpenPluginPanel)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-plugin.svg')} />
@@ -469,7 +470,7 @@ export function Toolbar() {
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('toolbar.randomRefhreshBtn')}<key>R</key>`}
-            ng-click="refreshRandom()"
+            data-click="refreshRandom()"
             onClick={call(machineryRefreshRandom)}
           >
             <img src={iconSrc(snapshot.theme, 'ic_refresh.svg')} />
@@ -481,7 +482,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={`${t('appmenu.actions')} <key>G</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-          ng-click="openActionsPanel($event)"
+          data-click="openActionsPanel($event)"
           onClick={call(machineryOpenActionsPanel)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-action.svg')} />
@@ -492,7 +493,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={shortcuts(t('context.order.orderBy'))}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-          ng-click="openOrderMenu($event)"
+          data-click="openOrderMenu($event)"
           onClick={call(openOrderMenu)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-layout.svg')} />
@@ -503,7 +504,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={`${t('toolbar.filterHint')}${shortcuts(shortcutsWrapper(snapshot.keybinds['find.filter.toggle'] || ''))}`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-          ng-click="toggleFilter()"
+          data-click="toggleFilter()"
           onClick={call(machineryToggleFilter)}
         >
           <div className="badge" style={snapshot.filterBadge > 0 ? undefined : { display: 'none' }}>{snapshot.filterBadge > 0 ? snapshot.filterBadge : ''}</div>
@@ -511,15 +512,15 @@ export function Toolbar() {
         </div>
 
         <div className="tabs" style={viewMode === 'alltags' ? { marginRight: '4px' } : { display: 'none', marginRight: '4px' }}>
-          <div className={`tab${viewMode === 'alltags' && snapshot.tagViewLayoutMode === 'INLINE' ? ' active' : ''}`} ng-click="toggleTagLayout()" onClick={call('toggleTagLayout')}>
+          <div className={`tab${viewMode === 'alltags' && snapshot.tagViewLayoutMode === 'INLINE' ? ' active' : ''}`} data-click="toggleTagLayout()" onClick={call('toggleTagLayout')}>
             <img src={iconSrc(snapshot.theme, 'ic-tag-manager-layout-grid.svg')} />
           </div>
-          <div className={`tab${viewMode === 'alltags' && snapshot.tagViewLayoutMode === 'LIST' ? ' active' : ''}`} ng-click="toggleTagLayout()" onClick={call('toggleTagLayout')}>
+          <div className={`tab${viewMode === 'alltags' && snapshot.tagViewLayoutMode === 'LIST' ? ' active' : ''}`} data-click="toggleTagLayout()" onClick={call('toggleTagLayout')}>
             <img src={iconSrc(snapshot.theme, 'ic-tag-manager-layout-list.svg')} />
           </div>
         </div>
 
-        <div className="ic-btn no-padding" style={viewMode === 'alltags' ? { marginRight: '4px' } : { display: 'none', marginRight: '4px' }} ng-click="openTagGroupListContextMenu($event)" onClick={call('openTagGroupListContextMenu')}>
+        <div className="ic-btn no-padding" style={viewMode === 'alltags' ? { marginRight: '4px' } : { display: 'none', marginRight: '4px' }} data-click="openTagGroupListContextMenu($event)" onClick={call('openTagGroupListContextMenu')}>
           <img src={iconSrc(snapshot.theme, 'ic-tag-manager-sort.svg')} />
         </div>
 
@@ -535,7 +536,7 @@ export function Toolbar() {
           tippy=""
           tippy-placement="bottom"
           tippy-content={`${t('toolbar.randomRefhreshBtn')}<key>R</key>`}
-          ng-click="refreshRandom()"
+          data-click="refreshRandom()"
           onClick={call(machineryRefreshRandom)}
         >
           <img src={iconSrc(snapshot.theme, 'ic_refresh.svg')} />
@@ -543,7 +544,7 @@ export function Toolbar() {
         <div
           className={`ic-btn filter-btn no-padding${snapshot.filterIsOpen ? ' active' : ''}`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-          ng-click="toggleFilter()"
+          data-click="toggleFilter()"
           onClick={call(machineryToggleFilter)}
         >
           <div className="badge" style={snapshot.filterBadge ? undefined : { display: 'none' }}>{snapshot.filterBadge || ''}</div>

@@ -11,6 +11,10 @@
  * $evalAsync 修正。字体加载链（fs → FontFace → document.fonts.add → body font-family）与
  * 语言判定（support/ja/zh 分支 + preferLng 覆盖）逐字。mediumEditor 指令为模板未用死代码
  * 不移植（运行时 30ms 后的 MediumEditor 初始化才是活面）。
+ *
+ * M4-D：FontFace 注册、30ms 初始化链、MediumEditor 实例与它的自定义事件、六处全局监听、
+ * scrollTop 写盘节流、changeFontName 的 200ms 读值统一登记到 `shared/engineLifecycle`
+ * （原实现只摘监听，字体/编辑器实例与三个定时器无人回收）。字体加载链与语言判定逐字未改。
  */
 import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +22,27 @@ import { createRoot } from 'react-dom/client';
 import { fontI18nStrings, fontTranslation, buildAlphabetHTML } from './fontContent';
 import { installTippy } from '../../core/tippyLite';
 import { driverScope, viewerParent } from '../shared/parentChannel';
+import { useEngineLifecycle } from '../shared/engineLifecycle';
+
+/** MediumEditor 实例面（medium-editor.min.js 公开 API 中本文件用到的成员）。 */
+interface MediumEditorInstance {
+  subscribe(event: string, handler: (event: MediumEditorKeyEvent) => void): void;
+  unsubscribe(event: string, handler: (event: MediumEditorKeyEvent) => void): void;
+  selectAllContents(): void;
+  destroy(): void;
+}
+
+/** editableKeydown 事件对象（原实现按 keyCode/ctrlKey/metaKey 判定）。 */
+interface MediumEditorKeyEvent {
+  keyCode: number;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+}
+
+/** MediumEditor 构造器（壳内 classic script 注入 window）。 */
+interface MediumEditorCtor {
+  new (element: Element, options: Record<string, unknown>): MediumEditorInstance;
+}
 
 // R5：本 bundle 不走 installBundleGlobals（那是主窗装配面），在模块求值期自行补装。
 // font-viewer.html 原引用的 ../js/vendors/tippy.js 已随 b1-9bx-A 退役批从磁盘删除，但标签
@@ -74,6 +99,10 @@ function FontViewer() {
   const fontNameRef = useRef<HTMLSpanElement | null>(null);
   const mediumEditorInitRef = useRef(false);
   const stateRef = useRef<any>({ fontName: '', newFontName: '', fontCSSName: '' });
+
+  // M4-D：本挂载周期唯一的释放点。它的 effect 先于下面所有 effect 执行，故后续 effect 与
+  // 渲染作用域里的回调都能通过 lcRef.current 拿到它。
+  const lcRef = useEngineLifecycle(() => {}, []);
 
   const urlParams = window.location.search.substr(1).split('&').reduce(
     function (accumulator: any, currentValue: string) {
@@ -145,6 +174,8 @@ function FontViewer() {
 
   // 字体加载链 + 语言判定 + 内容构建（font-viewer.js 414-528 + 636-864 逐字）
   useEffect(() => {
+    const lc = lcRef.current;
+    if (!lc) return;
     try { window.focus(); } catch (err) { /* noop */ }
     const fs = parent.require('fs');
     const fontMetas = $parentScope.current.fontMetas || {};
@@ -224,7 +255,11 @@ function FontViewer() {
         const font = new (window as any).FontFace(cleanName, fontBinary, { style: 'normal' });
         font.load();
         font.loaded.then(function () {
+          if (lc.disposed) return; // 字体加载回程晚到：就地放弃，不往已卸载的树上写
           document.fonts.add(font);
+          // 原实现只 add 不 delete：卸载后 FontFace 仍留在 document.fonts 里，
+          // 同一文档反复挂载会让字体集持续增长（且重名 FontFace 会互相顶替）。
+          lc.onDispose(function () { document.fonts.delete(font); });
           stateRef.current.fontCSSName = cleanName;
           setFontCSSName(cleanName);
           document.body.style.fontFamily = `'${cleanName}'` + ', "Fallback Outline"';
@@ -238,14 +273,15 @@ function FontViewer() {
           });
 
           // 30ms 后：scrollTop 恢复 + MediumEditor 初始化（767-806 逐字）
-          setTimeout(function () {
+          lc.timeout(function () {
             const scrollTop = localStorage.getItem('eagle.fontViewer.scrollTop') || 0;
             window.scrollTo(0, Number(scrollTop));
 
             const articleEl = document.querySelector('.content .article') as any;
-            if (articleEl && (window as any).MediumEditor && !mediumEditorInitRef.current) {
+            const MediumEditorCtor = (window as unknown as { MediumEditor?: MediumEditorCtor }).MediumEditor;
+            if (articleEl && MediumEditorCtor && !mediumEditorInitRef.current) {
               mediumEditorInitRef.current = true;
-              const editor = new (window as any).MediumEditor(articleEl, {
+              const editor = new MediumEditorCtor(articleEl, {
                 placeholder: { text: '', hideOnClick: true },
                 toolbar: {
                   buttons: ['h2', 'h3', 'bold', 'italic', 'underline', 'quote'],
@@ -267,15 +303,20 @@ function FontViewer() {
                 },
                 autoLink: true,
               });
-              editor.subscribe('editableKeydown', function (event: any) {
+              const onEditableKeydown = function (event: MediumEditorKeyEvent) {
                 const keyCode = event.keyCode;
                 if (keyCode == 65 && (event.ctrlKey || event.metaKey)) {
                   editor.selectAllContents();
                 }
-              });
+              };
+              editor.subscribe('editableKeydown', onEditableKeydown);
+              // 逆序释放：先退订（登记的晚）再 destroy（登记的早），与取得顺序相反。
+              lc.own(editor, function (instance) { instance.destroy(); });
+              lc.onDispose(function () { editor.unsubscribe('editableKeydown', onEditableKeydown); });
             }
           }, 30);
         }, function (err: any) {
+          if (lc.disposed) return;
           console.log(err);
           document.body.style.display = 'block';
           setIsSupport(false);
@@ -290,7 +331,8 @@ function FontViewer() {
 
   // changeFontName（250-264 逐字；blur 时读取 span 文本）
   const changeFontName = () => {
-    setTimeout(() => {
+    // 挂载期内的 200ms 读值定时器；卸载后不再回写 $parentScope（那是已销毁 viewer 的域）
+    lcRef.current?.timeout(() => {
       const s = stateRef.current;
       const el = fontNameRef.current;
       const newName = el ? (el.textContent || '') : s.newFontName;
@@ -322,6 +364,8 @@ function FontViewer() {
 
   // 全局键盘/滚轮/点击/滚动（317-388 + 19-25 逐字委托）
   useEffect(() => {
+    const lc = lcRef.current;
+    if (!lc) return;
     const selectContents = (el: any) => {
       window.setTimeout(function () {
         const sel = window.getSelection();
@@ -383,7 +427,7 @@ function FontViewer() {
           break;
       }
     };
-    window.addEventListener('keydown', onKeyDown);
+    lc.listen(window, 'keydown', onKeyDown);
 
     // waterfall 联动输入（348-351 逐字）
     const onKeyUp = function (event: any) {
@@ -395,7 +439,7 @@ function FontViewer() {
         });
       }
     };
-    document.body.addEventListener('keyup', onKeyUp);
+    lc.listen(document.body, 'keyup', onKeyUp);
 
     // a[target=_blank] 外开（19-25 逐字）
     const onBodyClick = function (event: any) {
@@ -407,7 +451,7 @@ function FontViewer() {
         parent.require('electron').shell.openExternal(link);
       }
     };
-    document.body.addEventListener('click', onBodyClick);
+    lc.listen(document.body, 'click', onBodyClick);
 
     // ctrl 滚轮缩放（367-388 逐字）
     const zoomByWheel = throttle(function (e: any) {
@@ -428,27 +472,20 @@ function FontViewer() {
         e.stopPropagation();
       }
     };
-    document.body.addEventListener('wheel', zoomByWheel, { passive: false });
-    document.body.addEventListener('wheel', swallowZoom, { passive: false });
+    lc.listen(document.body, 'wheel', zoomByWheel, { passive: false });
+    lc.listen(document.body, 'wheel', swallowZoom, { passive: false });
 
     // scrollTop 持久化（314-316；_.debounce(fn,500,true) 老签名 → trailing 等价）
-    let scrollTimer: any = null;
+    // 注：这是「取消上一轮再排下一轮」的节流写法，释放点里会留下已 clear 的空壳登记
+    // （pending 是上界）；真正的不变量是「卸载后存活定时器为 0」，由测试对假时钟断言。
+    let scrollTimer: number = 0;
     const onScroll = function () {
       clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(function () {
+      scrollTimer = lc.timeout(function () {
         localStorage.setItem('eagle.fontViewer.scrollTop', String(window.scrollY));
       }, 500);
     };
-    window.addEventListener('scroll', onScroll);
-
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      document.body.removeEventListener('keyup', onKeyUp);
-      document.body.removeEventListener('click', onBodyClick);
-      document.body.removeEventListener('wheel', zoomByWheel as any);
-      document.body.removeEventListener('wheel', swallowZoom);
-      window.removeEventListener('scroll', onScroll);
-    };
+    lc.listen(window, 'scroll', onScroll);
   }, []);
 
   // tippy 提示（模板 tippy-content 逐字）

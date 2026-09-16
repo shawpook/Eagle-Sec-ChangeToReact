@@ -224,6 +224,15 @@ export const REACT_SUITE = [
   // 正常图 / 取不到图（onError 兜底）/ 元数据 noThumbnail —— 两组占位盒与被替换的图片盒
   // 必须同为 171x128（证明几何不塌）。含两条负向自证（onError 置空 / 占位逻辑整体摘除）。
   'tests/workbench-thumbnail-placeholder.mjs',
+  // ── M8-5：后端侧的两道门禁（纯 Node/临时端口，无 Electron；放这里是为了让统一验收入口真跑到它们，
+  //    与既有 image-transform-closed-loop / source-mode-browse-closed-loop 同例）。 ──
+  // 行为门禁：/api/item/thumbnail 必须 200 + 真图片字节（该端点自 2026-08-04 起对任何条目恒 404，
+  // 真因是 server.js:2056 调用了从未导入的 ensureThumbnail）；未知/缺 id 仍须 404（空态契约不变）。
+  'tests/item-thumbnail-endpoint.mjs',
+  // 类别门禁：用 TS 编译器建作用域链，报出「被调用却既无本地定义也无导入」的标识符——
+  // 这一类（改 import 时漏改调用点）此前**没有任何门禁覆盖**，8cf92c55 的回归正是从这漏过去。
+  // 47 文件 / 2828 调用点 0 假阳性（含 25+ 易误伤构造），另有 500 调用点空转护栏。
+  'tests/backend-import-integrity.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -265,6 +274,8 @@ export const TEST_CLASSES = {
   'tests/video-fixture-duration.mjs': 'static',
   // 起 Vite dev + 真实 Electron（CDP 驱动）→ dev-probe。
   'tests/workbench-thumbnail-placeholder.mjs': 'dev-probe',
+  'tests/item-thumbnail-endpoint.mjs': 'static',
+  'tests/backend-import-integrity.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

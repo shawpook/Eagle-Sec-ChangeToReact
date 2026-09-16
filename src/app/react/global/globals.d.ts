@@ -162,7 +162,6 @@ declare module 'react' {
     resizable?: string;
     'on-resize'?: string;
     'auto-focus'?: string;
-    'ng-click'?: string;
     selectall?: string;
     'comment-item'?: string;
     'comments-container'?: string;

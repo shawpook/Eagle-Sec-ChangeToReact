@@ -168,6 +168,14 @@ export const REACT_SUITE = [
   // core/workers/protocol.ts；worker 侧因经典 script 边界改用文件头注释 +
   // 本测试的双向 AST 字面量校验）。纯 Node、秒级；7 处单方面改动会全部变红。
   'tests/worker-protocol-contract.mjs',
+  // M4-D：ng-* 成对替换（JSX 属性 ↔ CSS 属性选择器必须同改，只删一侧会静默改变
+  // 无边框窗口拖拽区与 toast 链接间距）。纯 Node、秒级。
+  'tests/m4-ng-click-pairing.mjs',
+  // M4-D：第三方引擎 React glue 的生命周期 adapter（挂载→就绪→卸载不变量：
+  // 反复挂卸后监听/定时器/DOM/播放器实例不增长）。纯 Node（node:vm + 桩化引擎），秒级。
+  'tests/m4-engine-lifecycle.mjs',
+  // M4-D：domLite 只限受控引擎岛——普通 UI 必须走 domQuery 原生助手。纯 Node、秒级。
+  'tests/m4-domlite-containment.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -193,6 +201,9 @@ export const TEST_CLASSES = {
   'tests/m4-window-subscriptions.mjs': 'static',
   'tests/worker-cancel-writeback.mjs': 'static',
   'tests/worker-protocol-contract.mjs': 'static',
+  'tests/m4-ng-click-pairing.mjs': 'static',
+  'tests/m4-engine-lifecycle.mjs': 'static',
+  'tests/m4-domlite-containment.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

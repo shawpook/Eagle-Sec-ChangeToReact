@@ -1,0 +1,15 @@
+{
+  "id": "eagle-reverse-template-service",
+  "version": "1.0.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "Eagle Reverse Service Plugin Template",
+  "keywords": ["template"],
+  "devTools": false,
+  "main": {
+    "serviceMode": true,
+    "url": "index.html",
+    "width": 640,
+    "height": 480
+  }
+}

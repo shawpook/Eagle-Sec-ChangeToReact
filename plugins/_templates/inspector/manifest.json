@@ -1,0 +1,15 @@
+{
+  "id": "eagle-reverse-template-inspector",
+  "version": "1.0.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "Eagle Reverse Inspector Plugin Template",
+  "keywords": ["template"],
+  "devTools": false,
+  "main": {
+    "serviceMode": false,
+    "url": "index.html",
+    "width": 360,
+    "height": 600
+  }
+}

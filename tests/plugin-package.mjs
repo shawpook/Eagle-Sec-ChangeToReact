@@ -6,7 +6,8 @@ import { packPlugin } from '../backend/src/plugin-package.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const pluginDir = path.join(projectRoot, 'tests/fixtures/plugins/example-service-plugin');
+// M6-2：示例插件已从 tests/fixtures/plugins 迁入仓库内单一插件根 plugins/（D24①）。
+const pluginDir = path.join(projectRoot, 'plugins/example-service-plugin');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-plugin-package-'));
 const packFile = path.join(tempRoot, 'example-service.eagleplugin');
 const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';

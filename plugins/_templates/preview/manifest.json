@@ -1,0 +1,15 @@
+{
+  "id": "eagle-reverse-template-preview",
+  "version": "1.0.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "Eagle Reverse Preview Plugin Template",
+  "keywords": ["template"],
+  "devTools": false,
+  "main": {
+    "serviceMode": false,
+    "url": "index.html",
+    "width": 1024,
+    "height": 768
+  }
+}

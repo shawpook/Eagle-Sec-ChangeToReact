@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Eagle Reverse Plugin Template</title>
+    <!-- 插件入口按约定写在 <head> 内、且不含 DOMContentLoaded 包裹：
+         后端会在此标签之前注入 /plugin-shim.js，因此本脚本求值时 window.eagle 已存在。
+         顺序由服务端保证（见 backend/src/server.js 的 injectPluginSdk），不要靠挪标签来「修顺序」。 -->
+    <script type="text/javascript" src="js/plugin.js"></script>
+</head>
+<body>
+    <div id="plugin-status">Eagle Reverse Plugin Template</div>
+</body>
+</html>

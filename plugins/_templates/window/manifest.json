@@ -1,0 +1,15 @@
+{
+  "id": "eagle-reverse-template-window",
+  "version": "1.0.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "Eagle Reverse Window Plugin Template",
+  "keywords": ["template"],
+  "devTools": false,
+  "main": {
+    "serviceMode": false,
+    "url": "index.html",
+    "width": 800,
+    "height": 600
+  }
+}

@@ -6,7 +6,8 @@ import { loadServicePlugin } from '../backend/src/plugin-runtime.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const pluginRoot = path.join(projectRoot, 'tests/fixtures/plugins/example-service-plugin');
+// M6-2：示例插件已从 tests/fixtures/plugins 迁入仓库内单一插件根 plugins/（D24①）。
+const pluginRoot = path.join(projectRoot, 'plugins/example-service-plugin');
 const markerPath = path.join(os.tmpdir(), 'eagle-reverse-plugin-marker.txt');
 
 fs.rmSync(markerPath, { force: true });

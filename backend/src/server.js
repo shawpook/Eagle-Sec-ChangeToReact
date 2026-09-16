@@ -76,7 +76,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
 const mockLibraryDir = path.join(projectRoot, 'frontend/public/mock-library');
 const reverseRoot = path.resolve(projectRoot, '..');
-const programRoot = path.resolve(projectRoot, '../..');
+// D24①：programRoot（工作区上两级）已随插件模板根收敛移除——它唯一的两个消费者都是
+// 插件模板路径解析，现改为仓库内 plugins/_templates。reverseRoot 保持原样（无本批消费者）。
 const port = Number(process.env.EAGLE_API_PORT || 41695);
 const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
 const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
@@ -95,40 +96,136 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use('/mock-library', express.static(mockLibraryDir));
 
-app.get('/plugin-shim.js', (req, res) => {
-  res.type('application/javascript');
-  res.send(`(function () {
+// 插件 SDK（`/plugin-shim.js`）：**注册 + 真实派发**。
+// 派发序列与 Node 侧 backend/src/plugin-runtime.js:78-85 的 runLifecycle() 同序（create → run → show）；
+// hide / beforeExit 不在此处派发——它们对应「页面隐藏」与「页面卸载」，由下方 visibilitychange /
+// pagehide 事件绑定，语义上等价于 Node 侧生命周期末段。
+// 探针：window.__eaglePluginLifecycle（派发序列）、window.eagle.__callbacks（已注册回调）、
+//       window.__eaglePluginLifecycleFailures（回调抛错记录）。
+const PLUGIN_SHIM_SOURCE = `(function () {
   if (window.__eaglePluginShimLoaded) return;
   window.__eaglePluginShimLoaded = true;
-  const callbacks = {};
+  var callbacks = {};
+  var dispatched = [];
+  var failures = [];
+  window.__eaglePluginLifecycle = dispatched;
+  window.__eaglePluginLifecycleFailures = failures;
+  function dispatch(name, payload) {
+    dispatched.push(name);
+    var fn = callbacks[name];
+    if (typeof fn !== 'function') return false;
+    try {
+      fn(payload);
+    } catch (err) {
+      failures.push({ name: name, message: String((err && err.message) || err) });
+      console.error('PLUGIN_CALLBACK_FAILED ' + name + ': ' + ((err && err.message) || err));
+    }
+    return true;
+  }
   window.eagle = {
-    onPluginCreate(fn) { callbacks.create = fn; },
-    onPluginRun(fn) { callbacks.run = fn; },
-    onPluginShow(fn) { callbacks.show = fn; },
-    onPluginHide(fn) { callbacks.hide = fn; },
-    onPluginBeforeExit(fn) { callbacks.beforeExit = fn; },
+    onPluginCreate: function (fn) { callbacks.create = fn; },
+    onPluginRun: function (fn) { callbacks.run = fn; },
+    onPluginShow: function (fn) { callbacks.show = fn; },
+    onPluginHide: function (fn) { callbacks.hide = fn; },
+    onPluginBeforeExit: function (fn) { callbacks.beforeExit = fn; },
     __callbacks: callbacks,
+    __dispatch: dispatch,
+    __dispatched: dispatched,
   };
-})();`);
+  var booted = false;
+  function runLifecycle() {
+    if (booted) return dispatched.slice();
+    booted = true;
+    dispatch('create', { manifest: window.__eaglePluginManifest || null });
+    dispatch('run');
+    dispatch('show');
+    return dispatched.slice();
+  }
+  window.eagle.__runLifecycle = runLifecycle;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { runLifecycle(); });
+  } else {
+    runLifecycle();
+  }
+  document.addEventListener('visibilitychange', function () {
+    dispatch(document.hidden ? 'hide' : 'show');
+  });
+  window.addEventListener('pagehide', function () { dispatch('beforeExit', {}); });
+})();`;
+
+app.get('/plugin-shim.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(PLUGIN_SHIM_SOURCE);
 });
+
+const PLUGIN_SHIM_TAG = '<script src="/plugin-shim.js"></script>';
+
+function pluginManifestFor(htmlFile) {
+  const manifestFile = path.join(path.dirname(htmlFile), 'manifest.json');
+  try {
+    if (!fs.existsSync(manifestFile)) return null;
+    return JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  } catch (err) {
+    return null;
+  }
+}
+
+// F19 顺序缺陷修复：shim 必须插在**插件自身脚本之前**。
+// 插件入口（如 js/plugin.js）在顶层就调用 eagle.onPluginCreate(...)，若 shim 晚于它求值，
+// 插件脚本会以 ReferenceError 中止，回调一个都注册不上。原实现在 </head> 前插入，
+// 而插件脚本恰恰写在 <head> 内更靠前，因此顺序是反的。
+function injectPluginSdk(html, manifest) {
+  if (html.includes(PLUGIN_SHIM_TAG)) return html;
+  const boot = `<script>window.__eaglePluginManifest=${JSON.stringify(manifest).replace(/</g, '\\u003c')};</script>${PLUGIN_SHIM_TAG}`;
+  const head = /<head[^>]*>/i.exec(html);
+  if (head) {
+    const at = head.index + head[0].length;
+    return html.slice(0, at) + boot + html.slice(at);
+  }
+  const doctype = /<!doctype[^>]*>/i.exec(html);
+  if (doctype) {
+    const at = doctype.index + doctype[0].length;
+    return html.slice(0, at) + boot + html.slice(at);
+  }
+  return boot + html;
+}
 
 function pluginHtmlMiddleware(root, staticRoot) {
   return (req, res, next) => {
     const relative = req.path.replace(/^\/+/, '');
     const file = path.join(root, relative);
     if (req.path.endsWith('.html') && fs.existsSync(file)) {
-      let html = fs.readFileSync(file, 'utf8');
-      html = html.replace('</head>', '<script src="/plugin-shim.js"></script></head>');
-      res.type('html').send(html);
+      const html = fs.readFileSync(file, 'utf8');
+      res.type('html').send(injectPluginSdk(html, pluginManifestFor(file)));
       return;
     }
     next();
   };
 }
 
-const bundledPluginsRoot = path.join(projectRoot, 'tests/fixtures/plugins');
+// D24①：插件根收敛为**仓库内单一根** `plugins/`，backend 与 electron 都从它读。
+// 不再经 programRoot（工作区上两级）解析——那条路径在本机不存在，且结果随检出目录深度变化，
+// 正是任务书 M6 验收项 3 点名的「隐式开发机依赖」。示例插件原先从 tests/fixtures/plugins 读，
+// 是 M7 点名的「不从测试目录读取」，一并向本根迁移。
+const pluginsRoot = path.resolve(process.env.EAGLE_PLUGINS_ROOT || path.join(projectRoot, 'plugins'));
+const bundledPluginsRoot = pluginsRoot;
 const examplePluginRoot = path.join(bundledPluginsRoot, 'example-service-plugin');
-const pluginTemplatesRoot = path.join(programRoot, 'resources/plugin_templates');
+const pluginTemplatesRoot = path.join(bundledPluginsRoot, '_templates');
+
+// 插件根是**随仓库交付的产品资源**（对外供出 /plugins/** 与 /plugin-templates/** 两个 URL），
+// 不是可选运行时数据：缺失即制品损坏。按 D24①「缺资源明确失败」，这里启动即抛错（非零退出），
+// 而不是静默 warn 后继续供出 404 页面。用户插件目录（userPluginsDir）是用户数据，不在此断言内。
+for (const [code, dir, label] of [
+  ['PLUGIN_ROOT_MISSING', bundledPluginsRoot, '插件根'],
+  ['PLUGIN_EXAMPLE_MISSING', examplePluginRoot, '示例插件目录'],
+  ['PLUGIN_TEMPLATES_MISSING', pluginTemplatesRoot, '插件模板根'],
+]) {
+  if (fs.existsSync(dir)) continue;
+  const err = new Error(`${code}: ${label}不存在 -> ${dir}`);
+  err.code = code;
+  throw err;
+}
+console.log(`Eagle Reverse plugins root: ${bundledPluginsRoot}`);
 app.use('/plugins/eagle-reverse-example-service', pluginHtmlMiddleware(examplePluginRoot));
 app.use('/plugins/eagle-reverse-example-service', express.static(examplePluginRoot));
 app.use('/plugin-templates', pluginHtmlMiddleware(pluginTemplatesRoot));
@@ -769,21 +866,23 @@ app.get('/', (req, res) => {
 });
 
 function listPlugins() {
+  // 单一根下的两个供给面：插件本体与模板。URL 前缀保持对外不变
+  // （/plugins/** 与 /plugin-templates/**），只换磁盘根。
   const roots = [
-    bundledPluginsRoot,
-    path.join(programRoot, 'resources/plugin_templates'),
+    { root: bundledPluginsRoot, urlPrefix: '/plugins', isTemplate: false },
+    { root: pluginTemplatesRoot, urlPrefix: '/plugin-templates', isTemplate: true },
   ];
   const plugins = [];
-  for (const root of roots) {
+  for (const entry of roots) {
+    const { root, urlPrefix, isTemplate } = entry;
     if (!fs.existsSync(root)) continue;
-    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const manifestFile = path.join(root, entry.name, 'manifest.json');
+    for (const child of fs.readdirSync(root, { withFileTypes: true })) {
+      if (!child.isDirectory()) continue;
+      const manifestFile = path.join(root, child.name, 'manifest.json');
       if (!fs.existsSync(manifestFile)) continue;
       try {
         const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-        const isTemplate = root.includes('plugin_templates');
-        const pluginName = manifest.id || entry.name;
+        const pluginName = manifest.id || child.name;
         plugins.push({
           id: manifest.id,
           version: manifest.version,
@@ -791,10 +890,8 @@ function listPlugins() {
           serviceMode: !!manifest.main?.serviceMode,
           width: manifest.main?.width || 640,
           height: manifest.main?.height || 480,
-          url: isTemplate
-            ? `/plugin-templates/${entry.name}/index.html`
-            : `/plugins/${pluginName}/index.html`,
-          path: path.join(root, entry.name),
+          url: isTemplate ? `${urlPrefix}/${child.name}/index.html` : `${urlPrefix}/${pluginName}/index.html`,
+          path: path.join(root, child.name),
         });
       } catch (err) {
         // Skip malformed manifests.

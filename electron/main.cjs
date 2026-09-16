@@ -1762,16 +1762,22 @@ function setupTray() {
   return tray;
 }
 
+// D24①：service 插件根与 backend 共用**仓库内单一根** `plugins/`。
+// 原实现走 path.resolve(__dirname,'..','..','plugins',...) —— 落在仓库外（本机不存在），
+// 且解析结果随检出目录深度变化，是 M6 验收项 3 点名的「隐式开发机依赖」。
 async function loadServicePlugins() {
-  try {
-    const { loadServicePlugin } = await import('../backend/src/plugin-runtime.js');
-    const pluginRoot = path.resolve(__dirname, '..', '..', 'plugins', 'example-service-plugin');
-    const plugin = loadServicePlugin(pluginRoot);
-    plugin.runLifecycle();
-    console.log(`Loaded service plugin: ${plugin.manifest.name} (${plugin.manifest.id})`);
-  } catch (err) {
-    console.warn(`Service plugin load failed: ${err.message}`);
+  const pluginsRoot = path.resolve(process.env.EAGLE_PLUGINS_ROOT || path.join(__dirname, '..', 'plugins'));
+  const pluginRoot = path.join(pluginsRoot, 'example-service-plugin');
+  const manifestFile = path.join(pluginRoot, 'manifest.json');
+  if (!fs.existsSync(manifestFile)) {
+    const err = new Error(`PLUGIN_RESOURCE_MISSING: service plugin manifest not found -> ${manifestFile}`);
+    err.code = 'PLUGIN_RESOURCE_MISSING';
+    throw err;
   }
+  const { loadServicePlugin } = await import('../backend/src/plugin-runtime.js');
+  const plugin = loadServicePlugin(pluginRoot);
+  plugin.runLifecycle();
+  console.log(`Loaded service plugin: ${plugin.manifest.name} (${plugin.manifest.id})`);
 }
 
 if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode || writePathSmokeMode || persistenceSmokeMode) {
@@ -1781,7 +1787,15 @@ if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || main
 app.whenReady().then(async () => {
   registerIpc();
   setupMenu();
-  await loadServicePlugins();
+  // D24①：插件资源缺失必须**明确失败**。原先 loadServicePlugins 内部 catch 后只打一行
+  // console.warn 就继续启动，桌面端会在「插件静默不存在」的状态下照常运行、退出码为 0。
+  try {
+    await loadServicePlugins();
+  } catch (err) {
+    console.error(`SERVICE_PLUGIN_LOAD_FAILED: ${err.message}`);
+    app.exit(1);
+    return;
+  }
   if (browserCaptureUiSmokeMode) {
     const timeout = setTimeout(() => {
       console.error('BROWSER_CAPTURE_UI_SMOKE_TIMEOUT');

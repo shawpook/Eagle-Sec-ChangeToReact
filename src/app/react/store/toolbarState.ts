@@ -169,16 +169,37 @@ export function syncToolbarFromScope(): void {
   useToolbarState.setState({ snapshot: next as ToolbarSnapshot });
 }
 
+let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindToolbarSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindToolbarSync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleToolbarSync = syncToolbarFromScope;
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleToolbarState = useToolbarState;
-  useBodyState.subscribe(() => syncToolbarFromScope());
-  useListState.subscribe(() => syncToolbarFromScope());
-  useFilterState.subscribe(() => syncToolbarFromScope());
-  usePanelState.subscribe(() => syncToolbarFromScope());
-  useSidebarState.subscribe(() => syncToolbarFromScope());
+  const unsub1 = useBodyState.subscribe(() => syncToolbarFromScope());
+  const unsub2 = useListState.subscribe(() => syncToolbarFromScope());
+  const unsub3 = useFilterState.subscribe(() => syncToolbarFromScope());
+  const unsub4 = usePanelState.subscribe(() => syncToolbarFromScope());
+  const unsub5 = useSidebarState.subscribe(() => syncToolbarFromScope());
+  unbindSubscriptions = () => {
+    unsub1();
+    unsub2();
+    unsub3();
+    unsub4();
+    unsub5();
+  };
   // 启动期一次性对齐。
   syncToolbarFromScope();
 }

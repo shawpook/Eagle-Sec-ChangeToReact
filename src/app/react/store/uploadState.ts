@@ -85,6 +85,11 @@ export function syncUploadFromScope(): void {
 
 let bound = false;
 
+export function unbindUploadSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindUploadSync(): void {
   if (bound) return;
   bound = true;

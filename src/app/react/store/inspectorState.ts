@@ -341,15 +341,35 @@ export function syncInspectorFromScope(): void {
   useInspectorState.setState({ snapshot: next as InspectorSnapshot });
 }
 
+let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindInspectorSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindInspectorSync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleInspectorSync = syncInspectorFromScope;
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleInspectorState = useInspectorState;
-  useBodyState.subscribe(() => syncInspectorFromScope());
-  useListState.subscribe(() => syncInspectorFromScope());
-  useFilterState.subscribe(() => syncInspectorFromScope());
-  usePanelState.subscribe(() => syncInspectorFromScope());
+  const unsub1 = useBodyState.subscribe(() => syncInspectorFromScope());
+  const unsub2 = useListState.subscribe(() => syncInspectorFromScope());
+  const unsub3 = useFilterState.subscribe(() => syncInspectorFromScope());
+  const unsub4 = usePanelState.subscribe(() => syncInspectorFromScope());
+  unbindSubscriptions = () => {
+    unsub1();
+    unsub2();
+    unsub3();
+    unsub4();
+  };
   // 启动期一次性对齐。
   syncInspectorFromScope();
 }

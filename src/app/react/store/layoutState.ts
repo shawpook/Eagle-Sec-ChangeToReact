@@ -34,6 +34,11 @@ for (const fieldName of MIGRATED) {
 
 let bound = false;
 
+export function unbindLayoutSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindLayoutSync(): void {
   if (bound) return;
   bound = true;

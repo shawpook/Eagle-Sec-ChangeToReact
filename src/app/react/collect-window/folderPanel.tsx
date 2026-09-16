@@ -574,10 +574,12 @@ export function FolderSelectPanelHost() {
 
     const bumpAll = () => bump((v: number) => v + 1);
 
-    registerFolderPanelOpener((params: any) => {
+    let openTimer: any = null;
+    const unregister = registerFolderPanelOpener((params: any) => {
       panel.init(params);
       setMaxDepth(panel.listData.maxDepth || 0);
-      setTimeout(() => {
+      if (openTimer) clearTimeout(openTimer);
+      openTimer = setTimeout(() => {
         panel.open();
       }, 50);
       bumpAll();
@@ -585,6 +587,8 @@ export function FolderSelectPanelHost() {
 
     (window as any).__eagleCollectFolderPanel = panel;
     return () => {
+      if (typeof unregister === 'function') unregister();
+      if (openTimer) clearTimeout(openTimer);
       (window as any).__eagleCollectFolderPanel = null;
     };
   }, []);

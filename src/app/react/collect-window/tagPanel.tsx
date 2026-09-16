@@ -39,9 +39,9 @@ export function TagSelectPanelHost() {
     (window as any).__eagleCollectTagPanel = panel;
 
     const initDraggable = () => {
-      if (!panelEl) return;
+      if (!panelEl) return null;
       let dragOriginalSize: any = {};
-      makeDraggable(panelEl, {
+      return makeDraggable(panelEl, {
         distance: 5,
         containment: 'body',
         start: (e: any, ui: any) => {
@@ -59,8 +59,8 @@ export function TagSelectPanelHost() {
     };
 
     const initResizable = () => {
-      if (!panelEl) return;
-      makeResizable(panelEl, {
+      if (!panelEl) return null;
+      return makeResizable(panelEl, {
         maxWidth: 800,
         minWidth: 200,
         minHeight: 160,
@@ -79,16 +79,20 @@ export function TagSelectPanelHost() {
       });
     };
 
-    initDraggable();
-    initResizable();
+    const dragHandle = initDraggable();
+    const resizeHandle = initResizable();
 
-    registerTagPanelOpenerHost((params: any) => {
-      setTimeout(() => {
+    let t1: any = null;
+    let t2: any = null;
+    const unregisterHost = registerTagPanelOpenerHost((params: any) => {
+      if (t1) clearTimeout(t1);
+      if (t2) clearTimeout(t2);
+      t1 = setTimeout(() => {
         panel.init(params);
         bumpAll();
       }, 10);
 
-      setTimeout(() => {
+      t2 = setTimeout(() => {
         // 原版 TagSelectPanel.open() 覆写无参（preventCollision 参数被静默丢弃，怪癖逐字）
         (panel as any).open({ preventCollisionWithElement: params.preventCollisionWithElement });
         bumpAll();
@@ -96,6 +100,11 @@ export function TagSelectPanelHost() {
     });
 
     return () => {
+      if (typeof unregisterHost === 'function') unregisterHost();
+      if (t1) clearTimeout(t1);
+      if (t2) clearTimeout(t2);
+      if (dragHandle && typeof dragHandle.destroy === 'function') dragHandle.destroy();
+      if (resizeHandle && typeof resizeHandle.destroy === 'function') resizeHandle.destroy();
       (window as any).__eagleCollectTagPanel = null;
     };
   }, []);

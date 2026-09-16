@@ -200,13 +200,30 @@ export function syncBodyFromScope(): void {
   useBodyState.setState(next as any);
 }
 
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindBodySync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindBodySync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleBodySync = syncBodyFromScope;
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleBodyState = useBodyState;
-  useFilterState.subscribe(() => syncBodyFromScope());
-  usePanelState.subscribe(() => syncBodyFromScope());
+  const unsub1 = useFilterState.subscribe(() => syncBodyFromScope());
+  const unsub2 = usePanelState.subscribe(() => syncBodyFromScope());
+  unbindSubscriptions = () => {
+    unsub1();
+    unsub2();
+  };
   // 启动期一次性对齐。
   syncBodyFromScope();
 }

@@ -214,7 +214,8 @@ function PreferencesShell() {
     };
     ipc.on('init', onInit);
     return () => {
-      if (ipc.off) ipc.off('init', onInit);
+      if (typeof ipc.off === 'function') ipc.off('init', onInit);
+      else if (typeof ipc.removeListener === 'function') ipc.removeListener('init', onInit);
     };
   }, []);
 

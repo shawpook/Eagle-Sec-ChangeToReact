@@ -332,15 +332,35 @@ export function syncDetailFromScope(): void {
   useDetailState.setState({ snapshot: next as DetailSnapshot });
 }
 
+let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindDetailSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindDetailSync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleDetailSync = syncDetailFromScope;
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleDetailState = useDetailState;
-  useBodyState.subscribe(() => syncDetailFromScope());
-  useListState.subscribe(() => syncDetailFromScope());
-  useFilterState.subscribe(() => syncDetailFromScope());
-  usePanelState.subscribe(() => syncDetailFromScope());
+  const unsub1 = useBodyState.subscribe(() => syncDetailFromScope());
+  const unsub2 = useListState.subscribe(() => syncDetailFromScope());
+  const unsub3 = useFilterState.subscribe(() => syncDetailFromScope());
+  const unsub4 = usePanelState.subscribe(() => syncDetailFromScope());
+  unbindSubscriptions = () => {
+    unsub1();
+    unsub2();
+    unsub3();
+    unsub4();
+  };
   // 启动期一次性对齐。
   syncDetailFromScope();
 }

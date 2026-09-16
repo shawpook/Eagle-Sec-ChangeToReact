@@ -74,7 +74,22 @@ export function syncFolderLock(): void {
   }
 }
 
+let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindLockSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindLockSync(): void {
+  if (bound) return;
+  bound = true;
+
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleLockState = useLockState;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
@@ -88,9 +103,14 @@ export function bindLockSync(): void {
   // bundle 29107-29111：偏好变更后动态更新 Touch ID 支援状态
   const ipc = ipcRenderer();
   if (ipc && typeof ipc.on === 'function') {
-    ipc.on('preferences-updated', () => {
+    const onPref = () => {
       useLockState.setState({ canUseTouchID: checkCanUseTouchID() });
-    });
+    };
+    ipc.on('preferences-updated', onPref);
+    unbindSubscriptions = () => {
+      if (typeof ipc.off === 'function') ipc.off('preferences-updated', onPref);
+      else if (typeof ipc.removeListener === 'function') ipc.removeListener('preferences-updated', onPref);
+    };
   }
 }
 

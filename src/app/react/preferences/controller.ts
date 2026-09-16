@@ -83,10 +83,28 @@ export function getControllerVersion(): number {
   return version;
 }
 
+let notifying = false;
 function notify(): void {
-  version++;
-  listeners.forEach((l) => l());
+  if (notifying) return;
+  notifying = true;
+  try {
+    version++;
+    listeners.forEach((l) => {
+      try {
+        l();
+      } catch (err) {
+        console.error('[eagle-preferences-controller] listener error', err);
+      }
+    });
+  } finally {
+    notifying = false;
+  }
 }
+
+export function disposePreferencesController(): void {
+  listeners.clear();
+}
+
 
 /** ng-click 的 $apply 等价：执行变更后统一 notify。 */
 export function applyController(fn?: (s: any) => void): void {
@@ -592,7 +610,13 @@ export const controllerScope: any = {
       req('electron').ipcRenderer.send('change-zoom', this.lastZoom);
     }
     const currentWindow = getCurrentWindow();
-    currentWindow && currentWindow.close();
+    if (currentWindow) {
+      setTimeout(() => {
+        try {
+          currentWindow.close();
+        } catch (err) {}
+      }, 50);
+    }
   },
 
   openAutoImport(event?: any) {

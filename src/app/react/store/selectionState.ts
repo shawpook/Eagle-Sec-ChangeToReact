@@ -57,6 +57,11 @@ export function writeLastSelectedIndex(value: any): void {
 
 let bound = false;
 
+export function unbindSelectionSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindSelectionSync(): void {
   if (bound) return;
   bound = true;

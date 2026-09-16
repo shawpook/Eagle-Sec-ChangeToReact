@@ -130,6 +130,16 @@ export function syncListFromScope(): void {
 }
 
 let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindListSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
 
 export function bindListSync(): void {
   if (bound) return;
@@ -151,7 +161,8 @@ export function bindListSync(): void {
     if (Object.keys(next).length) useListState.setState(next);
   };
   mirror(useBodyState.getState());
-  useBodyState.subscribe(mirror);
+  const unsub = useBodyState.subscribe(mirror);
+  unbindSubscriptions = unsub;
 
   // b1-9by-A：startScopeSync 退役——保留一次性对齐，后续由写入点直调驱动。
   syncListFromScope();

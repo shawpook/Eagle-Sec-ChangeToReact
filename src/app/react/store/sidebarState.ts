@@ -132,12 +132,30 @@ export function syncSidebarFromScope(): void {
   setSidebarSnapshot(next);
 }
 
+let bound = false;
+let unbindSubscriptions: (() => void) | null = null;
+
+export function unbindSidebarSync(): void {
+  if (!bound) return;
+  bound = false;
+  if (unbindSubscriptions) {
+    unbindSubscriptions();
+    unbindSubscriptions = null;
+  }
+}
+
 export function bindSidebarSync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleSidebarSync = syncSidebarFromScope;
   // 委托字段（bodyState/listState 源翻转）变化 → re-sync。
-  useBodyState.subscribe(() => syncSidebarFromScope());
-  useListState.subscribe(() => syncSidebarFromScope());
+  const unsub1 = useBodyState.subscribe(() => syncSidebarFromScope());
+  const unsub2 = useListState.subscribe(() => syncSidebarFromScope());
+  unbindSubscriptions = () => {
+    unsub1();
+    unsub2();
+  };
   // 启动期一次性对齐。
   syncSidebarFromScope();
 }

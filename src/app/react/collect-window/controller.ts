@@ -49,6 +49,10 @@ function notify(): void {
   }
 }
 
+export function disposeCollectController(): void {
+  listeners.clear();
+}
+
 /** ng-click 的 $apply 等价：执行变更后统一 notify。 */
 export function applyController(fn?: (s: any) => void): void {
   try {
@@ -80,8 +84,15 @@ export const mouseState = { windowMouseX: 0, windowMouseY: 0 };
 let openCollectTagSelect: (params: any) => void = () => {
   console.warn('[eagle-collect] tag panel host not mounted');
 };
-export function registerTagPanelOpenerHost(fn: (params: any) => void): void {
+export function registerTagPanelOpenerHost(fn: (params: any) => void): () => void {
   openCollectTagSelect = fn;
+  return () => {
+    if (openCollectTagSelect === fn) {
+      openCollectTagSelect = () => {
+        console.warn('[eagle-collect] tag panel host not mounted');
+      };
+    }
+  };
 }
 let isMouseMoving = false;
 let mousemoveTimeout: any;
@@ -169,7 +180,9 @@ scope.getThemeName = function (theme: any) {
 };
 
 scope.getTheme = () => {
-  return scope.getThemeName((window as any).preferences.theme).toLowerCase();
+  const prefTheme = (window as any).preferences?.theme;
+  if (!prefTheme) return 'dark';
+  return scope.getThemeName(prefTheme).toLowerCase();
 };
 
 scope.changeStar = (star: number) => {
@@ -232,8 +245,13 @@ scope.focusFolderInput = () => {
 
 // FolderSelectPanel 宿主注册的打开回调（folderPanel.tsx 挂载时写入）
 let openFolderPanel: ((params: any) => void) | null = null;
-export function registerFolderPanelOpener(fn: (params: any) => void): void {
+export function registerFolderPanelOpener(fn: (params: any) => void): () => void {
   openFolderPanel = fn;
+  return () => {
+    if (openFolderPanel === fn) {
+      openFolderPanel = null;
+    }
+  };
 }
 
 scope.initFolderSelect = () => {
@@ -360,24 +378,32 @@ export async function reloadData(): Promise<void> {
   const preferences = (window as any).preferences;
   const ipcRenderer = req('electron')?.ipcRenderer;
 
-  scope.browserName = eagle.env.browser.name;
+  scope.browserName = eagle?.env?.browser?.name || '';
   scope.theme = scope.getTheme();
   scope.platform = (window as any).process?.platform || 'win32';
-  scope.isMac = typeof (eagle.env && eagle.env.os && eagle.env.os.isMac) === 'function' ? !!eagle.env.os.isMac() : !!(eagle.env && eagle.env.os && eagle.env.os.isMac);
+  scope.isMac = typeof (eagle?.env?.os?.isMac) === 'function' ? !!eagle.env.os.isMac() : !!(eagle?.env?.os?.isMac);
   scope.isOpen = true;
-  scope.collectItem = new (window as any).CollectItem();
+  if (typeof (window as any).CollectItem === 'function') {
+    scope.collectItem = new (window as any).CollectItem();
+  } else {
+    scope.collectItem = { tags: [] };
+  }
 
   // 原版 i18nService.initLocale：locales/{locale}.json（页面相对路径）
   try {
-    const locale = preferences.general.language || 'en';
-    const response = await fetch(encodeURI(`locales/${locale}.json`));
-    i18nWords = await response.json();
+    const locale = preferences?.general?.language || 'en';
+    if (typeof fetch === 'function') {
+      const response = await fetch(encodeURI(`locales/${locale}.json`));
+      i18nWords = await response.json();
+    }
   } catch (err) {
     console.warn('[eagle-collect] locale load failed', err);
   }
   notifyController();
 
-  await loadData();
+  if (eagle?.folder?.all) {
+    await loadData();
+  }
 
   scope.isReady = true;
   remote?.getCurrentWindow?.()?.setOpacity?.(1);

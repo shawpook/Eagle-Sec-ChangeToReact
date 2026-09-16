@@ -577,6 +577,11 @@ export function writeSubFolders(value: any): void { writers.subFolders(value); }
 
 let bound = false;
 
+export function unbindMiscRawSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindMiscRawSync(): void {
   if (bound) return;
   bound = true;

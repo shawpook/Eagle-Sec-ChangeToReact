@@ -33,6 +33,11 @@ for (const fieldName of MIGRATED) {
 
 let bound = false;
 
+export function unbindPreferencesSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindPreferencesSync(): void {
   if (bound) return;
   bound = true;

@@ -53,7 +53,16 @@ export function syncErrorCount(list?: any[]): void {
   }
 }
 
+let bound = false;
+
+export function unbindToastSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindToastSync(): void {
+  if (bound) return;
+  bound = true;
   // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
   (window as any).__eagleToastSync = syncErrorCount;
   // b1-9by-A：startScopeSync 退役。保留一次性对齐（启动期 errorList 已有值时

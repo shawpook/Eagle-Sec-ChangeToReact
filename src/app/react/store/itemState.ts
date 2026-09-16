@@ -75,6 +75,11 @@ export function writeSelectedFolderMappings(value: any): void { writers.selected
 
 let bound = false;
 
+export function unbindItemSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindItemSync(): void {
   if (bound) return;
   bound = true;

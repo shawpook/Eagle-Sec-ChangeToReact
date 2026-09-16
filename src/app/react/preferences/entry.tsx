@@ -39,12 +39,30 @@ export interface PreferencesWindowState {
 // 简单外部 store（与主窗口 zustand 同风格；供 8b-8e 各面板组件共享）
 let state: PreferencesWindowState = { registration: null, panel: '', keyword: '', ready: false };
 const listeners = new Set<() => void>();
+let stateNotifying = false;
 function setState(patch: Partial<PreferencesWindowState>) {
   state = { ...state, ...patch };
   // 闭环测试契约（CDP Runtime.evaluate 直读）
   (window as any).__eaglePreferencesState = state;
-  listeners.forEach((l) => l());
+  if (stateNotifying) return;
+  stateNotifying = true;
+  try {
+    listeners.forEach((l) => {
+      try {
+        l();
+      } catch (err) {
+        console.error('[eagle-preferences-entry] listener error', err);
+      }
+    });
+  } finally {
+    stateNotifying = false;
+  }
 }
+
+export function disposePreferencesEntryState(): void {
+  listeners.clear();
+}
+
 export function usePreferencesWindowState(): PreferencesWindowState {
   const [, bump] = useState(0);
   useEffect(() => {
@@ -87,7 +105,9 @@ function PreferencesRoot() {
     (window as any).__eaglePreferencesEntryReady = true;
 
     return () => {
-      if (ipc.off) ipc.off('init', onInit);
+      (window as any).__eaglePreferencesEntryReady = false;
+      if (typeof ipc.off === 'function') ipc.off('init', onInit);
+      else if (typeof ipc.removeListener === 'function') ipc.removeListener('init', onInit);
     };
   }, [host]);
 

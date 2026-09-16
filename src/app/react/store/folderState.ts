@@ -71,6 +71,11 @@ export function writeStartCursor(value: any): void {
 
 let bound = false;
 
+export function unbindFolderSync(): void {
+  if (!bound) return;
+  bound = false;
+}
+
 export function bindFolderSync(): void {
   if (bound) return;
   bound = true;

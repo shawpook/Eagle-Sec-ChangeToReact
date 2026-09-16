@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ct } from './controller';
 import { getSortable, makeSortable } from '../components/interactions/sortable';
 
-import { q, hasClass, widthOf, heightOf, setCssEl, onEl, offsetOf, outerWidthOf } from '../utils/domQuery';
+import { q, hasClass, widthOf, heightOf, setCssEl, onEl, offAllEl, offsetOf, outerWidthOf } from '../utils/domQuery';
 const treeUtil = (window as any).eagle.utils.tree;
 
 type Listener = () => void;
@@ -36,6 +36,13 @@ export class ContextMenu {
     closeSignal++;
     listeners.forEach((l) => l());
   }
+}
+
+export function disposeCollectContextMenu(): void {
+  listeners.clear();
+  menuState = null;
+  openSignal = 0;
+  closeSignal = 0;
 }
 
 let openSignal = 0;
@@ -329,9 +336,7 @@ export function ContextMenuItems({ menu, activeMenu, themePath, eng }: any) {
         {items.map(
           (item: any, index: number) =>
             item.submenu && activeMenu === item.submenu && (
-              <div key={index} className="context-menu submenu open" ref={(el: any) => eng.bindSubmenu(el)}>
-                <ContextMenuItems menu={item.submenu} activeMenu={activeMenu} themePath={themePath} eng={eng} />
-              </div>
+              <SubmenuItem key={index} item={item} activeMenu={activeMenu} themePath={themePath} eng={eng} />
             )
         )}
       </div>
@@ -339,9 +344,24 @@ export function ContextMenuItems({ menu, activeMenu, themePath, eng }: any) {
   );
 }
 
+function SubmenuItem({ item, activeMenu, themePath, eng }: { item: any; activeMenu: any; themePath: string; eng: any }) {
+  const elRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    return eng.bindSubmenu(el);
+  }, [item, eng]);
+
+  return (
+    <div className="context-menu submenu open" ref={elRef}>
+      <ContextMenuItems menu={item.submenu} activeMenu={activeMenu} themePath={themePath} eng={eng} />
+    </div>
+  );
+}
+
 /* ---- 引擎（context-menu.js link 体逐字，scope 换为闭包对象） ---- */
 
-function createEngine(forceUpdate: () => void) {
+export function createEngine(forceUpdate: () => void = () => {}) {
   const scope: any = {
     searchKeyword: '',
     menu: null,
@@ -362,6 +382,8 @@ function createEngine(forceUpdate: () => void) {
   let searchInputEl: HTMLInputElement | null = null;
   let sortableEl: any = null;
   let sortableMenu: any = null;
+  let sortableHandle: any = null;
+  let submenuCleanup: (() => void) | null = null;
 
   const eng: any = {
     scope,
@@ -369,6 +391,12 @@ function createEngine(forceUpdate: () => void) {
     lastCloseSignal: -1,
 
     bindElement(el: any, input: any) {
+      if (searchInputEl && searchInputEl !== input) {
+        offAllEl(searchInputEl);
+      }
+      if (!el && !input) {
+        eng.destroy();
+      }
       contextMenuEl = el || null;
       searchInputEl = input || null;
       if (searchInputEl) {
@@ -383,15 +411,20 @@ function createEngine(forceUpdate: () => void) {
     bindSortable(el: any, menu: any) {
       if (sortableEl === el) return;
       if (sortableEl) {
-        const s0 = getSortable(sortableEl);
-        if (s0) s0.destroy();
+        if (sortableHandle && typeof sortableHandle.destroy === 'function') {
+          sortableHandle.destroy();
+        } else {
+          const s0 = getSortable(sortableEl);
+          if (s0) s0.destroy();
+        }
+        sortableHandle = null;
         sortableEl = null;
       }
       if (el && menu.sortable) {
         sortableEl = el;
         sortableMenu = menu;
         // D-2f：jQuery-UI sortable → 自研
-        makeSortable(el, {
+        sortableHandle = makeSortable(el, {
           distance: 10,
           animation: 200,
           handle: menu.sortableHelper ? '.drag-helper' : undefined,
@@ -408,6 +441,10 @@ function createEngine(forceUpdate: () => void) {
 
     bindSubmenu(el: any) {
       if (!el) return;
+      if (submenuCleanup) {
+        submenuCleanup();
+        submenuCleanup = null;
+      }
       // 原 autoPositionContextMenu 指令（462-462 逐字语义）
       const autoPosition = () => {
         const menuItem = q('#submenu-placeholder')?.parentElement;
@@ -446,8 +483,17 @@ function createEngine(forceUpdate: () => void) {
           maxHeight: `${maxBottom - offsetY}px`,
         });
       };
-      setTimeout(autoPosition, 50);
+      const timer = setTimeout(autoPosition, 50);
       window.addEventListener('resize', autoPosition);
+      const cleanup = () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', autoPosition);
+        if (submenuCleanup === cleanup) {
+          submenuCleanup = null;
+        }
+      };
+      submenuCleanup = cleanup;
+      return cleanup;
     },
 
     selectUp() {
@@ -645,7 +691,32 @@ function createEngine(forceUpdate: () => void) {
     },
 
     destroy() {
-      const cmItems = contextMenuEl?.querySelector('.context-menu-items') as HTMLElement | null;
+      if (submenuCleanup) {
+        submenuCleanup();
+        submenuCleanup = null;
+      }
+      if (sortableEl) {
+        if (sortableHandle && typeof sortableHandle.destroy === 'function') {
+          sortableHandle.destroy();
+        } else {
+          const s0 = getSortable(sortableEl);
+          if (s0) s0.destroy();
+        }
+        sortableHandle = null;
+        sortableEl = null;
+        sortableMenu = null;
+      }
+      if (keyBufferTimeout) {
+        clearTimeout(keyBufferTimeout);
+        keyBufferTimeout = null;
+      }
+      if (searchInputEl) {
+        offAllEl(searchInputEl);
+        searchInputEl = null;
+      }
+      const cmItems = typeof contextMenuEl?.querySelector === 'function'
+        ? (contextMenuEl.querySelector('.context-menu-items') as HTMLElement | null)
+        : null;
       if (cmItems) cmItems.style.maxHeight = '';
       scope.searchKeyword = '';
       scope.displayMenu = {};

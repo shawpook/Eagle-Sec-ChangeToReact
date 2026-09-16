@@ -161,6 +161,13 @@ export const REACT_SUITE = [
   // M4-B：采集/偏好窗 dispose 收口 + 主窗 24 个 store 的 bind*Sync 幂等守卫与退订句柄。
   // 纯 Node（node:vm + 真实 listener 计数桩驱动真实 bind/unbind 各 100 次），秒级。
   'tests/m4-window-subscriptions.mjs',
+  // M3-3：修「取消任务不回写已关闭窗口」——闸门放在 await 之后、任何 DOM 写入之前。
+  // 纯 Node（node:vm 桩化宿主），秒级；负向自证：移除闸门即变红。
+  'tests/worker-cancel-writeback.mjs',
+  // M3-3：四个自有 Worker 的协议契约（信封/通道/字段/错误文案的唯一事实源在
+  // core/workers/protocol.ts；worker 侧因经典 script 边界改用文件头注释 +
+  // 本测试的双向 AST 字面量校验）。纯 Node、秒级；7 处单方面改动会全部变红。
+  'tests/worker-protocol-contract.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -184,6 +191,8 @@ export const TEST_CLASSES = {
   'tests/m4-url-history.mjs': 'static',
   'tests/m3-filter-cold-start.mjs': 'static',
   'tests/m4-window-subscriptions.mjs': 'static',
+  'tests/worker-cancel-writeback.mjs': 'static',
+  'tests/worker-protocol-contract.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

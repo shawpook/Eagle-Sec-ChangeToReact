@@ -21,6 +21,24 @@ const MY_MODULE_ENTRIES = [
   'utif',
 ];
 
+/**
+ * M8-3：`src/node_modules` 下被 `core/shim/moduleRegistry.ts` 登记为**真实裸模块**的包
+ * （`requireModule()` 里 `realBareModule(req, '/src/node_modules/<包>/<入口>')` 那几条）。
+ *
+ * 为什么必须整包（kind=tree）而不是只挑入口文件：这些模块在运行期由 shim 逐个 XHR 取源码
+ * 再 `new Function` 求值，相对 require 走 `resolveLocalRequest()` 从**同一 origin**再取一次
+ * ——只拷入口会得到「文件在、加载失败」的假绿。实测：`stopword/lib/stopword.js` 首行就
+ * `require('./stopwords_en.js')`，并逐个 require 同包的 19 个 `stopwords_*.js` 数据文件。
+ *
+ * 期望集合由 `tests/publish-asset-manifest.mjs` 对 `moduleRegistry.ts` **实扫对账**得出，
+ * 不是在这里写死一份与源码脱钩的名单（同 MY_MODULE_ENTRIES 的既有口径）。
+ */
+export const SRC_NODE_MODULE_PACKAGES = [
+  'compare-versions',
+  'stopword',
+  'electron-referer',
+];
+
 export const PUBLISH_ASSET_MANIFEST = Object.freeze([
   { from: 'src/app', to: 'src/app', kind: 'app-runtime-tree' },
   ...MY_MODULE_ENTRIES.map((name) => ({
@@ -28,6 +46,16 @@ export const PUBLISH_ASSET_MANIFEST = Object.freeze([
     to: `src/my_modules/${name}`,
     kind: name.includes('.') ? 'file' : 'tree',
   })),
+  ...SRC_NODE_MODULE_PACKAGES.map((name) => ({
+    from: `src/node_modules/${name}`,
+    to: `src/node_modules/${name}`,
+    kind: 'tree',
+  })),
+  // M8-3：运行期 8+ 处用 `req(appRoot.path + '/package.json')`（appRoot.path 恒为 `/src`）
+  // 读版本元数据，读法是 syncText（同步 XHR、按页面 origin 解析、无文件系统回退）⇒ 产物里
+  // 没有它就是 404，version/buildVersion 全空。M7-3 已把它精简到只剩
+  // version/buildVersion/buildNumber（本批不再改动该文件的内容）。
+  { from: 'src/package.json', to: 'src/package.json', kind: 'file' },
   { from: 'src/i18n', to: 'src/i18n', kind: 'tree' },
   { from: 'src/config.js', to: 'src/config.js', kind: 'file' },
   {

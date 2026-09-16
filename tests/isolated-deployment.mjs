@@ -155,27 +155,14 @@ const RUNTIME_ROOT_GAPS = [
 // 分离出来、逐条打印成 GAP。**未登记**的 4xx 或未捕获异常一律立刻判红——负向自证 A
 // （删掉已登记产物）打的就是这条。
 //
-// 复现口径：对仓库自身的 `<repo>/dist/frontend` 直接发 HTTP（不起 Electron）：
-//   404  /src/package.json
-//   404  /src/node_modules/compare-versions/index.js
-// 与隔离根下的观测结果逐字一致 ⇒ 不是隔离副本引入的，是发布内容本身的缺口。
+// M8-3 已修复的两条（原 `deploy-missing-src-package-json` 与
+// `runtime-src-node-modules-unregistered`）**已从本表删除**，不再留豁免：
+//   `/src/package.json` 与 `/src/node_modules/{compare-versions,stopword,electron-referer}`
+//   已由 frontend/publish-asset-manifest.mjs 登记进发布清单并落到 dist/frontend/src/，
+//   对应的 404 与 `require(compare-versions)` 未捕获异常若再现一律判红。
+//   交付闭环的持久门禁在 tests/publish-asset-manifest.mjs（整包对账 + 产物侧真实装载）。
 // ---------------------------------------------------------------------------
 const KNOWN_DEPLOYMENT_GAPS = [
-  {
-    id: 'deploy-missing-src-package-json',
-    urls: (parsed) => parsed.pathname === '/src/package.json',
-    where: 'src/app/react/store/panelState.ts:163、src/app/react/core/bundleGlobals.ts:1165、src/app/react/core/apiServerDomain.ts:365',
-    why: '运行期用 syncText（同步 XHR，按页面 origin 解析，**无文件系统回退**，见 src/app/react/core/shim/browserRuntime.ts:111）读 appRoot.path + "/package.json"。发布清单 frontend/publish-asset-manifest.mjs 只登记 src/app、src/i18n、src/config.js，不含 src/package.json。',
-    fix: '把 package.json 纳入发布清单（或让 appRoot 指向一个部署内确实存在 package.json 的位置）。',
-  },
-  {
-    id: 'runtime-src-node-modules-unregistered',
-    urls: (parsed) => parsed.pathname === '/src/node_modules/compare-versions/index.js',
-    exception: (text) => /require\(compare-versions\)/.test(text),
-    where: 'src/app/react/core/shim/moduleRegistry.ts:545',
-    why: '真实消费者 PluginCenter 调 require("compare-versions")；入口路径硬编码 "/src/node_modules/compare-versions/index.js"，而 src/node_modules 只存在于源工作区、未被发布清单登记 ⇒ 部署副本 404 ⇒ realBareModule 回落 genericStub（moduleRegistry.ts:228）⇒ 调用即抛 RuntimeCapabilityError。这正是验收条款点名的「未登记的 src/node_modules」。',
-    fix: '二选一：把需要的裸模块纳入发布清单并落到 dist/frontend/src/node_modules；或把入口改为指向已登记的部署内路径。',
-  },
   {
     id: 'api-item-thumbnail-404-for-document',
     urls: (parsed) => parsed.pathname === '/api/item/thumbnail',

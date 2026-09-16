@@ -180,7 +180,7 @@ scope.getThemeName = function (theme: any) {
 };
 
 scope.getTheme = () => {
-  const prefTheme = (window as any).preferences?.theme;
+  const prefTheme = window.preferences?.theme;
   if (!prefTheme) return 'dark';
   return scope.getThemeName(prefTheme).toLowerCase();
 };
@@ -383,8 +383,8 @@ export async function reloadData(): Promise<void> {
   scope.platform = (window as any).process?.platform || 'win32';
   scope.isMac = typeof (eagle?.env?.os?.isMac) === 'function' ? !!eagle.env.os.isMac() : !!(eagle?.env?.os?.isMac);
   scope.isOpen = true;
-  if (typeof (window as any).CollectItem === 'function') {
-    scope.collectItem = new (window as any).CollectItem();
+  if (typeof window.CollectItem === 'function') {
+    scope.collectItem = new window.CollectItem();
   } else {
     scope.collectItem = { tags: [] };
   }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * R2 启动契约装配（shim 层唯一入口）。
  *
@@ -12,13 +11,21 @@
  * 铁律：`window.process/Buffer/global/require/electron/ipcRenderer/electronSettings/pluginModule/
  * i18n/EagleConfig/settings/preferences` 以及各事件时序（'initial'→'app-status-loading'→
  * 'preload-library'→'app-status-library-loaded'）逐字保留——这是 React 模块图的启动前置契约。
+ *
+ * M2-5 类型化：本文件已撤销整文件 `// @ts-nocheck`。上面的启动契约全局面（本文件是其**唯一
+ * 写入点**）统一声明在 `global/globals.d.ts` 的「具名全局声明面」区，故此处写入表达式逐字保留、
+ * 未新增任何 cast；仅 `bareModules`（`Record<string, unknown>`）等 `unknown` 取项在落盘时
+ * 窄化到具名类型，并在每处注明依据。语义零改动。
  */
 import { isElectronRuntime, nativeRequire, probeRuntimeModeOnce, resolveRuntimeMode, resolveWindowClass } from "./environment";
+import type { ShimRuntimeMode, ShimWindowClass } from "./environment";
 import {
   BrowserBuffer, installBrowserFetchRewrite, installMediaDurationPatch, pluginModule, syncText,
 } from "./browserRuntime";
 import { appRootModule, bareModules, installPinyinModules, populateBareModules, requireModule } from "./moduleRegistry";
+import type { PinyinliteModule, TinyPinyinModule } from "./moduleRegistry";
 import { currentPreferences, electronSettings, handleSettingsStorage, syncNativePreferences } from "./settingsI18n";
+import type { ElectronSettingsFace, MockI18n } from "./settingsI18n";
 import { ipcRenderer, installReturnBridgeFallback } from "./ipcBus";
 import { electron } from "./desktopCapability";
 import {
@@ -27,6 +34,26 @@ import {
 import { installRuntimeServices } from "../runtimeServices";
 
 function noopTeardown() { /* 已安装：返回空释放体，保证调用方总能拿到可调用的 teardown */ }
+
+/**
+ * `window.__eagleShim` 标志对象的形状。
+ *
+ * 定义在本文件而非 `global/globals.d.ts`：本文件是该对象的**唯一写入点**，且 shim 层模块须
+ * 自包含——`tests/shim-module-boundaries.mjs` 只以 `core/shim/*.ts` 为根建 Program（不加载
+ * ambient 全局声明），此处出现一个只声明在 d.ts 里的裸类型名会被判为「未解析标识符」。
+ * `globals.d.ts` 的 `Window.__eagleShim` 以 `import("../core/shim/install")` 引用本类型，
+ * 保证「形状只有一套」。
+ */
+export interface EagleShimInstallFace {
+  /** `resolveRuntimeMode()` 的结论；探测后若确认真后端，`seedDemoWhenConfirmed()` 会就地改写。 */
+  mode: ShimRuntimeMode;
+  /** `resolveWindowClass()` 的结论（诊断/台账口径）。 */
+  windowClass: ShimWindowClass;
+  /** 安装时刻（`Date.now()`，诊断用）。 */
+  installedAt: number;
+  /** 本函数返回的释放体；在返回前挂到同一对象上。 */
+  teardown?: () => void;
+}
 
 /**
  * M2-1：演示种子的**确认后安装**。
@@ -57,7 +84,10 @@ export function installLegacyShimContract() {
   const mode = resolveRuntimeMode();
   const windowClass = resolveWindowClass();
   const cleanups: Array<() => void> = [];
-  (window as any).__eagleShim = { mode, windowClass, installedAt: Date.now() };
+  // M2-5：标志对象留一个具名句柄，末尾挂 `teardown` 时无需再从 `window` 取回（同一对象，
+  // 故 `window.__eagleShim.teardown` 的可观测结果不变）。
+  const shimFlag: EagleShimInstallFace = { mode, windowClass, installedAt: Date.now() };
+  window.__eagleShim = shimFlag;
 
   // ── ⓪ RuntimeServices 装配（M2-1，**唯一装配点**：core/runtimeServices.ts）──────
   // 把「运行时能力」收成一个有限集合（RuntimeEnv/Settings/Library/Storage/Window/Ipc/
@@ -135,15 +165,18 @@ export function installLegacyShimContract() {
     cleanups.push(() => clearTimeout(timer));
   }
   window.pluginModule = pluginModule;
-  window.tinyPinyin = bareModules['tiny-pinyin'];
-  window.pinyinlite = bareModules['pinyinlite'];
+  // M2-5 窄化：`bareModules` 是 `Record<string, unknown>`，其登记项静态类型为 `unknown`；
+  // 目标的具名形状由登记表自身给出（`moduleRegistry.TinyPinyinModule` / `PinyinliteModule`），
+  // 故断言到具名 interface 而非 `any`。断言不产生运行期代码，落盘值逐字不变。
+  window.tinyPinyin = bareModules['tiny-pinyin'] as TinyPinyinModule;
+  window.pinyinlite = bareModules['pinyinlite'] as PinyinliteModule;
 
   const tinyPinyinGuard = setInterval(() => {
     if (!window.tinyPinyin || typeof window.tinyPinyin.convertToPinyin !== 'function') {
-      window.tinyPinyin = bareModules['tiny-pinyin'];
+      window.tinyPinyin = bareModules['tiny-pinyin'] as TinyPinyinModule;
     }
     if (typeof window.pinyinlite !== 'function') {
-      window.pinyinlite = bareModules['pinyinlite'];
+      window.pinyinlite = bareModules['pinyinlite'] as PinyinliteModule;
     }
   }, 50);
   const tinyPinyinGuardStop = setTimeout(() => clearInterval(tinyPinyinGuard), 6000);
@@ -164,10 +197,15 @@ export function installLegacyShimContract() {
   // ── ⑧ 解析期内联 boot 的等价供给（原 3385-3400）────────────────────────────
   try {
     if (!window.appRoot) window.appRoot = requireModule('app-root-path');
-    if (!window.i18n) window.i18n = new (requireModule(appRootModule.path + '/i18n'))();
+    // M2-5 窄化：截获表把该请求解析为 `settingsI18n.MockI18n` 类（moduleRegistry.ts 的
+    // `/src/i18n` 分支），故断言到该类而非 `any`；`new` 的求值时机与抛错路径逐字不变
+    // （装载失败仍原样抛出并被下方 catch 接住）。
+    if (!window.i18n) window.i18n = new (requireModule(appRootModule.path + '/i18n') as typeof MockI18n)();
     if (!window.EagleConfig) window.EagleConfig = requireModule(appRootModule.path + '/config.js');
     // collect-window 内联 boot 的等价供给（原经 require('/src/my_modules/electron-settings')）
-    if (!window.settings) window.settings = requireModule(appRootModule.path + '/my_modules/electron-settings');
+    // M2-5 窄化：截获表把该请求解析为 `settingsI18n.electronSettings`（同一实例），
+    // 断言到其具名门面类型，`window.settings` 与 `window.electronSettings` 仍是同一对象。
+    if (!window.settings) window.settings = requireModule(appRootModule.path + '/my_modules/electron-settings') as ElectronSettingsFace;
     if (!window.preferences) window.preferences = window.settings.getPreferences();
   } catch (err) {
     console.warn('[eagle-shim] legacy boot replication failed', err);
@@ -177,8 +215,8 @@ export function installLegacyShimContract() {
     for (const fn of cleanups.splice(0)) {
       try { fn(); } catch (err) { /* 释放尽力而为，不阻塞后续 */ }
     }
-    delete (window as any).__eagleBrowserShimLoaded;
+    delete window.__eagleBrowserShimLoaded;
   };
-  (window as any).__eagleShim.teardown = teardown;
+  shimFlag.teardown = teardown;
   return teardown;
 }

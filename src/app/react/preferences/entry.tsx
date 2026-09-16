@@ -102,10 +102,10 @@ function PreferencesRoot() {
 
     // shims 就绪标记：本 effect 提交后，本组件与 shell 的 'init' 监听器均已注册
     // （子组件 effect 先于父 effect 执行），此刻发射 init 不会丢失。
-    (window as any).__eaglePreferencesEntryReady = true;
+    window.__eaglePreferencesEntryReady = true;
 
     return () => {
-      (window as any).__eaglePreferencesEntryReady = false;
+      window.__eaglePreferencesEntryReady = false;
       if (typeof ipc.off === 'function') ipc.off('init', onInit);
       else if (typeof ipc.removeListener === 'function') ipc.removeListener('init', onInit);
     };

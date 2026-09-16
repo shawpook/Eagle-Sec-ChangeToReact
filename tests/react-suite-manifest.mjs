@@ -205,6 +205,15 @@ export const REACT_SUITE = [
   // 清单登记项/退役归档三方逐一一致（**与源码实扫对账，不写死数字**）、
   // 以及「调用真实复制函数时源不存在必须拒绝」——含 1 项负向自证。
   'tests/publish-asset-manifest.mjs',
+  // ── M8 覆盖面补齐：三个**长期不在任何套件里**的 M1 交付测试。 ──
+  // 依 D15「套件之外的测试等于长期未跑」，我用「改动的源文件 ∩ 带沙箱 require 守卫的测试」
+  // 做过一次全仓扫描，并逐个单独实跑确认当前通过后才登记；三者的断言一字未改。
+  //   F08/F09 动作供给对照契约（W12 交付，13 项 + 34 条未迁移动作台账，删条即失败）；
+  'tests/f08f09-action-supply-contract.mjs',
+  //   F06 后端图像变换端点闭环（W10 交付，自起 backend 于临时端口，读回像素验证旋转方向）；
+  'tests/image-transform-closed-loop.mjs',
+  //   P3-b 来源文件夹模式真实点击 UI 闭环（自起 backend + Vite + Electron，全部临时端口）。
+  'tests/source-mode-browse-closed-loop.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -239,6 +248,10 @@ export const TEST_CLASSES = {
   // 起 Vite dev（URL 为 /src/app/... 源码路径）并驱动真实 Electron 行为 → dev-probe。
   'tests/webview-tag-enabled.mjs': 'dev-probe',
   'tests/publish-asset-manifest.mjs': 'static',
+  'tests/f08f09-action-supply-contract.mjs': 'static',
+  'tests/image-transform-closed-loop.mjs': 'static',
+  // 起 Vite dev + 真实 Electron，但后端与端口都由本测试自己拉起 → dev-probe。
+  'tests/source-mode-browse-closed-loop.mjs': 'dev-probe',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

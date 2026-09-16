@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（95 项，顺序隔离执行）。
+ * React 全量回归套件（98 项，顺序隔离执行）。
  * 项数以 `react-suite-manifest.mjs` 的 `REACT_SUITE` 长度为准；合并各批次的登记项时
  * 必须重新数一遍长度再改这里——历史上多次出现注释与实际长度不同步（71/72/73/77/79 都写过）。
  * R8 起并入 F15 `preload-subscriptions` 与 F13-preview `preview-entry-subscriptions`
@@ -10,6 +10,9 @@
  * R12 起并入 M3-3 `worker-cancel-writeback` 与 `worker-protocol-contract`。
  * R13 起并入 M4-D `m4-ng-click-pairing` / `m4-engine-lifecycle` / `m4-domlite-containment`。
  * R14 起并入 M4-E `f11-scope-face-late-registration`。
+ * R18 起并入三个长期**不属任何套件**的 M1 交付测试（D15 同类问题，M8 覆盖面补齐）：
+ * `f08f09-action-supply-contract`（W12）/ `image-transform-closed-loop`（W10）/
+ * `source-mode-browse-closed-loop`（P3-b）。三者单独实跑通过后才登记，断言一字未改。
  * R17 起并入 M7-3 `publish-asset-manifest`（发布资产登记驱动：清单与源码实扫对账 +
  * 「复制源缺失必须拒绝」，守护任务书 M7 点名的「整树 copy → 登记驱动」与「复制失败即失败」两条）。
  * R16 起并入 M6-4 `webview-tag-enabled`（真机门禁：webviewTag 恢复后三处 <webview> 真的

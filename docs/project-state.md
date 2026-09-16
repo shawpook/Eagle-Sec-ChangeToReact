@@ -224,13 +224,28 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | ✅ **已交付核验并集成(`5d6c4311`)**；`待撤销 3 → 2`。其上报的写死台账断言由我方改造（`9febfb15`） |
 | **W44** | task_adcdfbccc219 | ctx_a511943eb8ae | **M2-8 `demoSeed.ts` + `ipcBus.ts` 类型化（M2 收官，待撤销 2 → 0）** | 🔄 进行中（worktree `m2-shim-pair`，claude/deepseek-flash） |
 | **W45** | task_c5922c0e3ca7 | ctx_e9636c5b0a65 | **M6-3 格式插件 preload 的原生根修正** | ✅ **已交付核验并集成（`b6c9a79f` + 登记 `2b837329`）**；新测试 13/13、typecheck 0 诊断。**顺带坐实 webviewTag 缺陷 → D26** |
-| **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | 🔄 报告已落盘（`outputs/research-m7r2-my-modules-2026-09-16.md`，705 行），待核验 |
+| **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | ✅ **已交付并核验**（`outputs/research-m7r2-my-modules-2026-09-16.md`，705 行）。核验见 §5 备注 |
 | **W47** | task_0224e87e62c4 | ctx_98debf473286 | **M6-4 恢复 `webviewTag`（D26）+ 实机门禁** | 🔄 进行中（worktree `m6-webviewtag`，codex 默认配置） |
+| **W48** | task_4504588e768c | ctx_94ff0bd35249 | **M7-3 发布资产登记驱动 + 复制失败即失败 + 退役零消费者 `my_modules` 条目** | 🔄 进行中（worktree `m7-publish-assets`，codex 默认配置） |
 
 > W37/W38 都允许改 `global/globals.d.ts` 的 `'ng-click'` 那一行——**冲突由 Coordinator 合并时处理**
 > （两边都只删同一行，cherry-pick 冲突是平凡解）。
 > W39 是 codex 派单，已按 D23 的规则先探针确认其 shell 与检索可用后再派。
 
+> **W46 报告的我方核验（不采信汇报）**：Coordinator 用独立写的扫描器（限定 live code 根：
+> `src/app/react`、`src/app/js`、`src/app`、`backend`、`frontend`、`electron`、`scripts`、`plugins`、`tests`，
+> 排除 `node_modules`/`dist`/`outputs`/点目录/`my_modules`）对 48 个候选逐项反查，结论一致：
+> 26 项在 live code 里**零命中**；另 18 项的全部命中都是 `req(appRoot + '/my_modules/x')` 且**都在
+> `moduleRegistry.ts` 的 `INTERCEPT_TABLE` 里有对应截获项**（`access`/`appdata-path`/`bplist-parse`/
+> `curl-request`/`electron-settings`/`file-icon`/`get-associated-application`/`get-drive-type`/`heif`/
+> `image-cropper`/`image-size`/`is-directory`/`is-hidden-file`/`json-rest-light`/`n-readlines`/
+> `sanitize-filename`/`url`/`vtt2srt`）。另核：`importScripts` 全仓仅 `utif`（保留对象）；HTML 的
+> `<script src>` 仅 `raw-viewer/index.html:8` 的 `raw-parser`（保留对象）；`pngjs` 的 24 处命中全是
+> **裸说明符** `import { PNG } from 'pngjs'`（解析到 `node_modules`），与 `src/my_modules/pngjs` 无关；
+> `ms`/`exif`/`heif` 的多处命中是子串/文件扩展名误命中。**唯一需注意的差异**：`electron-window-state`
+> 有 1 处引用 `src/app/js/plugin/main.js:125`，但该文件**无任何加载点**（只有 `frontend-gate-manifest.mjs:164`
+> 的登记名列表提到它），属死宿主，故退役结论成立。
+>
 > **D23 实测记录**：本机 codex worker 的 shell 通道**整体不可用**（所有命令经 WSL，
 > `/bin/bash` 缺失，输出恒为空却像正常执行）。所以它给的「无消费者/搜不到」类结论**必须自己复核**；
 > 删文件这类批次不能只信它。详见项目记忆 `env-codex-rg-wsl-broken.md`。
@@ -274,6 +289,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | `research-f07-capability-matrix-2026-09-15.md` (W9) | 358 | 能力矩阵 62 行（41 行为替身/空实现）；危险清单 37 条（29 条在 electron 生产态同样生效）；**`resolveRuntimeMode()` 全仓只有 install.ts:40 一个消费者**；**browser-connected 不构成独立态**（`!hasDesktopApi` 即判 demo → 浏览器连真后端仍灌 demo seed） |
 | `research-m3-scripts-workers-2026-09-16.md` (W20) | — | F03：`eagle-match-rules.js` 第三方边界字节级定位（L1068-1084 三个 MIT 小库**不得删**），第一方 L33-1067 消费者仅 `filterDomain.ts:1140-1171`（唯一调用点 `:2136`）；**「冷启动空函数窗口」结构上确凿**——`[]` 在 JS 里是真值，空快照写进 `contentFilterCache` 后**永不复算**；F16：4 个 Worker 中 3 个可转 TS，`importScripts` 是硬边界；**另确认「取消任务不回写已关闭窗口」缺陷存在**（`commentHooks.ts:1105-1201`），`bitmapViewer.ts:321-328` 已有正确防护 |
 | `research-m4-windows-scope-2026-09-16.md` (W21) | 1167 | **主窗其实已迁完**（20 个 zustand store + `bind*Sync` 快照桥，无可变 controller）；真正剩下的是三个子窗。**`canGoBack/canGoForward` 的缺陷是属性读取不加括号 → guard 恒真**；URL→状态**只有启动期一次性读**、React 侧零 `popstate/hashchange` 监听。**只有两处「持续性开销」**：`preview-window/controller.ts:2152` 的 500ms 跨进程轮询、`shell.tsx:699-703` 每次切项向主进程注册且无 off。**两个孤儿测试**（`preload-subscriptions` / `preview-entry-subscriptions`）不属任何套件，应最先登记 |
+| `research-m7r2-my-modules-2026-09-16.md` (W46) | 705 | **穷尽 `nativeRequire` 目标集**（结论：本仓**没有**任何 `nativeRequire('...my_modules...')` 调用点，故不存在「nativeRequire 与 shim 同时可达」的条目）；`src/my_modules` 56 项三分法：**① 仅经 `intercept table`/`bareModules` 供给、磁盘不执行 18 项**；② 真正经源码加载器/经典 script/Worker 从磁盘加载 7 项（`junk`/`pinyinlite`/`chinese_convert`/`tiny-pinyin`/`cartesian-product`/`raw-parser`/`utif`）；③ 两条路都可能 0 项。**退役分档：可立即退役 48 / 需先补替代 2（`junk`、`is-network-drive`）/ 必须保留 6**。`src/package.json`：`main` 无解析者，但 `version`/`buildVersion`/`buildNumber` 有 5 处现役消费者（删了会改变对外行为）。未确认项 5 条（U-01…U-05）逐条写清「没验到什么/为什么」 |
 | `research-m6-extension-plugin-2026-09-16.md` (W22) | — | 扩展侧**无任何构建目标**（6 个手写文件由 publicDir 逐字复制），故「popup React / background·content TS」是从零新建而非改造；**41593 在生产必然不可达**（`start-production.mjs:26-34` 恒设 `EAGLE_EXTENSION_PORT`，使 `server.js:3437` 的兼容监听门控为假）；MV2 fixture 不是 MV3 的 drop-in（等待的属性名不同）；插件侧**四个根互不相同、三个不可达**；`/plugin-shim.js` 只注册回调**从不派发**，现状被 `main.cjs:3595` 的 `typeof window.eagle` 断言掩盖 |
 
 ---
@@ -425,13 +441,14 @@ e6f6383e docs(m0): 纳入总体任务书
 W40–W43 已全部集成；M2 只剩最后 2 个 shim 文件（`demoSeed.ts` + `ipcBus.ts`，**互为循环依赖**），
 M6 只剩格式插件 preload 一项，M7 剩 `src/package.json` 与 `src/my_modules/**`，随后进 M8。
 
-本波（4 个 Worker，按 D16 分档：第 1、2 个 claude/deepseek-flash，第 3、4 个 codex 默认配置）：
+本波（5 个 Worker，按 D16 分档：第 1、2 个 claude/deepseek-flash，第 3 个起 codex 默认配置）：
 
 | 波次 ID | 任务 | 起草依据 |
 |---|---|---|
 | **W44** | **M2-8** 撤销 `demoSeed.ts` + `ipcBus.ts` 的 `@ts-nocheck`（**M2 收官：待撤销 2 → 0**） | 二者互为循环依赖，必须同 Owner |
 | **W45** | **M6-3** 格式插件 preload 的原生根修正（`DetailViewer.tsx:160` / `Inspector.tsx:947` / `preview-window/shell.tsx:585`） | W22 审计第 7 条 + Coordinator 本次行号级取证 |
 | **W47** | **M6-4** 恢复 `webviewTag` + 实机门禁（**依据 D26**，W45 交付时坐实的更大缺陷） | W45 探针 + 原版 `run.jsc` 常量池 + 原版 `plugin/index.js:3324` |
+| **W48** | **M7-3** 发布资产登记驱动 + 复制失败即失败 + 归档零消费者 `my_modules` 条目 + `src/package.json` 分字段 | 任务书 M7 原话（`plan:522-536`）+ W46 审计（我方已独立核验其 48 项主张） |
 | **W46** | **M7-R2** 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json` | M7 剩余项的硬前置 |
 
 > **W45 的新取证（Coordinator 于派单前核实，已写进 spec）**：`bareModules['url'] = urlModule` 是**无条件**的
@@ -440,7 +457,7 @@ M6 只剩格式插件 preload 一项，M7 剩 `src/package.json` 与 `src/my_mod
 > 同样是 `http://localhost:5176/src/app/js/plugin/api-format-extension.js`** —— 这不是「浏览器态才有的
 > 假路径」，而是真实功能缺陷。审计原文只说「未做运行期验证」，此行号级推理补齐了它。
 
-M8 触发前必须先收掉：① M2 待撤销归零；② **M6-4 闭合**（M6-3 已集成，它暴露的宿主缺口由 D26 裁决、M6-4 执行）；③ M7 两项各有明确结论（退役或保留 + 退出条件）。
+M8 触发前必须先收掉：① M2 待撤销归零（W44 在跑）；② **M6-4 闭合**（M6-3 已集成，它暴露的宿主缺口由 D26 裁决、M6-4 执行）；③ **M7-3 闭合**（W48 在跑：任务书点名的「整树 copy → 登记驱动」「复制失败即失败」两条尚未做，`my_modules` 退役与 `src/package.json` 分字段一并处理；退役一律走归档 + 登记回滚方式）。
 M8 才跑 **L3 全量**（92 项 + ARTIFACT 5 项）。
 
 ### 尚未清理的中间产物

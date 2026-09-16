@@ -237,6 +237,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | D17 | **只读审计报告必须复制进编码 Worker 的 worktree** | `outputs/` 是**未跟踪**目录，`git worktree add` 不会带过去。M4-C 与 M4-B 都报告过「任务所述的 `outputs/research-m4-windows-scope-2026-09-16.md` 在工作树与 git 历史中均不存在」。**派单前必须 `cp outputs/research-*.md <worktree>/outputs/`**，否则 Worker 只能凭 spec 里的摘要干活。根治办法（待做）：把报告纳入 git 或改为随任务投递 |
 | D18 | **antigravity Worker 首次在某个 worktree 启动会卡在「工作区信任」提示** | 症状：`worker-start` 返回 `state: failed`、`lastError: "Agent startup blocked: agent-trust-workspace"`，**spec 尚未投递**。处置：读终端 → `orca terminal send --terminal <handle> --text "" --enter`（`Yes, I trust this folder` 默认选中）→ 再 `worker-start … --agent antigravity --retry-of <旧 dispatchId>`。未找到可预置的信任列表文件（`~/.gemini/antigravity*` 下只有 brain/logs） |
 | D19 | **Worker 上报「规范冲突」时的裁决口径：授权改测试，但要求加严、不得只删断言** | W26（M3-2）的实例：批次 1 的 `match-rules-equivalence.mjs` 用**源码文本正则**抓 `filterDomain.ts` 里的 26 对 `w.isMatchXxxRule` 作为「表结构」判据；批次 2 的硬性要求正是把该函数体切走，于是探针必然抓到 0 对（`not ok 1` 及其下游 `not ok 3`/`not ok 8` 全属同一条多米诺）。**这类冲突要区分「测试在守护什么」**：它守护的是「规则表 = filterDomain 实际使用的那张表」，迁移后这个命题的**事实源变了**，应当随之重指向，而不是保留一个已失真的探针或直接删掉。裁决要求：① 把事实源重指向 `core/rules/matchRuleTable.ts`；② 把 26 键与顺序**冻结成测试内的字面清单**（防止「解析自己」自证）；③ **新增**「`filterDomain.ts` 里 `w.isMatch*Rule` 命中数为 0 且确实引用了 `getMatchRuleTable`」的迁移完成断言；④ 其余 17 条运行时等价性断言一字不改；⑤ 必须做负向自证 |
+| D21 | **合并后必须跑全量回归；红了要用 git worktree 二分定位到具体提交，再派原 Worker 修** | 实例：85 项全量回归 `FAILED: 1: continuous-grid-scroll`（`first folder visit starts at the top`，`4500 !== 0`，首跑与重跑均红 → 确定性，非抖动）。定位手法：`git worktree add --detach <commit> <路径>` + 建 `node_modules` junction + 单独跑该测试 —— `d4f611a2`（M4-A 之前）**PASS**、`2502357f`（含 M4-A）**FAIL**，一次二分即锁定。**教训：单个 Worker 的定向测试全绿不等于合并后安全**——M4-A 自己的 `m4-url-history` 25/25 全绿，却在它没覆盖的既有闭环测试上打红了主分支。**另注**：`continuous-grid-scroll` 正是 M2-2 那次回归的同一项，它是本项目对「主窗启动/网格几何」最灵敏的哨兵 |
 | D20 | **M4-B 存一处已登记偏差：净增 3 处 `(window as any)`——不掩饰、留后续项** | W28 在 `collect-window/controller.ts`（14→15）与 `preferences/entry.tsx`（3→4）净增 3 行 `(window as any)`（`preferences?.theme`、`CollectItem`、`__eaglePreferencesEntryReady`）。核查结论：三者都是这两个文件**既有的**「读 window 动态全局」惯用式（同文件原本已有 14 处 / 3 处），**不是用来掩盖类型错误**——同批里它们反而**加强**了守卫（`?.`、`typeof` 判函数、失败回落）。但它确实踩了硬约束 1「不得新增 `any`」。**根治方式**：在 `global/globals.d.ts` 为这些 window 全局加 `declare global` 声明，届时这三处与同仓既有 85 处可一并消除。**已登记为 M2 类型化批次的后续项**，不在本批回退（回退会让那三处的空值防护一并丢失） |
 
 ---
@@ -376,7 +377,8 @@ M1 与 M2 第一批至此**全部闭环且主分支全绿**。后续按批次推
 
 | 阻塞 | 影响 | 处置 |
 |---|---|---|
-| ~~M2-1 引入的回归~~ | — | ✅ 已由 W18 修复并集成（`82d5b1f8`），主分支全量回归 ALL GREEN（见 D13/D14 与 §3） |
+| **`continuous-grid-scroll` 被 M4-A 打红**（首次进入文件夹停在 4500 而非顶部） | 主分支 85 项全量回归 `FAILED: 1`；**这是用户可见缺陷**，不是测试期望过时 | **已二分定位**：`d4f611a2`（M4-A 之前）PASS，`2502357f`（含 M4-A）FAIL。已派 **M4-Afix**（`task_a7644295ccf7` / `ctx_c892cf9860cf`），见 D21 |
+| ~~M2-1 引入的回归~~ | — | ✅ 已由 W18 修复并集成（`82d5b1f8`），主分支全量回归 ALL GREEN |
 | **`dist-entry-check` 依赖本地构建产物** | 未重建时会出现「4 页没有 module 入口脚本」的**假失败** | 按 D12：跑该门禁前先 `npm run build`。**后续 Worker 的 spec 必须写明这一条**，否则会误报回归 |
 | ~~W10/W11/W8 未合并前不能派 F06 第三批与 F08~~ | — | ✅ 均已合并 |
 | ~~F06 中间态（解桩前写文件明确拒绝）~~ | — | ✅ 已由 F06 第三批解桩闭合 |

@@ -56,9 +56,28 @@ export const ARCHIVE_ROOT = 'docs/retired-2026-09-16';
 const TAB_BAR_NAME = /tab[-_]?bar/i;
 
 const SCAN_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.json', '.css']);
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'outputs', 'docs', 'tests', 'coverage']);
+const SKIP_DIRS = new Set([
+  'node_modules', 'dist', 'outputs', 'docs', 'tests', 'coverage',
+  // .gitignore 里**非点开头**的顶层目录（点开头的由 shouldSkipDir 统一处理）：
+  // 它们同样不是交付面，但原先没被跳过，于是本机的历史抓痕会让 S5 报假红。
+  'test-run', 'screenshots', 'tests-tmp', '图片参考定位组件位置',
+]);
 
-function walkFiles(root, predicate, skipDirs = SKIP_DIRS) {
+/**
+ * 是否跳过该目录。
+ *
+ * **点开头目录一律跳过**（`.git` / `.tmp` / `.workbuddy-ai` / `.zcode` / `.agents` …）：
+ * 它们全是工具与抓痕目录，不是交付面。这一条是 M7-2 合并时补的——原实现只跳过上面那几个
+ * 具名目录，于是本机 `.tmp/`、`tests-tmp/` 里的历史构建快照会让 S5 报假红：
+ * **同一个提交在主工作区红、在全新 worktree 绿**，而那种门禁不可信。
+ * 真实交付目录（`src` / `backend` / `electron` / `frontend` / `scripts` / `plugins`）
+ * 都不是点开头，扫描面不受影响。
+ */
+function shouldSkipDir(name) {
+  return name.startsWith('.') || SKIP_DIRS.has(name);
+}
+
+function walkFiles(root, predicate, skipDirs = null) {
   const found = [];
   const visit = (dir) => {
     let entries;
@@ -70,7 +89,8 @@ function walkFiles(root, predicate, skipDirs = SKIP_DIRS) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!skipDirs.has(entry.name)) visit(full);
+        const skip = skipDirs === null ? shouldSkipDir(entry.name) : skipDirs.has(entry.name);
+        if (!skip) visit(full);
       } else if (entry.isFile() && predicate(full)) {
         found.push(full);
       }

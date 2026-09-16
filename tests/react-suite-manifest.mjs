@@ -180,6 +180,10 @@ export const REACT_SUITE = [
   // 直写落 plain 不落 store）。纯 Node（node:vm 跑真实 scopeFace/scopeFieldBridge），秒级；
   // 含「当前为什么不触发」的 AST 断言与撤钩子负向自证。
   'tests/f11-scope-face-late-registration.mjs',
+  // M7-2：tab-bar 退役的**负向门禁**（原先是与实现脱钩、且不属任何套件的恒红用例，
+  // 已改造为 11 项断言：源位置不得复活 / 归档完整性与指纹 / 源码树零加载引用 /
+  // 清单不得重新登记 / 产物不得交付）。纯 Node、秒级；含 8 项负向自证。
+  'tests/tab-bar-closed-loop.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -209,6 +213,7 @@ export const TEST_CLASSES = {
   'tests/m4-engine-lifecycle.mjs': 'static',
   'tests/m4-domlite-containment.mjs': 'static',
   'tests/f11-scope-face-late-registration.mjs': 'static',
+  'tests/tab-bar-closed-loop.mjs': 'static',
   'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };

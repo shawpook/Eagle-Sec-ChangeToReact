@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const https = require('node:https');
 const os = require('node:os');
-const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, screen, shell, Tray } = require('electron');
 
 const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
 const apiBase = process.env.EAGLE_API_URL || 'http://localhost:41695';
@@ -167,6 +167,47 @@ function loadWindowState() {
   } catch (err) {
     return {};
   }
+}
+
+// b1-9bw：窗口几何落盘前必须先与**当前**显示器集合对账。
+// 症状：electron 进程活着、`Loaded service plugin` 之后不再有日志、终端上看不到任何报错，
+// 但屏幕上就是不出现窗口——实测 userData/window-state.json 里存着 {"x":302,"y":1262,...}，
+// 而本机虚拟屏只有 1920x1080（副屏被拔掉/分辨率改小/上一个窗口被拖到屏幕下缘都会留下这种
+// 陈旧几何），createWindow 原样沿用就把主窗整个建在可视区之外。
+// 判定：与任一显示器工作区的交叠在横纵两个方向都小于阈值即视为不可见，丢弃 x/y 交给系统居中。
+const MIN_VISIBLE_WINDOW_PX = 80;
+
+function boundsVisibleEnough(bounds) {
+  let displays = [];
+  try {
+    displays = screen.getAllDisplays();
+  } catch (err) {
+    // app 尚未 ready 时拿不到 screen，此时不拦（真正的窗口创建都发生在 ready 之后）。
+    return true;
+  }
+  if (displays.length === 0) return true;
+  return displays.some((display) => {
+    const area = display.workArea;
+    const overlapWidth = Math.min(bounds.x + bounds.width, area.x + area.width) - Math.max(bounds.x, area.x);
+    const overlapHeight = Math.min(bounds.y + bounds.height, area.y + area.height) - Math.max(bounds.y, area.y);
+    return overlapWidth >= MIN_VISIBLE_WINDOW_PX && overlapHeight >= MIN_VISIBLE_WINDOW_PX;
+  });
+}
+
+function clampWindowState(saved) {
+  if (!saved || typeof saved !== 'object') return {};
+  const next = { ...saved };
+  if (typeof next.x !== 'number' || typeof next.y !== 'number') {
+    delete next.x;
+    delete next.y;
+    return next;
+  }
+  const width = typeof next.width === 'number' ? next.width : 1280;
+  const height = typeof next.height === 'number' ? next.height : 800;
+  if (boundsVisibleEnough({ x: next.x, y: next.y, width, height })) return next;
+  delete next.x;
+  delete next.y;
+  return next;
 }
 
 function normalizeClipboardPath(value) {
@@ -817,13 +858,17 @@ async function openOriginalPreview(payload = {}) {
 }
 
 function createWindow(options = {}) {
-  const saved = loadWindowState();
+  const saved = clampWindowState(loadWindowState());
   const url = options.url || previewUrl;
+  const width = options.width || saved.width || 1280;
+  const height = options.height || saved.height || 800;
+  // b1-9bw：位置先由调用方/历史状态解析，再统一过一遍可见性校验——两条来源都可能是陈旧值，
+  // 任一不可见就整体丢弃 x/y，让系统居中，杜绝「进程在跑、窗口在屏幕外」的假死启动。
+  const requestedX = typeof options.x === 'number' ? options.x : saved.x;
+  const requestedY = typeof options.y === 'number' ? options.y : saved.y;
   const windowOptions = {
-    width: options.width || saved.width || 1280,
-    height: options.height || saved.height || 800,
-    x: options.x || saved.x,
-    y: options.y || saved.y,
+    width,
+    height,
     minWidth: options.minWidth || 960,
     minHeight: options.minHeight || 600,
     autoHideMenuBar: true,
@@ -838,6 +883,11 @@ function createWindow(options = {}) {
       webviewTag: true,
     },
   };
+  if (typeof requestedX === 'number' && typeof requestedY === 'number'
+    && boundsVisibleEnough({ x: requestedX, y: requestedY, width, height })) {
+    windowOptions.x = requestedX;
+    windowOptions.y = requestedY;
+  }
   if (process.platform === 'darwin' && currentPreferencesState().general.enableVibrancy !== 'false') {
     windowOptions.vibrancy = vibrancyTypeForTheme(currentPreferencesState().theme.name);
     windowOptions.transparent = true;
@@ -863,9 +913,14 @@ function createWindow(options = {}) {
   win.on('unmaximize', notifyWindowState);
   win.on('enter-full-screen', notifyWindowState);
   win.on('leave-full-screen', notifyWindowState);
-  win.on('resize', () => saveWindowState(win));
-  win.on('move', () => saveWindowState(win));
-  win.on('close', () => saveWindowState(win));
+  // b1-9bw：只有主窗口写回 window-state.json。此前 viewer:open / plugin:open / 原始预览等
+  // 辅助窗共用同一份状态，任何一个被拖到屏幕下缘都会在关闭时把主窗的下次启动位置一起带偏
+  // （实测落盘的 y=1262 即此类污染），所以辅助窗一律只读不写。
+  if (options.persistState === true) {
+    win.on('resize', () => saveWindowState(win));
+    win.on('move', () => saveWindowState(win));
+    win.on('close', () => saveWindowState(win));
+  }
   return win;
 }
 
@@ -3616,14 +3671,14 @@ app.whenReady().then(async () => {
     });
     return;
   }
-  createWindow({ show: !smokeMode });
+  createWindow({ show: !smokeMode, persistState: true });
   setupTray();
   if (smokeMode) {
     setTimeout(() => app.quit(), 1500);
     return;
   }
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createWindow({ persistState: true });
   });
 });
 

@@ -2,8 +2,8 @@
 
 > 用途：上下文压缩后靠本文件快速恢复工作，不依赖被压缩的对话历史。
 > 维护者：Coordinator（主会话）。**每完成一个阶段性任务后必须更新本文件。**
-> 最后更新：2026-09-16（M1 / M3 / M4 / M5 已全部集成；M2 待撤销 2；M6-3 已集成、M6-4 在跑；M7 前两批完成）
-> 当前套件 **93 项** + ARTIFACT **5 项**；最近提交 `2b837329`。
+> 最后更新：2026-09-16（**M1 / M2 / M3 / M4 / M5 已全部完成并集成**；M6-3 已集成、M6-4 在跑；M7-3 在跑）
+> 当前套件 **93 项** + ARTIFACT **5 项**；最近提交 `e2cdf202`。
 > 验证口径为分层（D22）——**最近一次全量 L3 是 85 项跑出 FAILED:1 的那次；此后各批只做 L1/L2 定向核验，
 > 尚未重跑 L3（当前套件 93 项 + ARTIFACT 5 项）。L3 留给 M8 最终验收。**
 
@@ -40,7 +40,7 @@
 |---|---|---|
 | **M0** 范围台账与可失败门禁 | ✅ **已完成并集成** | 见 §4 |
 | **M1** 优先修功能闭环 | ✅ **全部集成完毕** | F15 ✅ / F13-preview ✅ / F06 后端 ✅ / F10 ✅ / F08·F09 ✅ / F06 前端 ✅ / **F06 能力接线 ✅** / **F04 ✅** |
-| **M2** 替代万能 shim | 🔄 **前七批已集成，剩最后 2 个文件（互相依赖，同一批）** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**待撤销 3 → 2**（M2-6 `f761c440`、M2-7 `5d6c4311`）；**只剩 2 个 shim 文件**：`demoSeed.ts` 与 `ipcBus.ts`（二者**互为循环依赖**，必须同批同 Owner） |
+| **M2** 替代万能 shim | ✅ **全部完成并集成** | M2-1…M2-5 均已集成（`90cc3501`/`82d5b1f8`/`b01e6843`/`d4f611a2`/`6d51ac5a`）；**M2-6**（`desktopCapability.ts` 类型化，`f761c440`）已集成。**M2-8**（`demoSeed.ts` + `ipcBus.ts`，`0aedf7a2`）已集成，`NOCHECK_LEDGER` **清空**——`tests/typecheck.mjs` 现报「整文件 @ts-nocheck **0**，待撤销 **0**」。shim 层 8 个文件全部撤销完毕。**记录在案的允许写法**：`desktopApi!.duplicates!.status(...)` 等 4 处非空断言（修前此处即 `null.status`，断言只抹类型、不改求值）、守卫后定格为 const、`waitPreferencesEntry.attempts` 改等价闭包计数器（该属性只写不读、且是块级局部不可达）、`new Set()`/`Array.isArray` 的隐式 any 收敛为显式标注。同时抓到一个**历史缺陷**（未修、只如实标注）：`demoSeed.ts` 的 `capturePollTimer` 声明并在 `disposeDemoTimers` 里清理，但**从未被赋值** |
 | M3 经典业务脚本进模块图 | 🔄 **前三批已集成** | M3-R 审计已交付（§5）；**M3-1**（`core/rules/*`）、**M3-2**（调用点切换 + 冷启动空快照不自愈）、**M3-3**（Worker 协议类型化 + 「取消任务不回写已关闭窗口」缺陷修复）均已集成（`4c1fc124` / `35675429` / `55dc91ff`） |
 | M4 窗口与 scope 收口 | ✅ **四批 + 收尾全部集成** | M4-R 审计已交付（§5）；**M4-C**（预览窗 dispose）、**M4-A**（URL/历史守卫）、**M4-B**（采集/偏好窗 dispose + store 订阅守卫）、**M4-D**（ng-* 成对替换 + jQuery 哑雷 + 引擎生命周期 adapter + domLite 收口，`b5f9ab71`）均已集成。**M4-E 已集成（`242e5618`）**：F11 晚注册缺陷（**运行期探针坐实真实存在**，M4-R 原判「潜伏不触发」只对了一半）+ `detailHooks.ts:38` 的 jQuery 同族哑雷 + 死声明。M4 至此无已知遗留 |
 | M5 外围工具 UI 与生产配置 | ✅ **全部集成** | **M5-1**（工具页/媒体页进模块图 + 运行期地址单一来源，`69b489d6`）+ **M5-2**（生产启动等就绪再开窗 + 非默认端口生产验收，`c987dfef`）。验收项 1 已由**真实 Electron/CDP 实测**覆盖：四类页面请求全部命中覆盖后的端口，且 `artifactDigest` 不变 |
@@ -76,6 +76,9 @@
 已集成的提交（自下而上）：
 
 ```
+e2cdf202 test(typecheck): 订正头部过期注释（"保留现有 8 项整文件免检" → 以台账为准）  [Coordinator]
+0aedf7a2 refactor(m2): 撤销 demoSeed.ts 与 ipcBus.ts 的 @ts-nocheck（待撤销 2 → 0，M2 收官）  [W44]
+47af1683 docs(state): 核验 W46 审计、派 W48（M7-3 发布资产登记驱动 + my_modules 退役）  [Coordinator]
 2b837329 test(suite): 登记 M6-3 的 plugin-format-preload，REACT_SUITE 92 → 93  [Coordinator]
 b6c9a79f fix(m6): 格式插件 preload 的原生根 —— 收敛为唯一解析点，Electron 态返回真实磁盘路径  [W45]
 c5511f53 docs(state): 派 W44-W46（M2 收官 / M6-3 preload 原生根 / M7-R2 只读审计）  [Coordinator]
@@ -222,7 +225,7 @@ e6f6383e docs(m0): 纳入总体任务书
 | **W41** | task_8d1331bb9419 | ctx_6653e3718049 | **M7-2 tab-bar 退役 + 旧宿主入口隔离归档（F02/F20）** | ✅ **已交付核验并集成**；其负向门禁的**扫描口径有缺陷（我方修）**见 D25 |
 | **W42** | task_984014a701ea | ctx_16e2a6cd099e | **F23 产物门禁加固（入口/生成资源缺失无条件失败）** | ✅ **已交付核验并集成(`a436d3f1`)**；`frontend-gates-unit` **40 → 59**（+19 条负向用例） |
 | **W43** | task_95ba134f76fc | ctx_a64d3c602b93 | **M2-7 `browserRuntime.ts` 类型化** | ✅ **已交付核验并集成(`5d6c4311`)**；`待撤销 3 → 2`。其上报的写死台账断言由我方改造（`9febfb15`） |
-| **W44** | task_adcdfbccc219 | ctx_a511943eb8ae | **M2-8 `demoSeed.ts` + `ipcBus.ts` 类型化（M2 收官，待撤销 2 → 0）** | 🔄 进行中（worktree `m2-shim-pair`，claude/deepseek-flash） |
+| **W44** | task_adcdfbccc219 | ctx_a511943eb8ae | **M2-8 `demoSeed.ts` + `ipcBus.ts` 类型化（M2 收官，待撤销 2 → 0）** | ✅ **已交付核验并集成（`0aedf7a2`）**；我方独立复核：typecheck 0 诊断/免检 0、shim-module-boundaries OK、runtime-services-contract 20/20、module-registry-contract 6/6、frontend-gates-unit 59/59、preload-subscriptions 43/43、m4-window-subscriptions 23/23；偏差清单逐条复核通过（`.attempts` 全仓只写不读、`clearInterval(null)` 本是 no-op） |
 | **W45** | task_c5922c0e3ca7 | ctx_e9636c5b0a65 | **M6-3 格式插件 preload 的原生根修正** | ✅ **已交付核验并集成（`b6c9a79f` + 登记 `2b837329`）**；新测试 13/13、typecheck 0 诊断。**顺带坐实 webviewTag 缺陷 → D26** |
 | **W46** | task_ebfed344f1dc | ctx_a3dd400c873c | **M7-R2 只读审计：`nativeRequire` 目标集 / `src/my_modules/**` / `src/package.json`** | ✅ **已交付并核验**（`outputs/research-m7r2-my-modules-2026-09-16.md`，705 行）。核验见 §5 备注 |
 | **W47** | task_0224e87e62c4 | ctx_98debf473286 | **M6-4 恢复 `webviewTag`（D26）+ 实机门禁** | 🔄 进行中（worktree `m6-webviewtag`，codex 默认配置） |

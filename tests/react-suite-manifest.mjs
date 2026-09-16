@@ -147,6 +147,9 @@ export const REACT_SUITE = [
   // 主进程 leave-full-screen 监听随切项累积）。纯 Node（node:vm + EventEmitter 代表
   // remote 代理面），无 Electron、秒级；含突变测试（逐个移除修复点必现 FAIL）。
   'tests/m4-preview-dispose.mjs',
+  // M2-4 / M7-1：moduleRegistry 撤销 @ts-nocheck + 隐式截获表驱动契约化。
+  // 覆盖 34 项条目穷尽对照、逐项行为等价性、可观测性结构化记录与 /index.js 封堵。
+  'tests/module-registry-contract.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -167,6 +170,7 @@ export const TEST_CLASSES = {
   'tests/preview-entry-subscriptions.mjs': 'static',
   'tests/match-rules-equivalence.mjs': 'static',
   'tests/m4-preview-dispose.mjs': 'static',
+  'tests/module-registry-contract.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };
 

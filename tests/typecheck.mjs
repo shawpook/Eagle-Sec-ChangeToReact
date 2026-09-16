@@ -18,7 +18,6 @@ export const NOCHECK_LEDGER = [
   { file: 'src/app/react/core/shim/desktopCapability.ts', category: '桌面能力' },
   { file: 'src/app/react/core/shim/install.ts', category: '环境与启动装配' },
   { file: 'src/app/react/core/shim/ipcBus.ts', category: 'IPC 总线' },
-  { file: 'src/app/react/core/shim/moduleRegistry.ts', category: '动态模块加载' },
 ];
 
 export function scanTypeDirectives(text, file = 'source.ts') {

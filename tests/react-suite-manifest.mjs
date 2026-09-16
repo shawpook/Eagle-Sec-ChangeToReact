@@ -129,6 +129,16 @@ export const REACT_SUITE = [
   // F04：预览窗 boot 契约（静态接线 + typescript 内存转译 + node:vm 跑真实 boot.ts，无 Electron、秒级）。
   // 覆盖内联 boot 摘除、entry.tsx 先安装后求值的顺序不变式、只补缺不覆盖、必需面缺失即抛错。
   'tests/preview-boot-contract.mjs',
+  // F15：preload 具名频道的退订契约（纯 Node + typescript 内存转译 + node:vm，无 Electron、秒级）。
+  // 覆盖 43 个具名频道一律返回 disposer、退订精确、重复退订幂等。
+  // M4-R 审计发现：本项与下一项**此前从未登记进任何套件**，只有 docs 里的手工运行记录——
+  // 等于长期未跑。经核实当前通过（43/43、12/12）后登记；两处断言一字未改。
+  'tests/preload-subscriptions.mjs',
+  // F13-preview：预览窗 entry 的订阅生命周期（100 次挂卸、精确清理、迟到 callback 防护）。
+  // 同时钉住 F04 的顺序不变式「boot 校验先于 createRoot」——
+  // 该断言是本次登记时补的：F04 给 entry.tsx 加了 `./boot` 依赖，打断了本文件
+  // 「禁止加载未隔离的依赖」的实测路径，而本文件不在套件里，全量回归从未暴露它。
+  'tests/preview-entry-subscriptions.mjs',
 ];
 
 /** 分类：未登记项按 `dev-probe` 计（默认口径），但必需项必须显式登记。 */
@@ -145,6 +155,8 @@ export const TEST_CLASSES = {
   'tests/image-transform-dispatch.mjs': 'static',
   'tests/runtime-services-contract.mjs': 'static',
   'tests/preview-boot-contract.mjs': 'static',
+  'tests/preload-subscriptions.mjs': 'static',
+  'tests/preview-entry-subscriptions.mjs': 'static',
   'tests/frontend-public-policy.mjs': 'static',
 };
 
@@ -215,6 +227,10 @@ export const REQUIRED_TESTS = [
   'tests/library-switch-ui-closed-loop.mjs',
   'tests/source-mode-ui-closed-loop.mjs',
   'tests/txt-update-closed-loop.mjs',
+  // F15 / F13-preview：原先不属任何套件（M4-R 审计发现），登记后一并列为验收必需项，
+  // 防止「通过删除测试」制造绿色。
+  'tests/preload-subscriptions.mjs',
+  'tests/preview-entry-subscriptions.mjs',
 ];
 
 export function classOf(test) {

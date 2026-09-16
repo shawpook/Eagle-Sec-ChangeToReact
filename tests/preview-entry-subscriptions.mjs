@@ -53,6 +53,10 @@ function loadEntry(ipc, { deferController = false, bridge } = {}) {
   const effects = [];
   const applied = [];
   const installers = [];
+  // M1-F04 的顺序不变式：entry.tsx 在 createRoot **之前**必须已校验 boot 全局到位。
+  // 这里按调用序记录，用来断言「assertPreviewBootInstalled 先于 createRoot」——只记录不 stub 实现，
+  // 因此不放松本文件「禁止加载未隔离的依赖」的判据（./boot 仍是受控替身，见下方 imports）。
+  const order = [];
   const events = new EventEmitter();
   const window = {
     __eagleIpc: ipc,
@@ -62,10 +66,13 @@ function loadEntry(ipc, { deferController = false, bridge } = {}) {
   };
   loadModule('src/app/react/preview-window/entry.tsx', {
     '../core/shimsLegacy': {},
-    'react-dom/client': { createRoot: () => ({ render: (element) => element.type() }) },
+    'react-dom/client': {
+      createRoot: () => { order.push('createRoot'); return { render: (element) => element.type() }; },
+    },
     react: { useEffect: (effect) => effects.push(effect) },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
     './shell': { default: () => null },
+    './boot': { assertPreviewBootInstalled: () => { order.push('boot'); } },
     './controller': { applyController: (callback) => callback({ runInitSequence: (params) => applied.push(params) }) },
     '../core/keymap': { installKeymap: () => installers.push('keymap') },
     '../core/tippyLite': { installTippy: () => installers.push('tippy') },
@@ -76,6 +83,8 @@ function loadEntry(ipc, { deferController = false, bridge } = {}) {
   });
   assert.deepEqual(installers, ['keymap', 'tippy', 'shortcut']);
   assert.equal(effects.length, 1);
+  // F04 引入：boot 校验必须发生，且必须早于 createRoot。顺序反了就等于把半装状态放进 React 树。
+  assert.deepEqual(order, ['boot', 'createRoot'], 'boot 校验必须先于 createRoot');
   return { mount: effects[0], window, applied };
 }
 

@@ -45,6 +45,8 @@ import { get } from '../utils/lang';
 import { machinerySortData } from './itemDomain';
 import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './tagManagerDomain';
 
+import { getMatchRuleTable } from './rules/matchRuleTable';
+import type { MatchRuleFn } from './rules/matchRules';
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState, writeShuffle } from '../store/itemState';
@@ -1137,38 +1139,45 @@ export function getFilter(): any {
   return filterCache;
 }
 
-function getMatchFunctionTable(): any {
-  const w = window as any;
-  // b1-9m：取消模块级缓存——vendor 注入晚于首次取表时，缓存内 isMatch*Rule 为 undefined
-  // 且永不自愈。每次重建（26 次属性读，开销可忽略）。
-  return {
-    "name": w.isMatchNameRule,
-    "folderName": w.isMatchFolderNameRule,
-    "url": w.isMatchUrlRule,
-    "annotation": w.isMatchAnnotationRule,
-    "comments": w.isMatchCommentsRule,
-    "width": w.isMatchWidthRule,
-    "height": w.isMatchHeightRule,
-    "fileSize": w.isMatchFileSizeRule,
-    "createTime": w.isMatchTimeRule,
-    "mtime": w.isMatchMTimeRule,
-    "btime": w.isMatchBTimeRule,
-    "tags": w.isMatchTagsRule,
-    "rating": w.isMatchRatingRule,
-    "folders": w.isMatchFoldersRule,
-    "type": w.isMatchTypeRule,
-    "shape": w.isMatchShapeRule,
-    "color": w.isMatchColorRule,
-    "duration": w.isMatchDurationRule,
-    "bpm": w.isMatchBPMRule,
-    "camera": w.isMatchCameraRule,
-    "iso": w.isMatchISORule,
-    "aperture": w.isMatchApertureRule,
-    'focalLength': w.isMatchFocalLengthRule,
-    'shutter': w.isMatchShutterRule,
-    "timestamp": w.isMatchTimestampRule,
-    "fontActivated": w.isMatchFontActivatedRule
-  };
+/* ── M3-2：表已被 core/rules 接管，此处不再逐项读 window ─────────────────────────
+ * b1-9m 的旧注释（「取消模块级缓存——vendor 注入晚于首次取表时，缓存内 isMatch*Rule 为
+ * undefined 且永不自愈」）描述的正是本轮要治的冷启动窗口，它**在批次 2 已不复存在**：
+ * `bundleGlobals.ts` 的两个 loader 都是 `fetch(...).then(...)`（必然异步），而 `loadSupply()`
+ * 与 `EXTERNAL_SUPPLY_NAMES` 都不覆盖这两个 vendor 脚本，两个 `*Loaded` 标志也没有任何
+ * 产品消费者——于是「首帧取表」与「vendor 注入」之间存在真实窗口，期内表内 26 项全是
+ * `undefined`。改由静态 ESM 导入供给后，每个值都是**模块求值期就已绑定**的函数引用，
+ * 模块求值完成即可用，结构上不存在该中间态（冷启动断言见 tests/m3-filter-cold-start.mjs）。
+ *
+ * 保留「每次调用返回新对象」的外形与键顺序，与切换前逐项同构。 */
+function getMatchFunctionTable(): Record<string, MatchRuleFn | undefined> {
+  return getMatchRuleTable();
+}
+
+/* ── M3-2：规则表缺席的可观测失败 ──────────────────────────────────────────────
+ * 切换调用点后「整张表缺席」已不可能，仍可能缺席的是**单个 property 无对应规则函数**
+ * （条件由旧版本写入、或脏数据）。这条路径原先与「图片真的不匹配」在返回值上不可区分
+ * ——都是 false——而 false 会被 machineryCalcuteFilterResult 固化成空快照。故在此显式
+ * 失败：计数 + 最近一次记录 + 首报日志，再抛错。
+ *
+ * ⚠️ 抛点受设计约束：调用链上游 machineryExistInSmartFilter 有 `catch { return false; }`，
+ * 异常会被吞掉——这是既有兜底，本轮**不拆**（拆掉会改变大量既有路径的行为）。因此
+ * 「计数变化」与「last 记录」才是可靠的可观测面，异常只用于中断本次计算。 */
+export interface MatchRuleTableFailure {
+  property: string;
+  reason: string;
+}
+
+let matchRuleTableFailureCount = 0;
+let lastMatchRuleTableFailure: MatchRuleTableFailure | null = null;
+
+/** 自模块求值以来「规则表缺席」发生的累计次数（单调递增）。 */
+export function getMatchRuleTableFailureCount(): number {
+  return matchRuleTableFailureCount;
+}
+
+/** 最近一次「规则表缺席」的细节；从未发生时为 `null`。 */
+export function getLastMatchRuleTableFailure(): MatchRuleTableFailure | null {
+  return lastMatchRuleTableFailure;
 }
 
 export function machineryCalculateFilterCounts(): void {
@@ -1297,6 +1306,39 @@ export function machineryCalcuteFilterBadge(): void {
   if (filter.filterRules.semantic.value) filter.filterBadge++;
 }
 
+/* ── M3-2：一次 raw 内容筛选 + 缓存写入（含「结果可不可信」判定）────────────────
+ * 判定与写入收在同一处，是为了让「不可信 ⇒ 不写缓存」这条不变式**无法被绕过**：
+ * 判在别处、写在这里，中间任何一次提前 return 都会让空快照漏进去。
+ *
+ * 抽出来的理由是可断言性：machineryCalcuteFilterResult 下接 machineryFilterData 三分片
+ * （本文件 1574-2600+），依赖 `w.eagle.filter` 全表与 DOM，无法在测试里驱动；而本函数
+ * 只依赖 selectedSmartFolders / raw 两个 store 字段，能被独立驱动。
+ *
+ * ⚠️ 这是**生产路径本身**，不是测试替身：machineryCalcuteFilterResult 调用的就是它。
+ *
+ * 判定依据是规则表缺席的**计数变化**而非异常：调用链上游 machineryExistInSmartFilter 的
+ * `catch { return false; }` 会把守卫抛出的错吞掉（既有兜底，不拆），异常不足以作信号。
+ *
+ * 两种空结果必须分开：`[]` 在 JS 里是真值，一旦落进 contentFilterCache，filterContent
+ * （本文件 :~478）与 machineryFilterContent 后续都会把 `[]` 当命中缓存传回，空快照于是
+ * 长期保留、永不自愈。**真·空集照写**（那是合法结果），**算不出来不写**（下次重算）。 */
+export function machineryFilterRawPass(): { result: any[]; trustworthy: boolean } {
+  const failuresBefore = getMatchRuleTableFailureCount();
+  const result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
+  const failures = getMatchRuleTableFailureCount() - failuresBefore;
+  const trustworthy = failures === 0;
+  if (trustworthy) {
+    writeContentFilterCache(result.slice(0));
+  }
+  else {
+    console.error(
+      '[filterDomain] 本轮内容筛选期间规则表缺席 ' + failures +
+      ' 次，结果不可信——跳过 contentFilterCache 写入，避免固化空快照',
+    );
+  }
+  return { result, trustworthy };
+}
+
 /* calcuteFilterResult（bundle 27634-27653 逐字） */
 export async function machineryCalcuteFilterResult(data: any[], contentFilterCache: any): Promise<any[]> {
   writeColorDistancesMap({});
@@ -1307,8 +1349,9 @@ export async function machineryCalcuteFilterResult(data: any[], contentFilterCac
         result = contentFilterCache.slice(0);
       }
       else {
-        result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
-        writeContentFilterCache(result.slice(0));
+        // M3-2：判定与写入都在 machineryFilterRawPass 内（不可信时不写缓存），
+        // 此处只取结果。详见该函数上方注释。
+        result = machineryFilterRawPass().result;
       }
       const filtered = await machineryFilterData(result);
       resolve(filtered);
@@ -2133,7 +2176,27 @@ function machineryIsMatchCondition(condition: any, image: any): boolean {
 
   for (let i = 0; i < condition.rules.length; i++) {
     var isMatch = false;
-    isMatch = MATCH_FUNCTION[condition.rules[i].property](condition.rules[i], image);
+    // M3-2 守卫：规则表缺席时**明确失败**，不再静默并入「不匹配」。
+    // 抛点选在调用前而非调用后——`MATCH_FUNCTION[property](...)` 原样调用时抛的是
+    // `undefined is not a function`，与「property 名本身就读不出来」无法区分；先取引用
+    // 再判别，失败信号才带得上 property 名。
+    const ruleFn = MATCH_FUNCTION[condition.rules[i].property];
+    if (typeof ruleFn !== 'function') {
+      const property = String(condition.rules[i].property);
+      const failure: MatchRuleTableFailure = {
+        property,
+        reason: `筛选规则表中不存在 property="${property}" 对应的匹配函数（表内共 ${Object.keys(MATCH_FUNCTION).length} 项）`,
+      };
+      matchRuleTableFailureCount++;
+      lastMatchRuleTableFailure = failure;
+      if (matchRuleTableFailureCount === 1) {
+        // 首报即止：本路径本不该发生，一旦发生则每张图片都会走到这里，
+        // 逐张 console.error 会把渲染进程刷死；次数由计数承担。
+        console.error('[filterDomain] 筛选规则表缺席：' + failure.reason);
+      }
+      throw new Error('[filterDomain] ' + failure.reason);
+    }
+    isMatch = ruleFn(condition.rules[i], image);
 
     // 如果有任何一調規則沒有 match，交集狀態必為 false
     if (!isMatch) {

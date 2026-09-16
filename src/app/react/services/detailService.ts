@@ -17,6 +17,7 @@ import { q, qa, widthOf, heightOf, addClass, removeClass, cssSet } from '../util
 import { isNumeric } from '../utils/lang';
 import { machineryGetRatioExp, machineryGetRatioNonExp, machineryOnZoomRatioChanged } from './viewOpsService';
 import { machineryRenameCurrentFolder } from '../core/libraryDomain';
+import { getImagePixelDensity, isMobileResolution, isMobileWidth } from '../core/rules/zoomHelpers';
 import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState, writeIsInlineMode, writeIsCommentMode } from '../store/bodyState';
@@ -70,9 +71,11 @@ export function detailUpdateZoomRatio(ratio: any, x: any, y: any, hasTransition:
 }
 
 /* smartZoom（bundle 31209-31334 逐字；devicesMetrics/isMobileResolution/getImagePixelDensity/
-   isMobileWidth 经 window（c18a 供给），zoomRatio 换算走 machinery 版） */
+   isMobileWidth 改由 core/rules/zoomHelpers 静态供给——原注释记的「经 window（c18a 供给）」
+   是批次 2 之前的形态：c18a 走 `fetch(...).then(...)` 注入，必然异步，而 detailSmartZoom
+   可在注入完成前被调用，期内 `w.getImagePixelDensity` 是 undefined（PROGRESS.md 记的
+   c18a-c18d 回归同款）。静态导入后模块求值完成即可用。zoomRatio 换算走 machinery 版） */
 export function detailSmartZoom(target: any, forceMode: any): void {
-  const w = window as any;
   var current = target || useSelectionState.getState().current;
   var ratio = useLayoutState.getState().imageSize.zoomRatio || 100;
   var lastRatio = ratio;
@@ -140,9 +143,17 @@ export function detailSmartZoom(target: any, forceMode: any): void {
       offsetY = toolbarHeight / 2 * 100 / ratio;
     }
 
+    // isMobileResolution / isMobileWidth 命中时返回**数值**（分别是设备高 h 与 375），
+    // 未命中才返回 false（见 core/rules/zoomHelpers.ts 的返回值注解）。原写法在守卫与取值
+    // 处各调一次、且经 `any` 才吞掉算术诊断；现先各求值一次，再由真值守卫同时完成「命中
+    // 判别」与「数值收窄」。两者都是纯函数（只读 devicesMetrics / 只做取模与比较），
+    // 重复调用与取局部变量行为等价。
+    const mobileResolutionH = isMobileResolution(current.width, current.height);
+    const mobileWidthPx = isMobileWidth(current.width);
+
     // 如果是手机尺寸并且尺寸符合画面大小
-    if (w.getImagePixelDensity(current) !== 100) {
-      var mr = w.getImagePixelDensity(current);
+    if (getImagePixelDensity(current) !== 100) {
+      var mr = getImagePixelDensity(current);
       var largeThanCotainer = current.width * mr / 100 > containerWidth || current.height * mr / 100 > containerHeight;
       if (!largeThanCotainer) {
         ratio = mr;
@@ -155,8 +166,8 @@ export function detailSmartZoom(target: any, forceMode: any): void {
         offsetY = toolbarHeight / 2 * 100 / ratio;
       }
     }
-    else if (w.isMobileResolution(current.width, current.height)) {
-      var mr2 = 100 * w.isMobileResolution(current.width, current.height) / current.height;
+    else if (mobileResolutionH) {
+      var mr2 = 100 * mobileResolutionH / current.height;
       var largeThanCotainer2 = current.width * mr2 / 100 > containerWidth || current.height * mr2 / 100 > containerHeight;
       if (!largeThanCotainer2) {
         ratio = mr2;
@@ -169,8 +180,8 @@ export function detailSmartZoom(target: any, forceMode: any): void {
         offsetY = toolbarHeight / 2 * 100 / ratio;
       }
     }
-    else if (w.isMobileWidth(current.width) && current.width * 2.4 < current.height) {
-      ratio = w.isMobileWidth(current.width) / current.width * 100;
+    else if (mobileWidthPx && current.width * 2.4 < current.height) {
+      ratio = mobileWidthPx / current.width * 100;
       if (ratio > 100) {
         ratio = 100;
       }

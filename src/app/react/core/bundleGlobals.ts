@@ -1711,6 +1711,20 @@ export function installBundleGlobals(): void {
   // → w.require 机械替换）。26 个 isMatch*Rule + intersect/hexToRGB/rgbToHex/
   // colorSimilarityDistance + cacheColorMappings 状态。classic script 注入（顶层函数声明
   // 落 window 的语义与 bundle 一致——new Function 内声明不落 window，故不可用）。
+  //
+  // ── M3-2 注记：**已无产品消费者，兼容保留** ────────────────────────────────
+  // 本块原先的唯一产品消费者是 `core/filterDomain.ts` 的 `getMatchFunctionTable()`
+  // （逐项读 `w.isMatch*Rule`），该调用点已于 M3-2 改走 `core/rules/matchRuleTable.ts`
+  // 的静态 ESM 导入；`services/detailService.ts` 等其余调用点不涉及本表。全仓已无产品
+  // 代码读 `w.isMatch*Rule`。两个 `*Loaded` 标志（下方 matchRulesLoaded / 再下方的
+  // zoomHelpersLoaded）**全仓只写不读**，本轮不为它们造消费者。
+  // 保留原因：本块是 F03「经典文本执行通道」的样本之一（fetch → 造 <script> → 文本执行），
+  // 退役需先有该通道的对照与回退记录（属 M7），本批只加注、不改行为、不删代码。
+  // 退出条件（三者须同时成立，否则不得删除本块）：
+  //   ① M7 批次已产出 F03 经典文本执行通道的对照与回退记录；
+  //   ② `frontend/public/vendor/` 的 classic-script 注入通道**整批**退役，
+  //      `frontend/public/vendor/eagle-match-rules.js` 不再随构建交付；
+  //   ③ 全仓复核确认无 `window.isMatch*Rule` 读取（含 shim / preview-window / 第三方段落）。
   if (!w.isMatchNameRule) {
     try {
       fetch('/vendor/eagle-match-rules.js')
@@ -1742,6 +1756,20 @@ export function installBundleGlobals(): void {
   // 消费）。守卫必须查助手本身：devicesMetrics 是 bundle 顶层 var（天然上 window），
   // 拿它做守卫会永久短路注入，machinerySmartZoom 在 w.getImagePixelDensity 处 TypeError，
   // zoomer 的 updateNavigator/loadURL 链断裂 → 详情原图管线死（c18a-c18d 回归根因）。
+  //
+  // ── M3-2 注记：**已无产品消费者，兼容保留** ────────────────────────────────
+  // 唯一产品消费者 `services/detailService.ts` 的 detailSmartZoom 已于 M3-2 改走
+  // `core/rules/zoomHelpers.ts` 的静态 ESM 导入（`w.getImagePixelDensity` /
+  // `w.isMobileResolution` / `w.isMobileWidth` 三处读取全部移除）。上方 c18a-c18d 的
+  // 回归根因随之失效——本块注入是 `fetch(...).then(...)`，必然异步，而 detailSmartZoom
+  // 可在注入完成前被调用；静态导入后模块求值完成即可用，该窗口结构上不存在。
+  // `zoomHelpersLoaded` 标志**全仓只写不读**，本轮不为它造消费者。
+  // 保留原因：与 c14 同——本块是 F03「经典文本执行通道」的样本，退役属 M7。
+  // 退出条件（三者须同时成立，否则不得删除本块）：
+  //   ① M7 批次已产出 F03 经典文本执行通道的对照与回退记录；
+  //   ② `frontend/public/vendor/eagle-zoom-helpers.js` 不再随构建交付；
+  //   ③ 全仓复核确认无 `window.getImagePixelDensity` / `window.isMobileResolution` /
+  //      `window.isMobileWidth` 读取（含 preview-window 的同名**自有**闭包实现，勿误删）。
   if (!w.getImagePixelDensity || !w.isMobileResolution || !w.isMobileWidth) {
     try {
       fetch('/vendor/eagle-zoom-helpers.js')

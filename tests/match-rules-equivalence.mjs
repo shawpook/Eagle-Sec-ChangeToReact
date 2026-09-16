@@ -10,8 +10,12 @@
  * 任何一侧的转写错误都会让两侧分叉；测试作者写错的期望值不会影响判定 —— 因为没有期望值。
  *
  * ── 覆盖 ──
- *  1. `getMatchFunctionTable()`（`core/filterDomain.ts:1140-1171`）的**键集合与顺序**
- *     及其 `key → w.isMatchXxxRule` 映射：先对源码文本取证，再对 `getMatchRuleTable()` 断言；
+ *  1. `getMatchRuleTable()`（`core/rules/matchRuleTable.ts`，M3-2 之后筛选表的**唯一事实源**）
+ *     的**键集合与顺序**及其 `key → isMatchXxxRule` 映射：对源码文本取证后，与测试内**冻结的
+ *     字面清单** `EXPECTED_RULE_TABLE` 逐项比对 —— 只解析再断言自己是自证的，冻结清单让
+ *     「表被改动」必须显式改测试才可能通过；
+ *  1b. **迁移已完成**的结构断言：`filterDomain.ts` 源码里 `w.isMatch*Rule` 形态的 vendor
+ *     全局读命中数为 0，且确已从 `./rules/matchRuleTable` 取表（失败时打印命中数与行号）；
  *  2. 26 个 `isMatch*Rule` 的**逐条具名真/假样例**；
  *  3. 26 个规则 ×（method × value × image）的**确定性伪随机扫描**（每条数百组），
  *     覆盖未知 method、缺字段、类型错位、`__proto__` 键名等 vendor 未加防护的路径；
@@ -39,6 +43,8 @@ const VENDOR_MATCH = 'frontend/public/vendor/eagle-match-rules.js';
 const VENDOR_ZOOM = 'frontend/public/vendor/eagle-zoom-helpers.js';
 const FILTER_DOMAIN = 'src/app/react/core/filterDomain.ts';
 const RULES_DIR = 'src/app/react/core/rules';
+/** M3-2 之后筛选表的**唯一事实源**：26 个 property 的权威表已迁到此处。 */
+const RULES_TABLE = `${RULES_DIR}/matchRuleTable.ts`;
 
 const repoRequire = createRequire(new URL('../package.json', import.meta.url));
 const read = (rel) => fs.readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
@@ -187,24 +193,100 @@ function loadZoomHelpers() {
   return { context, sandbox, zoomMod };
 }
 
-// ───────────────────── 表结构：以 filterDomain 源码为凭 ─────────────────────
+// ───────────────────── 表结构：以 core/rules 源码为凭 ─────────────────────
 
 /**
- * 从 `getMatchFunctionTable()` 的**源码文本**里抽出 `key → vendor 全局名`。
- * 这是本批的契约面：表键集合、顺序、以及每个键指向哪个 vendor 全局。
+ * ── 这块为什么长这样：事实源的迁移（M3 批次 1 → 批次 2）────────────────────────
+ *
+ * 批次 1 时，筛选表还是 `filterDomain.ts::getMatchFunctionTable()` 里的**内联字面量**，
+ * 每项形如 `"name": w.isMatchNameRule`（读 vendor 注入的 window 全局）。那时它是唯一
+ * 权威处，于是本测试直接解析**那个函数体的源码文本**来取证。
+ *
+ * 批次 2 把表迁到 `core/rules/matchRuleTable.ts::getMatchRuleTable()`（值改为 ESM 导入的
+ * 函数引用，不再是 window 属性读），`filterDomain.ts` 只剩一层转发。**事实源随表一起
+ * 迁移** —— 正是本批的目的 —— 所以解析目标从 `filterDomain.ts` 改指 `matchRuleTable.ts`。
+ *
+ * ⚠️ 但「解析 matchRuleTable.ts，再断言它等于它自己」是**自证的**：表少一项、多一项、或
+ * 换序时，解析结果与运行期表会一起漂移，断言照样全绿。因此把 26 项冻结成下面这份字面
+ * 清单，要求解析结果与之**逐项相等（集合与顺序）**：任何对表的改动都必须显式改这个清单
+ * 才能通过，改不动就说明是误改。`filterDomain.ts` 一侧「调用点确已切走」另由结构断言
+ * （第 1b 节）负责。
  */
-function parseFilterDomainTable() {
-  const src = read(FILTER_DOMAIN);
-  const start = src.indexOf('function getMatchFunctionTable(');
-  assert.ok(start >= 0, `未在 ${FILTER_DOMAIN} 找到 getMatchFunctionTable`);
+const EXPECTED_RULE_TABLE = [
+  ['name', 'isMatchNameRule'],
+  ['folderName', 'isMatchFolderNameRule'],
+  ['url', 'isMatchUrlRule'],
+  ['annotation', 'isMatchAnnotationRule'],
+  ['comments', 'isMatchCommentsRule'],
+  ['width', 'isMatchWidthRule'],
+  ['height', 'isMatchHeightRule'],
+  ['fileSize', 'isMatchFileSizeRule'],
+  ['createTime', 'isMatchTimeRule'],
+  ['mtime', 'isMatchMTimeRule'],
+  ['btime', 'isMatchBTimeRule'],
+  ['tags', 'isMatchTagsRule'],
+  ['rating', 'isMatchRatingRule'],
+  ['folders', 'isMatchFoldersRule'],
+  ['type', 'isMatchTypeRule'],
+  ['shape', 'isMatchShapeRule'],
+  ['color', 'isMatchColorRule'],
+  ['duration', 'isMatchDurationRule'],
+  ['bpm', 'isMatchBPMRule'],
+  ['camera', 'isMatchCameraRule'],
+  ['iso', 'isMatchISORule'],
+  ['aperture', 'isMatchApertureRule'],
+  ['focalLength', 'isMatchFocalLengthRule'],
+  ['shutter', 'isMatchShutterRule'],
+  ['timestamp', 'isMatchTimestampRule'],
+  ['fontActivated', 'isMatchFontActivatedRule'],
+];
+
+/** 在一份源码文本里**逐行**找 `pattern` 的命中，返回 `{ line, text }`（行号从 1 起）。 */
+function findHits(rel, pattern) {
+  const re = new RegExp(pattern.source, pattern.flags.replace(/g/g, ''));
+  const hits = [];
+  read(rel).split('\n').forEach((line, i) => {
+    if (re.test(line)) hits.push({ line: i + 1, text: line.trim() });
+  });
+  return hits;
+}
+
+/** 把命中列表折成可归因的串（行号 + 该行内容）；无命中时显式写明，避免空串看起来像忘了打印。 */
+const describeHits = (hits) => (hits.length ? hits.map((h) => `  L${h.line}: ${h.text}`).join('\n') : '  （无命中）');
+
+/**
+ * 从 `getMatchRuleTable()` 的**源码文本**里抽出 `[key, vendor 全局名]` 对。
+ * 这是本批的契约面：表键集合、顺序、以及每个键指向哪个规则函数。
+ *
+ * 产出仍与搬迁前同形（`[key, isMatchXxxRule]`），下游 `VENDOR_NAME_OF` / `win[vendorName]`
+ * 因此无需改动 —— `matchRules.ts` 的导出名与 vendor 全局名逐字相同。
+ */
+function parseRuleTable() {
+  const src = read(RULES_TABLE);
+  const start = src.indexOf('export function getMatchRuleTable(');
+  assert.ok(start >= 0, `未在 ${RULES_TABLE} 找到 getMatchRuleTable`);
   const end = src.indexOf('\n}', start);
-  assert.ok(end > start, 'getMatchFunctionTable 未闭合');
+  assert.ok(end > start, 'getMatchRuleTable 未闭合');
   const body = src.slice(start, end);
-  const pairs = [];
-  const re = /^\s*["']?([A-Za-z]\w*)["']?\s*:\s*w\.(isMatch\w+)\s*,?\s*$/gm;
+
+  // 命名空间别名不写死：从 `import * as <alias> from './matchRules'` 反解出来。
+  // 若别名被改而解析器仍只认 `R.`，会静默解析出 0 对（表面上「表是空的」）—— 这里显式失败。
+  const aliasMatch = /import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s*from\s*['"]\.\/matchRules['"]/.exec(src);
+  assert.ok(aliasMatch, `${RULES_TABLE} 应以 \`import * as <alias> from './matchRules'\` 供给规则函数`);
+  const alias = aliasMatch[1];
+
+  const re = /^\s*["']?([A-Za-z]\w*)["']?\s*:\s*([A-Za-z_$][\w$]*)\s*\.\s*(isMatch\w+)\s*,?\s*$/gm;
+  const raw = [];
   let m;
-  while ((m = re.exec(body)) !== null) pairs.push([m[1], m[2]]);
-  return pairs;
+  while ((m = re.exec(body)) !== null) raw.push([m[1], m[2], m[3]]);
+
+  const foreign = raw.filter(([, ns]) => ns !== alias).map(([k, ns, fn]) => `${k}: ${ns}.${fn}`);
+  assert.deepEqual(
+    foreign,
+    [],
+    `表项应一律经 ${alias}（= ./matchRules 的命名空间）取，以下经了别的命名空间：\n${foreign.join('\n')}`,
+  );
+  return raw.map(([key, , fn]) => [key, fn]);
 }
 
 // ───────────────────── 输入样本 ─────────────────────
@@ -429,13 +511,20 @@ test('M3-1 等价性：vendor 与 core/rules/* 在同组输入下逐项一致', 
 
   // ───────────────── 1. 表结构 ─────────────────
 
-  await t.test('表结构：filterDomain 源码的键集合/顺序/映射 == getMatchRuleTable()', () => {
-    const pairs = parseFilterDomainTable();
-    assert.equal(pairs.length, 26, `筛选表应恰有 26 项，实得 ${pairs.length}`);
+  await t.test('表结构：matchRuleTable 源码 == 冻结清单 == getMatchRuleTable()', () => {
+    const pairs = parseRuleTable();
+
+    // 加严一：与冻结字面清单**逐项相等（集合与顺序）**。这是防「解析自己再断言自己」的那道闸。
+    assert.deepEqual(
+      pairs,
+      EXPECTED_RULE_TABLE,
+      `getMatchRuleTable() 的键集合/顺序/映射已偏离冻结清单：应恰 ${EXPECTED_RULE_TABLE.length} 项，实得 ${pairs.length} 项。\n` +
+        '若这是有意的表改动，请同步更新 EXPECTED_RULE_TABLE；否则说明表被误改。',
+    );
 
     const keys = pairs.map(([k]) => k);
     assert.equal(new Set(keys).size, 26, '表键应互不重复');
-    assert.deepEqual(Object.keys(table), keys, 'getMatchRuleTable() 的键与顺序应与 getMatchFunctionTable() 一致');
+    assert.deepEqual(Object.keys(table), keys, 'getMatchRuleTable() 的键与顺序应与冻结清单一致');
 
     for (const [key, vendorName] of pairs) {
       assert.equal(typeof win[vendorName], 'function', `vendor 应供给 ${vendorName}`);
@@ -452,6 +541,39 @@ test('M3-1 等价性：vendor 与 core/rules/* 在同组输入下逐项一致', 
       exportedRuleNames.map((n) => n).sort(),
       pairs.map(([, v]) => v).sort(),
       'matchRules.ts 导出的 isMatch*Rule 集合应与筛选表引用的 vendor 全局集合完全一致',
+    );
+  });
+
+  // ───────────────── 1b. 迁移已完成（调用点结构断言）─────────────────
+
+  await t.test('迁移已完成：filterDomain.ts 不再读 vendor 全局，且已改从 matchRuleTable 取表', (t1) => {
+    // 加严二：原「解析 filterDomain 内联表」的探针随事实源迁走而失去意义（表已不在那里）。
+    // 它的补偿是这两条**结构断言** —— 正面证明调用点真的切到了新模块，而不是两处并存。
+    // 两条都打印实测命中数与行号，失败时不必再手工 grep。
+    const vendorReads = findHits(FILTER_DOMAIN, /\b(?:w|window)\s*\.\s*(isMatch\w+)\b/g);
+    const tableRefs = findHits(FILTER_DOMAIN, /\bgetMatchRuleTable\b/g);
+    const tableImports = findHits(FILTER_DOMAIN, /from\s*['"]\.\/rules\/matchRuleTable['"]/g);
+
+    t1.diagnostic(
+      `${FILTER_DOMAIN}：w.isMatch*Rule 命中 ${vendorReads.length} 处；getMatchRuleTable 引用 ${tableRefs.length} 处；` +
+        `来自 './rules/matchRuleTable' 的导入 ${tableImports.length} 处`,
+    );
+
+    assert.equal(
+      vendorReads.length,
+      0,
+      `${FILTER_DOMAIN} 仍存在 ${vendorReads.length} 处 vendor 全局读（w.isMatch*Rule），调用点未切走：\n` +
+        describeHits(vendorReads),
+    );
+    assert.ok(
+      tableRefs.length > 0,
+      `${FILTER_DOMAIN} 未引用 getMatchRuleTable（命中 ${tableRefs.length} 处）—— 没有从新模块取表：\n` +
+        describeHits(tableRefs),
+    );
+    assert.ok(
+      tableImports.length > 0,
+      `${FILTER_DOMAIN} 未从 './rules/matchRuleTable' 导入（命中 ${tableImports.length} 处）—— 表的来源不是新模块：\n` +
+        describeHits(tableImports),
     );
   });
 
@@ -691,7 +813,7 @@ test('M3-1 等价性：vendor 与 core/rules/* 在同组输入下逐项一致', 
     assert.equal(n, cases.length, '每条具名样例都应实际跑到');
 
     const lacking = [];
-    for (const [key] of parseFilterDomainTable()) {
+    for (const [key] of parseRuleTable()) {
       const outs = seen.get(key);
       if (!outs) { lacking.push(`${key}（无样例）`); continue; }
       if (!outs.has('ret bool:true')) lacking.push(`${key}（无真样例）`);
@@ -708,7 +830,7 @@ test('M3-1 等价性：vendor 与 core/rules/* 在同组输入下逐项一致', 
     const samples = sampleProduct(SWEEP_METHODS, SWEEP_VALUES, SWEEP_IMAGES, SWEEP_RULES_EXTRA, 500);
     assert.ok(samples.length >= 400, `扫描样本应有数百组，实得 ${samples.length}`);
     const cmp = makeComparator('随机扫描');
-    for (const [key, vendorName] of parseFilterDomainTable()) {
+    for (const [key, vendorName] of parseRuleTable()) {
       for (const [rule, image] of samples) {
         cmp.compare(`[${key}]`, win[vendorName], table[key], [rule, image]);
       }
@@ -990,11 +1112,11 @@ test('M3-1：新模块不得引入裸 require / @ts-nocheck / any', async (t) =>
   });
 });
 
-// ── 键 → vendor 全局名：由 filterDomain 源码解析后固化，供具名样例引用 ──
-// （在模块求值期解析一次；若 filterDomain 的表被改动，上面第 1 节的断言会先失败）
-const VENDOR_NAME_OF = Object.fromEntries(parseFilterDomainTable());
+// ── 键 → vendor 全局名：由 core/rules 表源码解析后固化，供具名样例引用 ──
+// （在模块求值期解析一次；若表被改动，上面第 1 节的冻结清单断言会先失败）
+const VENDOR_NAME_OF = Object.fromEntries(parseRuleTable());
 for (const key of ['name', 'folderName', 'url', 'annotation', 'width', 'height', 'fileSize', 'createTime',
   'mtime', 'btime', 'tags', 'rating', 'folders', 'type', 'shape', 'color', 'duration', 'bpm', 'camera',
   'iso', 'aperture', 'focalLength', 'shutter', 'timestamp', 'fontActivated', 'comments']) {
-  assert.ok(VENDOR_NAME_OF[key], `filterDomain 的筛选表应含 ${key}`);
+  assert.ok(VENDOR_NAME_OF[key], `筛选表应含 ${key}`);
 }

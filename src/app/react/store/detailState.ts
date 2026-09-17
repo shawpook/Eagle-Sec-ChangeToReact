@@ -203,6 +203,28 @@ function buildDetailSnapshot(): Partial<DetailSnapshot> {
       const imageSize = useLayoutState.getState().imageSize || {};
       const pinned = Array.isArray(useMiscRawState.getState().pluginModule?.pinnedPlugins) ? useMiscRawState.getState().pluginModule.pinnedPlugins : [];
 
+      /**
+       * F-VP-1d（2026-09-17，视频详情控件条/右键菜单修复）：类型表取值必须带 window 兜底。
+       *
+       * 背景：`VIDEO_TYPES` / `AUDIO_TYPES` / `FONT_TYPES` / `URL_TYPES` / `MODEL_TYPES` /
+       * `DISABLE_ZOOM_TYPES` / `SUPPORT_FORMATS` 这几张类型表是 bundle 时代由
+       * `bundleGlobals.ts` 直接挂在 **window** 上的静态常量（`w.VIDEO_TYPES = {...}`，
+       * 构建期由 EagleConfig.*_FORMATS 一次性生成），**从不经过 scope 写入路径**。
+       * miscRawState 虽把这些名字登记进 MIGRATED（miscRawState.ts:548）以承接「后续 scope 写入」，
+       * 但其初始值恒为 `null`（miscRawState.ts:509）且无人写入。
+       *
+       * 后果（本函数原先只读 store）：`isVideoType` 恒为 false → `#detail-container` 永远拿不到
+       * `is-video` 类 → `_content-area.scss:527` 的 `#detail-container { width: 20000px }`
+       *（图片缩放虚拟画布）无法被 `.is-video { width: 100% !important }`（同文件 580-581 行）覆盖，
+       * 容器撑到 20000px，`.vjs-control-bar` 随之同宽并溢出视口 —— 控件条 DOM 齐全（17 个按钮）
+       * 却不可见，用户可感知为「视频能播放但没有控件条 / 右键扩展菜单唤不出」。
+       *
+       * 取值语义与全仓其它消费点一致（Inspector.tsx:705/707、inspectorActions.ts:320/592、
+       * boxItem.tsx:13 均读 `window.X`）：store 优先承接未来迁移，window 兜底承接当前静态表。
+       */
+      const typeTable = (name: string): any =>
+        (useMiscRawState.getState() as any)[name] || (window as any)[name] || null;
+
       let currentSnap: DetailCurrentSnapshot | null = null;
       let pluginExt = '';
       let pluginAllowZoom = false;
@@ -291,15 +313,15 @@ function buildDetailSnapshot(): Partial<DetailSnapshot> {
             return false;
           }
         })(),
-        isUrlType: !!(current && useMiscRawState.getState().URL_TYPES && useMiscRawState.getState().URL_TYPES[current.ext]),
-        isFontType: !!(current && useMiscRawState.getState().FONT_TYPES && useMiscRawState.getState().FONT_TYPES[current.ext]),
-        isVideoType: !!(current && useMiscRawState.getState().VIDEO_TYPES && useMiscRawState.getState().VIDEO_TYPES[current.ext]),
-        isAudioType: !!(current && useMiscRawState.getState().AUDIO_TYPES && useMiscRawState.getState().AUDIO_TYPES[current.ext]),
-        isModelType: !!(current && useMiscRawState.getState().MODEL_TYPES && useMiscRawState.getState().MODEL_TYPES[current.ext]),
+        isUrlType: !!(current && typeTable('URL_TYPES') && typeTable('URL_TYPES')[current.ext]),
+        isFontType: !!(current && typeTable('FONT_TYPES') && typeTable('FONT_TYPES')[current.ext]),
+        isVideoType: !!(current && typeTable('VIDEO_TYPES') && typeTable('VIDEO_TYPES')[current.ext]),
+        isAudioType: !!(current && typeTable('AUDIO_TYPES') && typeTable('AUDIO_TYPES')[current.ext]),
+        isModelType: !!(current && typeTable('MODEL_TYPES') && typeTable('MODEL_TYPES')[current.ext]),
         isPdf: !!current && current.ext === 'pdf',
         isGif: !!current && current.ext === 'gif',
-        disableZoom: !!(current && useMiscRawState.getState().DISABLE_ZOOM_TYPES && useMiscRawState.getState().DISABLE_ZOOM_TYPES[current.ext]),
-        notSupportFormat: !!(current && useMiscRawState.getState().SUPPORT_FORMATS && !useMiscRawState.getState().SUPPORT_FORMATS[current.ext]),
+        disableZoom: !!(current && typeTable('DISABLE_ZOOM_TYPES') && typeTable('DISABLE_ZOOM_TYPES')[current.ext]),
+        notSupportFormat: !!(current && typeTable('SUPPORT_FORMATS') && !typeTable('SUPPORT_FORMATS')[current.ext]),
         commentRect: rect,
         ratio: useMiscRawState.getState().ratio || 0,
         zoomRatio: imageSize.zoomRatio ?? 100,

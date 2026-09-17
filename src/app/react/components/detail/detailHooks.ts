@@ -1749,21 +1749,101 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 /* mouseGesture（bundle 70837-71140 逐字移植）                          */
 /* ------------------------------------------------------------------ */
 
-export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, selector?: string) {
+export function useMouseGesture(ref?: React.RefObject<HTMLElement | null> | null, selector?: string) {
+  /**
+   * F-CTX-1（2026-09-17，详情页右键菜单无反应修复）。
+   *
+   * 缺陷机理（实测取证链：DOM ancestry 快照 + `defaultPrevented` 行为法）：
+   * 1. 本 hook 的 effect 依赖原先只有 `[selector]`，而 selector 是常量 `'.noSel'`，
+   *    **永不变化 ⇒ effect 只在组件挂载时执行一次**。
+   * 2. 挂载那一刻 `ref.current` 仍为 `null` —— 原 `DetailViewer.tsx:774` 的挂载点是
+   *    `{smoothZoomDone && <div ref={gestureRef} />}`（条件渲染），进入详情前该 div 不存在；
+   *    而 `smoothZoomDone` 由 `miscDomain.ts` 在进入详情后的 `$timeout` 回调里才置 true。
+   *    于是 effect 在 `if (!element) return;` 处**提前退出**。
+   * 3. 进入详情后 `onMouseDown` 从未绑定 ⇒ 右键链路（`mousedown` 本 hook →
+   *    `mouseup` window → `openItemContextMenu`）整体不通；绑定在**容器层**，与素材类型
+   *    无关 ⇒ 图像与视频表现完全一致（即用户所报「右击无反应，视频和图像都是」）。
+   *
+   * ⚠ 结构真相（实测两时序采样，勿凭直觉推断）：
+   *   smoothZoom 初始化**前后**，`.noSel` 与 `#detail-container` 的关系会变：
+   *   - early（刚进详情，smoothZoom 未初始化）：`.noSel` **不存在**，
+   *     `#detail-container` 的父节点是 `#eagle-detail-wrapper`；
+   *   - settled（初始化后）：`div.noSel.smooth_zoom_preloader` **作为新父节点插入**，
+   *     `#detail-container` 成为它的子节点（`noSelContainsContainer: true`，
+   *     `noSelIsContainer: false`）。
+   *   即走的是 `smoothZoomEngine.ts:1108` 的 `.wrap(...)` 分支（包一层），
+   *   **不是** `:1114-1119` 的 `addClass` 分支（把类加在容器自身）。故：
+   *   - `q('.noSel')` 在 early 阶段必然查不到 ⇒ 这正是必须 rAF 轮询的原因；
+   *   - `#detail-container` 是**唯一全程存在**的稳定锚点，列为最终回落目标；
+   *   - 右键落在 `.detail-wrap`，冒泡经 `#detail-container` 再到 `.noSel`，
+   *     故绑在这两层中任一层都能拦截，行为等价。
+   *
+   * 修复：effect 内**先立即尝试绑定，未就绪则 rAF 轮询等到目标出现**（30s 上限防空转）。
+   * 绑定目标按 `selector → ref → #detail-container` 三级回落，保证右键链路必定接上。
+   * 不用 `[ref.current]` 作依赖 —— ref 变化不触发重渲染，该写法只在偶然重渲染时生效，
+   * 不具备确定性（实测：图像场景偶然通过、视频场景仍失败）。
+   */
   useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
     const downTime = { value: 0 };
     const state = { isZooming: false };
     let startPoint = { x: 0, y: 0 };
     let endPoint = { x: 0, y: 0 };
     let maxDistanceX = 0;
     let originData = { x: undefined as number | undefined, y: undefined as number | undefined, ratio: 100 };
-    let containerEl: HTMLElement | null = element;
-    if (selector) {
-      containerEl = q(selector);
-    }
+
+    /**
+     * 目标解析三级回落：
+     * 1. `selector` —— 详情页 `'.noSel'`，由 smoothZoom 以 `.wrap()` 插入为新父节点
+     *    （`smoothZoomEngine.ts:1108`）。**early 阶段不存在**，故轮询必不可少；
+     * 2. `ref.current` —— 可选。DetailToolbar 的 too-big 容器走此路（无 selector）；
+     * 3. `#detail-container` —— 全程存在的稳定锚点，保证链路必定接上。
+     * `onEl(null, ...)` 在 `domQuery.ts:201` 是**静默返回**（无告警），故必须确保最终找到目标。
+     */
+    const resolveTarget = (): HTMLElement | null =>
+      (selector ? q(selector) : null) || ref?.current || document.getElementById('detail-container');
+
+    let containerEl: HTMLElement | null = resolveTarget();
+    let containerBound = false;
+
+    const onMouseDown = (event: any) => {
+      (document.activeElement as HTMLElement | null)?.blur();
+      if (event.button === 2 || event.button === 1) {
+        event.preventDefault();
+        event.stopPropagation();
+        downTime.value = Date.now();
+        startPoint = { x: event.pageX, y: event.pageY };
+        originData.ratio = useLayoutState.getState().imageSize?.zoomRatio ?? 100;
+        originData.x = event.pageX;
+        originData.y = event.pageY;
+        maxDistanceX = 0;
+        hideGestureVisual();
+      }
+    };
+    const bindTarget = () => {
+      if (containerBound || !containerEl) return;
+      containerBound = true;
+      onEl(containerEl, 'mousedown', onMouseDown);
+    };
+
+    // 未就绪时以 rAF 轮询等待（#detail-container 由 portal 在首帧后才挂出）。
+    let readyFrame: number | null = null;
+    let readyDeadline = 0;
+    const waitForTarget = () => {
+      if (containerBound) return;
+      const target = resolveTarget();
+      if (target) {
+        containerEl = target;
+        bindTarget();
+        return;
+      }
+      if (!readyDeadline) readyDeadline = Date.now() + 30000;
+      if (Date.now() > readyDeadline) return;
+      readyFrame = requestAnimationFrame(waitForTarget);
+    };
+
+    // 就绪即绑；未就绪则转入轮询（容器经 portal 挂载，时机可能晚于本 effect）。
+    bindTarget();
+    waitForTarget();
 
     // 視覺反饋元件
     let gestureCanvas: HTMLElement | null = null;
@@ -1920,22 +2000,6 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
       }
     }
 
-    const onMouseDown = (event: any) => {
-      (document.activeElement as HTMLElement | null)?.blur();
-      if (event.button === 2 || event.button === 1) {
-        event.preventDefault();
-        event.stopPropagation();
-        downTime.value = Date.now();
-        startPoint = { x: event.pageX, y: event.pageY };
-        originData.ratio = useLayoutState.getState().imageSize?.zoomRatio ?? 100;
-        originData.x = event.pageX;
-        originData.y = event.pageY;
-        maxDistanceX = 0;
-        hideGestureVisual();
-      }
-    };
-    onEl(containerEl, 'mousedown', onMouseDown);
-
     const onMouseMove = (event: any) => {
       if (startPoint.y) {
         if (state.isZooming || Math.abs(startPoint.y - event.pageY) > Math.abs(startPoint.x - event.pageX)) {
@@ -2003,6 +2067,9 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
     window.addEventListener('mouseup', onMouseUp);
 
     return () => {
+      // F-CTX-1：延迟绑定用的 rAF 轮询必须随 effect 一并取消，避免悬挂空转。
+      if (readyFrame) cancelAnimationFrame(readyFrame);
+      readyFrame = null;
       offEl(containerEl, 'mousedown');
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);

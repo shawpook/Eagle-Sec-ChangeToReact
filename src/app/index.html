@@ -18,6 +18,23 @@
     <link rel="stylesheet" href="css/modules/flatpicker/flatpickr.min.css">
     <link rel="stylesheet" type="text/css" href="css/modules/flatpicker/themes/airbnb.css">
     <link href="css/vendors/videojs/video-js.css" rel="stylesheet">
+    <!-- F-VP-1（视频详情播放修复）：video.js 引擎与语言包必须在本页**解析期同步**加载。
+         迁移后主窗只剩 video-js.css，`window.videojs` 恒为 undefined，而详情播放器的
+         `useMediaElement`（components/detail/detailHooks.ts:653/1458）在首次 loadedmetadata
+         时执行 `videojs()(video, {...}).ready(...)` —— 该表达式在引擎缺席时抛 TypeError，
+         使同一函数内的自动播放、控件条、字幕（initTrack）、批注（initComments）、
+         快捷手势（initShortcuts）与缩略图预览（initThumbnailPewivew）**全部中断**，
+         表现即「视频素材点开无法播放」。
+         加载顺序契约与 preview-window.html（53-58 行）完全一致：video.js 在前，语言包紧随
+         （lang/*.js 以裸 `videojs.addLanguage` 注册），且必须早于文件末尾的 module 入口
+         （`/src/app/react/main.tsx`）——模块脚本天然晚于经典脚本，故置于 head 尾部即可满足。
+         两者契约同源，任一窗口的加载时机变更都需同步核对另一窗口。 -->
+    <script src="js/vendors/videojs/video.js"></script>
+    <script src="js/vendors/videojs/lang/en.js"></script>
+    <script src="js/vendors/videojs/lang/zh_TW.js"></script>
+    <script src="js/vendors/videojs/lang/zh_CN.js"></script>
+    <script src="js/vendors/videojs/lang/ko_KR.js"></script>
+    <script src="js/vendors/videojs/lang/ja_JP.js"></script>
 </head>
 <body
     tabindex="-1"

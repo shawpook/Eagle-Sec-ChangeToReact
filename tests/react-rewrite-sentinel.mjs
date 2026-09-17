@@ -109,6 +109,35 @@ for (const [name, re] of Object.entries(metrics)) {
 const indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
 counts.vendorScriptTags = (indexHtml.match(/<script src="js\/vendors\//g) || []).length;
 
+// F-VP-1（2026-09-17）：vendorScriptTags 这条棘轮的语义是「vendor 脚本只能减少」（退役方向），
+// 但它对「被误删的必需引擎」是无差别的——本批正是撞上这一点：
+//   迁移后主窗 index.html 只留下了 video-js.css，`js/vendors/videojs/video.js` 与语言包
+//   从未被本页引用，`window.videojs` 恒为 undefined；而详情播放器 useMediaElement 首次
+//   loadedmetadata 执行 videojs()(video, {...}).ready(...) 抛 TypeError，使自动播放、控件条、
+//   字幕、批注、快捷手势、缩略图预览全部中断 —— 用户可感知为「视频素材点开无法播放」。
+//   对照窗口 preview-window.html（53-58 行）至今仍加载同一组引擎，且其专属门禁
+//   tests/preview-boot-contract.mjs 明文要求语言包「不得被摘除」。
+// 因此本批把基线从 0 修正为 6（video.js + 5 个语言包），并在此补一道**正向**断言：
+// 这些必需引擎必须在 index.html 内真实引用。二者合起来才既挡住无用新增、又挡住必需引擎被摘。
+// 若日后确实要升级/替换 video.js，必须同步改这里与基线，而不是静默删除。
+const REQUIRED_INDEX_VENDOR_SCRIPTS = [
+  'js/vendors/videojs/video.js',
+  'js/vendors/videojs/lang/en.js',
+  'js/vendors/videojs/lang/zh_TW.js',
+  'js/vendors/videojs/lang/zh_CN.js',
+  'js/vendors/videojs/lang/ko_KR.js',
+  'js/vendors/videojs/lang/ja_JP.js',
+];
+for (const required of REQUIRED_INDEX_VENDOR_SCRIPTS) {
+  // 只认 script 标签形态——注释提及不计。
+  if (!indexHtml.includes(`src="${required}"`)) {
+    failures.push(
+      `必需 vendor 引擎在 index.html 中缺失: ${required}`
+      + `（详情视频播放器依赖 window.videojs；摘除会使视频素材点开无法播放）`
+    );
+  }
+}
+
 let baseline = null;
 if (fs.existsSync(baselinePath)) {
   baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));

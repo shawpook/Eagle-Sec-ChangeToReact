@@ -2989,6 +2989,20 @@ app.whenReady().then(async () => {
               }, 'main scope');
               const videoItem = scope.raw.find((item) => item && !item.isDeleted && (item.ext === 'mp4' || item.ext === 'webm'));
               if (!videoItem) throw new Error('No video item in current library');
+              // F-VP-1（2026-09-17）：先证明 video.js 引擎已在主窗接线。迁移后主窗只剩
+              // video-js.css，window.videojs 恒为 undefined，而 useMediaElement 首次
+              // loadedmetadata 即执行 videojs()(video, {...}).ready(...) —— 引擎缺席时该表达式
+              // 抛 TypeError，中断同函数内的自动播放/控件条/字幕/批注/快捷手势/缩略图预览，
+              // 表现为「视频素材点开无法播放」。仅断言 videoWidth>0 无法发现该缺陷（原生
+              // <video> 无 videojs 也能解码），故在此显式取引擎真值。
+              const videojsEngine = {
+                type: typeof window.videojs,
+                version: (window.videojs && window.videojs.VERSION) || null,
+                hasGetComponent: Boolean(window.videojs && typeof window.videojs.getComponent === 'function'),
+                scriptTags: Array.from(document.querySelectorAll('script[src]'))
+                  .map((s) => s.getAttribute('src'))
+                  .filter((src) => /videojs/i.test(String(src))),
+              };
               scope.selected = [videoItem];
               scope.selectedMappings = {};
               scope.current = videoItem;
@@ -3005,6 +3019,13 @@ app.whenReady().then(async () => {
                       videoWidth: element.videoWidth,
                       videoHeight: element.videoHeight,
                       duration: Number(element.duration) || 0,
+                      // F-VP-1：播放器 UI 真值 —— videojs 就绪后会把 <video> 包进
+                      // .video-js 容器并渲染 .vjs-control-bar；引擎缺席时两者均为 0，
+                      // 且 .video-js 会停留在 NativeVideoBranch 里那个静态类名上
+                      // （未被 videojs 接管，无 vjs-tech / 无控件条）。
+                      vjsControlBar: document.querySelectorAll('.detail-wrap .vjs-control-bar').length,
+                      vjsTech: document.querySelectorAll('.detail-wrap video.vjs-tech').length,
+                      playerElClass: (element.closest('.video-js') || element).className,
                     }
                   : null;
               }, 'native detail video', 25000).catch((err) => {
@@ -3023,8 +3044,60 @@ app.whenReady().then(async () => {
                   detailContainerHtml: String(document.querySelector('#detail-container')?.innerHTML || '').slice(0, 500),
                   contentPanelClass: document.querySelector('.content-panel.detail-mode')?.className || '',
                   currentExt: scope.current && scope.current.ext,
+                  vjsControlBar: document.querySelectorAll('.detail-wrap .vjs-control-bar').length,
+                  vjsTech: document.querySelectorAll('.detail-wrap video.vjs-tech').length,
                 };
               });
+              // F-VP-1：控件条是「videojs 成功接管播放器」的可观察结果。它与 player 的
+              // 就绪状态解耦（videojs 的 ready 回调晚于 loadedmetadata），故独立等待。
+              const controlBar = await waitFor(() => {
+                const bars = document.querySelectorAll('.detail-wrap .vjs-control-bar').length;
+                const tech = document.querySelectorAll('.detail-wrap video.vjs-tech').length;
+                return bars > 0 && tech > 0 ? { controlBars: bars, techEls: tech } : null;
+              }, 'videojs control bar', 15000).catch(() => ({
+                controlBars: document.querySelectorAll('.detail-wrap .vjs-control-bar').length,
+                techEls: document.querySelectorAll('.detail-wrap video.vjs-tech').length,
+                missing: true,
+              }));
+              // F-VP-1b：控件条「挂上」不等于「可用」。取证按钮数量/可见性与 player 内部状态，
+              // 以便区分「控制条 DOM 缺席」与「控制条在场但被隐藏/按钮未装配」两类症状。
+              const controlBarDetail = (() => {
+                const host = document.querySelector('.detail-wrap') || document;
+                const bar = host.querySelector('.vjs-control-bar');
+                const videoJsEl = host.querySelector('.video-js');
+                const player = videoJsEl && videoJsEl.player;
+                const buttons = bar ? bar.querySelectorAll('.vjs-button') : [];
+                const rect = bar ? bar.getBoundingClientRect() : null;
+                const cs = bar ? getComputedStyle(bar) : null;
+                return {
+                  hasBar: Boolean(bar),
+                  buttonCount: buttons.length,
+                  buttonClasses: Array.from(buttons).map((b) => b.className).slice(0, 24),
+                  rect: rect ? { w: Math.round(rect.width), h: Math.round(rect.height) } : null,
+                  display: cs ? cs.display : null,
+                  visibility: cs ? cs.visibility : null,
+                  // F-VP-1c：容器类名与宽度 —— is-video 缺席时 #detail-container 会停在
+                  // width: 20000px（图片缩放虚拟画布），控件条随之溢出视口而不可见。
+                  // 这两项是「控件条可见性」缺陷的直接指标，故升为常驻取证面。
+                  detailContainerClass: (() => {
+                    const el = document.getElementById('detail-container');
+                    return el ? el.className : null;
+                  })(),
+                  detailContainerWidth: (() => {
+                    const el = document.getElementById('detail-container');
+                    return el ? Math.round(el.getBoundingClientRect().width) : null;
+                  })(),
+                  hasPlayerInstance: Boolean(player),
+                  playerControls: player ? player.controls_ : null,
+                  playerControlBarChildren: player && player.controlBar && player.controlBar.children_
+                    ? player.controlBar.children_.length : null,
+                  loopBtn: bar ? bar.querySelectorAll('.vjs-icon-loop').length : 0,
+                  forwardBtn: bar ? bar.querySelectorAll('.vjs-icon-forward').length : 0,
+                  backwardBtn: bar ? bar.querySelectorAll('.vjs-icon-backward').length : 0,
+                  noteBtn: bar ? bar.querySelectorAll('.vjs-icon-note').length : 0,
+                  contextMenuHost: String((document.querySelector('#eagle-context-menu-host') || {}).innerHTML || '').slice(0, 160),
+                };
+              })();
               let interaction = null;
               const videoElement = document.querySelector('.detail-wrap video');
               if (videoElement && !videoElement.error && videoElement.readyState >= 1) {
@@ -3037,16 +3110,121 @@ app.whenReady().then(async () => {
                   duration: Number(videoElement.duration) || 0,
                 };
               }
+              // F-CTX-1（2026-09-17）：详情页右键菜单可达性取证。
+              // useMouseGesture 的 effect 原先只依赖常量 selector，effect 只在挂载时跑一次，
+              // 而那时 ref（{smoothZoomDone && <div ref/>} 条件渲染）尚为 null 便提前退出；
+              // 进入详情后 effect 不再重跑，mousedown 处理器从未绑定 —— 右键链路整体不通，
+              // 且绑定位于详情容器层、与素材类型无关（图像与视频表现一致）。
+              // 探针必须等 gestureRef 宿主 div 与 .noSel 都就绪后再测，否则会把「尚未就绪」
+              // 误判成「处理器未绑定」。
+              const gestureRefReady = await waitFor(() => {
+                const container = document.getElementById('detail-container');
+                if (!container) return null;
+                const noSelEl = document.querySelector('.noSel');
+                return noSelEl ? { hasContainer: true, noSelIsContainer: noSelEl === container } : null;
+              }, 'detail container and noSel', 15000).catch(() => ({ hasContainer: false, noSelIsContainer: false, missing: true }));
+              let contextMenuProbe = null;
+              try {
+                const container = document.getElementById('detail-container');
+                const host = document.querySelector('#eagle-context-menu-host');
+                const snapshot = (tag) => ({
+                  tag,
+                  itemCount: host ? host.querySelectorAll('.context-menu-item').length : -1,
+                  htmlLen: host ? host.innerHTML.length : -1,
+                  rootClass: (() => {
+                    const r = host && host.querySelector('.context-menu');
+                    return r ? r.className : null;
+                  })(),
+                  // 与 rootClass 同一节点同一时刻取类名数组，避免正则/空白差异导致误判。
+                  rootClassList: (() => {
+                    const r = host && host.querySelector('.context-menu');
+                    return r ? Array.from(r.classList) : null;
+                  })(),
+                });
+                const before = snapshot('before');
+                if (!container) {
+                  contextMenuProbe = { missing: true, containerPresent: false, before };
+                } else {
+                  // F-CTX-1：右键真实落点在 #detail-container 的内层子树（.detail-wrap / video 等）。
+                  // .noSel 就是 #detail-container 自己（smoothZoom setContainer 施加的类），
+                  // 在其上派发无法验证冒泡链路，故改用内层元素作为命中点。
+                  const inner = container.querySelector('.detail-wrap')
+                    || container.querySelector('.image-wrap')
+                    || container.querySelector('video')
+                    || container;
+                  const rect = inner.getBoundingClientRect();
+                  const cx = Math.round(rect.x + rect.width / 2);
+                  const cy = Math.round(rect.y + rect.height / 2);
+                  const mk = (type) => new MouseEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 2,
+                    buttons: type === 'mousedown' ? 2 : 0,
+                    clientX: cx,
+                    clientY: cy,
+                    pageX: cx,
+                    pageY: cy,
+                  });
+                  const down = mk('mousedown');
+                  inner.dispatchEvent(down);
+                  const mousedownDefaultPrevented = down.defaultPrevented;
+                  await new Promise((resolve) => setTimeout(resolve, 120));
+                  window.dispatchEvent(mk('mouseup'));
+                  await new Promise((resolve) => setTimeout(resolve, 700));
+                  const after = snapshot('after');
+                  // menuOpen 取同一快照内同一节点的 classList，避免正则/空白/时序漂移。
+                  const opened = Array.isArray(after.rootClassList)
+                    ? after.rootClassList.indexOf('open') >= 0
+                    : /\bopen\b/.test(String(after.rootClass || ''));
+                  contextMenuProbe = {
+                    containerPresent: true,
+                    containerClass: String(container.className || ''),
+                    hitTargetClass: String(inner.className || '') || inner.tagName.toLowerCase(),
+                    mousedownDefaultPrevented,
+                    handlerBound: mousedownDefaultPrevented,
+                    menuOpen: opened,
+                    before,
+                    after,
+                    itemCount: after.itemCount,
+                  };
+                }
+              } catch (err) {
+                contextMenuProbe = { error: String((err && err.message) || err) };
+              }
               return {
                 videoItemId: videoItem.id,
                 videoExt: videoItem.ext,
                 detailMode: Boolean(scope.isDetailMode),
+                videojsEngine,
+                controlBar,
+                controlBarDetail,
+                gestureRefReady,
+                contextMenuProbe,
                 player,
                 interaction,
               };
             })()`
           );
+          const engineOk = result.videojsEngine
+            && result.videojsEngine.type === 'function'
+            && result.videojsEngine.hasGetComponent === true
+            && Array.isArray(result.videojsEngine.scriptTags)
+            && result.videojsEngine.scriptTags.some((src) => /vendors\/videojs\/video\.js/.test(String(src)));
+          const controlBarOk = result.controlBar
+            && !result.controlBar.missing
+            && result.controlBar.controlBars > 0
+            && result.controlBar.techEls > 0;
+          // F-CTX-1：右键处理器必须真的绑上（mousedownDefaultPrevented），且菜单必须展开并渲染出条目。
+          const contextMenuOk = result.contextMenuProbe
+            && result.contextMenuProbe.containerPresent === true
+            && result.contextMenuProbe.handlerBound === true
+            && result.contextMenuProbe.menuOpen === true
+            && result.contextMenuProbe.itemCount > 0;
           const ok = result.detailMode
+            && engineOk
+            && controlBarOk
+            && contextMenuOk
             && result.player && !result.player.error
             && result.player.videoWidth > 0
             && result.player.videoHeight > 0

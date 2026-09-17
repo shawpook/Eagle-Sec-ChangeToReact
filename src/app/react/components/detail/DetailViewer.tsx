@@ -498,7 +498,6 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
     isCommentMode,
     isCropMode,
     isDetailMode,
-    smoothZoomDone,
     showDetailImage,
     initDetailMode,
     useMpvPlayer,
@@ -507,8 +506,16 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
     maxDimension,
   } = snapshot;
 
-  const gestureRef = useRef<HTMLDivElement>(null);
-  useMouseGesture(gestureRef, '.noSel');
+  /**
+   * F-CTX-1 收尾（2026-09-17）：原先这里是 `useMouseGesture(gestureRef, '.noSel')` +
+   * 模板里的 `{smoothZoomDone && <div ref={gestureRef} />}`。该空 div 属 bundle 时代移植
+   * 遗留物 —— 它只是「顺手借来当容器句柄」，既非 `.noSel` 的祖先，也不承载任何内容。
+   * 实测（两时序采样）：smoothZoom 初始化后以 `.wrap()` 把 `#detail-container` 包进
+   * `div.noSel.smooth_zoom_preloader`（`smoothZoomEngine.ts:1108`），与这个空 div 无关；
+   * 而 `'#detail-container'` 是全程存在的稳定锚点，已被 hook 列为最终回落目标。
+   * 故摘除 ref 与空 div，仅保留 selector。
+   */
+  useMouseGesture(undefined, '.noSel');
 
   // model-viewer iframe 键盘通道（bundle 20213-20238 逐字）——模型查看器页内
   // ESC/←/→ postMessage('Exit'/'Prev'/'Next') 到 parent；React 世界此前无监听（活缺口，
@@ -771,7 +778,6 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
   return (
     <>
       <input id="comment-blur" type="" name="" style={{ opacity: 0, position: 'absolute', zIndex: -1 }} />
-      {smoothZoomDone && <div ref={gestureRef} />}
       {branch}
       {/* NOTE: 避免 zoomer 沒有任何圖片初始化會造成 zoomming 功能異常，因此這裡強制給一張圖 */}
       <img

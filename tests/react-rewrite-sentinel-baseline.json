@@ -1,5 +1,5 @@
 {
-  "generated": "b1-9bz-E6-1",
+  "generated": "F-VP-1（2026-09-17 视频详情播放修复）",
   "counts": {
     "evalAsync": 0,
     "apply": 0,
@@ -17,6 +17,6 @@
     "lodashWindow": 0,
     "lodashBind": 0,
     "lodashBare": 0,
-    "vendorScriptTags": 0
+    "vendorScriptTags": 6
   }
 }

@@ -20,7 +20,8 @@
 | R0-4 窗口可见性实机断言 | ✅ | 新增 `--smoke-window-bounds` 真机门禁 |
 | R1-1 `access` 恒 true | ✅ | 改真实可写判定，不可判定即抛错 |
 | R1-2 六项替身 / `/mock-user-data` | ⚠️ 部分 | 只做 `app.getPath('userData')` 真值这条根因；其余转未做项 |
-| R1-3 D14 取证 / R1-4 空 catch 分类 | ❌ | 需长时实机取证，转未做项 |
+| R1-3 D14 取证 | ✅ | 已实机取证，见 §11 |
+| R1-4 空 catch 分类 | ❌ | 体量大，需逐条判读，转未做项 |
 | R2-* 运行证据（插件/RAW/部署根/L3 全量） | ❌ | 需真机长跑，转未做项 |
 | R3-* 架构债 | ❌ | 体量过大，转未做项 |
 | R4-1 probe 脚本归档 | ✅ | 移出 `tests/` |
@@ -90,7 +91,8 @@
 **验证证据**：typecheck OK（235 文件 0 诊断）；`shim-module-boundaries` OK；
 `module-registry-contract` 6/6；`runtime-services-contract` 20/20；
 `scope-field-convergence` OK。
-**未验证**：真实 Electron 下 `app.getPath('userData')` 是否落到真值——需 §5 的实机门禁跑通后补证。
+**未验证（写作当时）**：真实 Electron 下 `app.getPath('userData')` 是否落到真值。
+**已于 §11 实机取证闭合**：主进程返回真实路径，渲染层经 `app:get-path` 同步通道取到的值与主进程一致。
 
 ---
 
@@ -275,9 +277,10 @@ index 的 cache-tree 失效指针（tree `0ce60ba9`）已用 `git write-tree` �
 
 ## 9. 未做项（按验收报告原文口径，不伪装成已完成）
 
+> R1-3（D14 取证）**已于 §11 完成实机取证**，已从下表移除。
+
 | # | 验收原文要点 | 未做原因 |
 |---|---|---|
-| R1-3 | 落地 D14 取证：实测 Electron 下 `nativeRequire('http')` 可用性，据此决定 `http`/`https`/`JsonRestServer` 是「显式失败」还是「可接线」 | 需长时实机取证 |
 | R1-4 | 对 680 处 `catch (err) { /* 注释 */ }` 分类（顶层兜底 / 真实吞错），给「吞错且影响业务结果」的加观测 | 体量大，需逐条判读 |
 | R2-1 | 造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通（含 guest 内 preload 真实执行、加载失败、退出清理） | 需造插件 + 实机 |
 | R2-2 | 准备 RAW / TIFF / HEIF / UDOC 真实样本，跑通解码矩阵 | 缺样本 |
@@ -308,14 +311,77 @@ index 的 cache-tree 失效指针（tree `0ce60ba9`）已用 `git write-tree` �
 | 批 3 | R0-4 实机窗口可见性门禁；R0-2 `electron/**` 静态门禁 | `c367b2aa` |
 | 批 4 | R4-1 probe 归档；R4-2 gitignore；R4-3 构建链三件事 | `c367b2aa` |
 | 收尾 | 复跑门禁；**git 对象库事故与恢复**；`git reset --soft c367b2aa` 复位指针 | `c367b2aa` |
+| 提交 | `d48c7576` 代码门禁（R0-1/R0-2/R0-4/R1-1/R1-2）；`c676747d` 仓库与构建链（R4-1/2/3 + docs） | `c676747d` |
+| 推送 | `git push origin react-in-place` → `c367b2aa..c676747d` | `c676747d` |
 
-**当前 HEAD：`c367b2aab5e59755f36d5659f7cfa31f56a112c6`**
-（= 整改起始基线；本次所有整改改动**均尚未提交**，全部在工作区：
-8 个已跟踪文件改动 + 18 个重命名（已暂存）+ 6 个新增文件
-（`electron/window-geometry.cjs`、`tests/electron-window-geometry.mjs`、
-`tests/electron-main-gates.mjs`、`tests/electron-window-bounds.mjs`、
-`outputs/probe-archive/README.md`、本工作记录）。
-是否提交、怎么切分提交，交给用户决定。）
+**当前 HEAD：`c676747d15f803e49efa4807d6af882afe6e49b0`（已推送到 origin）**
 
-按验收 R0-3 的口径：本报告结论只针对上述 HEAD + 工作区改动这一状态；
-此后再有新增提交，需重新验收。
+两个提交：
+
+| 提交 | 内容 | 规模 |
+|---|---|---|
+| `d48c7576` | `fix(electron+shim)`：窗口几何纯函数化与单测、`electron-main-gates` 静态闸、实机窗口可见性门禁、`access` 真实判定、三处伪造路径根因 | 10 文件，+867/−47 |
+| `c676747d` | `chore(repo)`：构建链三件事、18 个 probe 脚本归档、gitignore 补齐、落盘本工作记录与验收报告 | 23 文件（含 18 个重命名） |
+
+**仓库健康度（推送后复核）**：HEAD 与 `origin/react-in-place` 均为 `c676747d`，ahead 0 / behind 0；
+对象 18840 个可读；`git stash` 恢复正常；`git fsck --connectivity-only` 仅剩 5 条——
+5 个从未推送过的本地分支 tip（`shawpook/m1-f04-boot`、`m1-f06-frontend`、`m2-runtime-services`、
+`m5-tools-address`、`ui-change-attempt-glm`）对象已丢失且**远端确认没有**（`git ls-remote` 只有
+`main` 与 `react-in-place`），不可恢复。这些分支名仍留在本地，要不要删由用户决定：
+`git branch -D shawpook/m1-f04-boot shawpook/m1-f06-frontend shawpook/m2-runtime-services shawpook/m5-tools-address ui-change-attempt-glm`
+
+另：事故期间 `origin/react-in-place` 这个**本地**跟踪引用停在旧值 `d82ab6d7`（显示 ahead 115 的假象），
+推送后已校正为 `c676747d`。
+
+---
+
+## 11. R1-3 · D14 取证：Electron 下 `nativeRequire('http')` 到底能不能用
+
+验收原文要求：「实测 Electron 下 `nativeRequire('http')` 可用性，据此决定
+`http`/`https`/`JsonRestServer` 是『显式失败』还是『可接线』；结论写回 `project-state.md`，不再标记为待证」。
+
+**取证脚本**：`outputs/d14-capability-probe.cjs`（**一次性取证，不是门禁**，放在 `outputs/` 而非
+`tests/`，遵 §6 定下的规矩）。关键点是窗口 `webPreferences` 必须与生产一致，否则结论没有意义：
+`nodeIntegration:true` + `contextIsolation:false` + `sandbox:false` + `webviewTag:true`。
+
+**实测结果**（Electron 22.3.7 / Node 16.17.1 / win32，完整输出见 `outputs/_d14-probe.txt`）：
+
+| 模块 | 结果 |
+|---|---|
+| `http` | ✅ 可用（取到 `METHODS` / `STATUS_CODES` / `Agent`） |
+| `https` | ✅ 可用 |
+| `net` | ✅ 可用 |
+| `node:os` / `node:fs` / `path` / `child_process` / `electron` | ✅ 均可用 |
+| `node:fs` 含 `accessSync` | ✅ —— §3.1 那道真实权限判定在 Electron 下确实落得地 |
+
+**⇒ D14 的「可能可用」从推测变成结论。**
+
+### 但裁决不变，且理由变强了
+
+维持 `http` / `https` / `JsonRestServer` **显式失败**。理由从「能力可能不存在」换成一条**更硬的**：
+
+能力确实存在，而唯一消费者 `urlEnlarger.#checkURLByEagle` **没有 try/catch**，且被
+`isRunningInEagleApp` 门控——直接接线会把「抛点落在无保护表达式上」重新引回来。
+换句话说：这是**消费者侧不设防**，不是**能力侧不可得**。
+
+**若将来要接线，前置条件**是先给该消费者加 try/catch，或把调用点整体纳入能力门控；
+不是把 `nativeRequire('http')` 直接接上去就完事。这条已写进 `project-state.md` 的 D41。
+
+### 顺带闭合 §3.2 的「未验证」
+
+同一次取证把 R1-2 的真值通道也验了：
+
+- 主进程 `app.getPath('userData')` → `C:\Users\Administrator\AppData\Roaming\Electron`（**真实路径**）。
+  名为 `Electron` 是因为直接 `npx electron` 跑、没设 app name；真实运行按 app name 走，
+  这里要看的是「是不是真值」而不是具体值。
+- 渲染层 `ipcRenderer.sendSync('app:get-path', 'userData')` → 与主进程**完全一致**；`temp` 同理。
+- 空名 / 非法名 → 返回 `''`，**不伪造**（符合设计：取不到就返回空串并登记能力缺口）。
+
+⇒ `/mock-user-data` 那条路的替代通道已证实可用，§3.2 的「未验证」就此闭合。
+
+**未做的部分**：没有验证真实应用打包后（设了 app name、走了 `preload.cjs` 的通用 `ipc.sendSync`）
+的取值。本次是「同型通道」取证，不是端到端打包验证；若要完全闭合，需在打包产物上再跑一次。
+
+---
+
+按验收 R0-3 的口径：本报告结论只针对 §10 记录的 HEAD 这一状态；此后再有新增提交，需重新验收。

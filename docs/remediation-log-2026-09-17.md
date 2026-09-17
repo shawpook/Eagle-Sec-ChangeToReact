@@ -428,6 +428,7 @@ refs/remotes 目录: （空）
   （仅剩 2 条无害的 dangling blob/tree）。
 - 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`b3445c09`**
   （R2-5 收尾提交推送后复核，按 §8.3 刷新 `packed-refs` 后）；`ahead/behind = 0/0`。
+  其后的 `f2055dce` **只修改本表（时间线补记）**，代码与结论均未变，故以 `b3445c09` 为验收基准提交。
 - 5 个不可恢复的分支引用已按用户指示删除（SHA 存档见 §8.2）。
 - 遗留：`refs/stash` 悬空引用仍在（`2d705f0c` 对象已丢失），清不清由用户决定。
 

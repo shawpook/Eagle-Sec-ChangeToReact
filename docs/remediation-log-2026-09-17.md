@@ -418,13 +418,16 @@ refs/remotes 目录: （空）
 | `a2c17953` | R2-3：部署根四处耦合点的运行期探针 + 共享 `tests/deployment-root.mjs`（见 §13） | 5 文件 |
 | `7f57bd91` | `docs(remediation)`：R2-1 探查结论（结构性阻塞）+ 更正 GPU 环境结论 | — |
 | `30c400fd` | R2-5：L3 驱动与证据归档 + GPU 逃生口 + 两个环境根因取证（见 §15） | 4 文件，+384/−2 |
+| `7a98824f` | `docs(remediation)`：R2-5 落地后补时间线与仓库健康度（HEAD=`30c400fd`） | — |
+| `a4a8d5c8` | `docs(remediation)`：注明时间线补记提交只改本文件 | — |
+| `b3445c09` | `docs(remediation)`：R2-5 归档第 4 轮真实结果（L3 已跑完 107/107，见 §15.6）+ `run-l3-full.mjs` 解析修正与 `--reparse` | 2 文件，+137/−39 |
 
 **仓库健康度（最终复核）**：
 
 - `git fetch origin` 退出码 **0**（此前恒为 1）；`git fsck --connectivity-only` **0 错误**
   （仅剩 2 条无害的 dangling blob/tree）。
-- 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`30c400fd`**
-  （R2-5 推送后复核，按 §8.3 刷新 `packed-refs` 后）；`ahead/behind = 0/0`。
+- 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`b3445c09`**
+  （R2-5 收尾提交推送后复核，按 §8.3 刷新 `packed-refs` 后）；`ahead/behind = 0/0`。
 - 5 个不可恢复的分支引用已按用户指示删除（SHA 存档见 §8.2）。
 - 遗留：`refs/stash` 悬空引用仍在（`2d705f0c` 对象已丢失），清不清由用户决定。
 

@@ -32,3 +32,13 @@ tests-tmp/
 
 # 本地 agent 工作状态（与 .claude/.zcode 同类，不入库）
 .workbuddy/
+.zcode/
+.workbuddy-ai/
+
+# R4-2（2026-09-17）：vite 加载配置时产生的临时文件（异常退出会残留在工作区）
+frontend/vite.preview.config.mjs.timestamp-*.mjs
+
+# R4-2：运行应用时被写进**被跟踪的演示库**的运行期产物（不是源码，每次跑都会脏工作区）
+frontend/public/mock-library/**/mode.json
+frontend/public/mock-library/**/virtual-cache.json
+frontend/public/mock-library/**/backup/

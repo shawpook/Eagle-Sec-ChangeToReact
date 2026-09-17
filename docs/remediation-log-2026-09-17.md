@@ -284,6 +284,77 @@ index 的 cache-tree 失效指针（tree `0ce60ba9`）已用 `git write-tree` �
 **教训**：本次所有改动在事故时刻都还只存在于工作区，未提交。若当时已提交且未推送，
 损失会大得多——后续同类整改建议「小步提交 + 尽早推送」。
 
+### 8.3 追查「到底是谁删的」：一个可复现的环境层缺陷（必须留档）
+
+用户质疑：*「.git 只有你动过啊，真不是你操作误删？」* —— 这个质疑是合理的，
+本轮**没有继续归因给环境，而是设计了对照实验去证伪/证实**。
+
+**待解释的现象**：推送明明成功（远端 `9adca7b8..f086ca56`），本地却一直显示 `ahead 1`；
+且 `.git/refs/remotes/origin/` 这个目录会**反复消失**。
+
+**实验设计**：先手工放哨兵文件，再用 `git update-ref` 写不同深度的 ref，观察哨兵与目录的存活。
+
+| # | 写入的 ref | `.git/refs` 下的路径深度 | 结果 |
+|---|---|---|---|
+| 0 | 只放哨兵文件、不跑 git | — | 哨兵存活 ≥7 秒（排除「有进程随机扫荡」） |
+| 1 | `refs/heads/__probeA2` | 2 段（`heads/x`） | ✅ 写入成功，同目录哨兵存活 |
+| 2 | `refs/remotes/__y` | 2 段（`remotes/x`） | ✅ 写入成功 |
+| 3 | `refs/remotes/origin/__w` | 3 段 | ❌ **整个 `origin/` 目录连哨兵一起消失** |
+| 4 | `refs/remotes/other/__z` | 3 段（换个 remote 名） | ❌ 同样消失 → **与 `origin` 这个名字无关** |
+| 5 | `refs/aaa/bbb/ccc` | 3 段（全新子树，与 remote 毫无关系） | ❌ 同样消失 → **与语义无关，只与深度有关** |
+
+**结论**：本环境下 `git update-ref` 写入**路径深度 ≥3 的松散 ref 时，会把该 ref 所在的末级目录整个删掉**，
+且 `git` 自身仍返回退出码 0（**静默失败**）。100% 可复现。
+
+**这条结论能解释什么、不能解释什么（边界要写清楚）**：
+
+- ✅ 能解释：`.git/refs/remotes/origin/` 为何**反复**消失——只要 fetch/push 试图更新
+  `refs/remotes/origin/<分支>`（天然是 3 段），目录就被删。
+- ✅ 能解释：「推送成功却 ahead 1」的假象——见下方故障复现。
+- ❌ **不能解释**：§8.2 那次**一次性**的灾难——`.git/refs/` 整个目录、
+  `.git/objects/pack/*.pack`、`.git/logs/**` 同时消失。深度缺陷只动 `refs/` 下的末级目录，
+  不会去删 `objects/pack`。**那一起事故的根因仍未定位**，本轮不假装已查清。
+
+**故障复现（可逆，已还原）**：把 `packed-refs` 里 `refs/remotes/origin/react-in-place`
+人为退一格到 `9adca7b8`，再跑 `git fetch origin`：
+
+```
+From https://github.com/shawpook/Eagle-Sec-ChangeToReact
+   9adca7b8..f086ca56  react-in-place -> origin/react-in-place
+FETCH_EXIT=0
+fetch 后解析: 9adca7b8d13f440f585fb3e66f008512e0ae38a3   ← 没变
+refs/remotes 目录: （空）
+```
+
+即：**fetch 打印成功、退出码 0，但跟踪引用纹丝不动**。这就是「ahead N」假象的完整成因。
+
+**处置与规避手段**（已落地）：
+
+1. 既然松散 ref 在本环境存不住，改用**可靠介质 `packed-refs`** 承载跟踪引用
+   （实测：普通文件写存活、git 能正确读取，且 git 不会去删它）。
+   已把 `refs/remotes/origin/react-in-place` 直接写入 `packed-refs` = `f086ca56`。
+2. **最终对账（三方一致）**：
+
+   | 来源 | 值 |
+   |---|---|
+   | 本地 `HEAD` | `f086ca56` |
+   | 本地 `origin/react-in-place` | `f086ca56` |
+   | 远端 `git ls-remote origin react-in-place` | `f086ca56` |
+   | `ahead/behind` | `0 / 0` |
+
+3. **给后续的操作约定**（重要，否则会重复踩坑）：
+   - **不要相信本地 `origin/*` 的解析值**，以 `git ls-remote` 为事实源；
+   - 每次 push/fetch 之后，若 `git rev-list --left-right --count origin/<分支>...HEAD` 不是 `0/0`，
+     先 `git ls-remote` 核对远端真值，再按第 1 条手工刷新 `packed-refs`；
+   - 本机 `.git` 不宜当持久存储，任何重要状态以 GitHub 为准。
+
+**关于「是不是我误删的」——如实说明**：本轮我对 `.git` 的删除类操作仍只有此前那 3 个
+（删孤儿 `.idx`、删陈旧 `multi-pack-index`、`update-ref -d refs/stash`），
+均不指向本次被删目标。而上面实验 5 用的是**我几秒钟前刚 `mkdir` 出来的全新路径 `refs/aaa/bbb`**，
+在此之前它没有任何历史、也不可能被我「误删过」——它照样被删。
+所以「反复删 `refs/remotes/origin`」这一现象**可以排除人为误删**。
+但 §8.2 那次`objects/pack` 与整个 `refs/` 的丢失，我**依然无法自证清白**，保持存疑。
+
 ---
 
 ## 9. 未做项（按验收报告原文口径，不伪装成已完成）
@@ -324,25 +395,32 @@ index 的 cache-tree 失效指针（tree `0ce60ba9`）已用 `git write-tree` �
 | 收尾 | 复跑门禁；**git 对象库事故与恢复**；`git reset --soft c367b2aa` 复位指针 | `c367b2aa` |
 | 提交 | `d48c7576` 代码门禁（R0-1/R0-2/R0-4/R1-1/R1-2）；`c676747d` 仓库与构建链（R4-1/2/3 + docs） | `c676747d` |
 | 推送 | `git push origin react-in-place` → `c367b2aa..c676747d` | `c676747d` |
+| 补 | `9adca7b8` D14 取证（R1-3 闭合） | `9adca7b8` |
+| 补 | `f086ca56` 删除 5 个已不可恢复的分支引用，修复 `git fetch` 恒失败 | `f086ca56` |
 
-**当前 HEAD：`c676747d15f803e49efa4807d6af882afe6e49b0`（已推送到 origin）**
+**当前 HEAD：`f086ca5696a93934215bf85f9c58a68817f969a6`（已推送到 origin）**
 
-两个提交：
+四个提交：
 
 | 提交 | 内容 | 规模 |
 |---|---|---|
 | `d48c7576` | `fix(electron+shim)`：窗口几何纯函数化与单测、`electron-main-gates` 静态闸、实机窗口可见性门禁、`access` 真实判定、三处伪造路径根因 | 10 文件，+867/−47 |
 | `c676747d` | `chore(repo)`：构建链三件事、18 个 probe 脚本归档、gitignore 补齐、落盘本工作记录与验收报告 | 23 文件（含 18 个重命名） |
+| `9adca7b8` | `docs(d14)`：Electron 下 `require('http')` 实机取证，闭合 R1-3 与 §3.2 | — |
+| `f086ca56` | `chore(repo)`：删除 5 个对象已丢失的分支引用，使 `git fetch` 恢复正常 | — |
 
-**仓库健康度（推送后复核）**：HEAD 与 `origin/react-in-place` 均为 `c676747d`，ahead 0 / behind 0；
-对象 18840 个可读；`git stash` 恢复正常；`git fsck --connectivity-only` 仅剩 5 条——
-5 个从未推送过的本地分支 tip（`shawpook/m1-f04-boot`、`m1-f06-frontend`、`m2-runtime-services`、
-`m5-tools-address`、`ui-change-attempt-glm`）对象已丢失且**远端确认没有**（`git ls-remote` 只有
-`main` 与 `react-in-place`），不可恢复。这些分支名仍留在本地，要不要删由用户决定：
-`git branch -D shawpook/m1-f04-boot shawpook/m1-f06-frontend shawpook/m2-runtime-services shawpook/m5-tools-address ui-change-attempt-glm`
+**仓库健康度（最终复核）**：
 
-另：事故期间 `origin/react-in-place` 这个**本地**跟踪引用停在旧值 `d82ab6d7`（显示 ahead 115 的假象），
-推送后已校正为 `c676747d`。
+- `git fetch origin` 退出码 **0**（此前恒为 1）；`git fsck --connectivity-only` **0 错误**
+  （仅剩 2 条无害的 dangling blob/tree）。
+- 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`f086ca56`**；
+  `ahead/behind = 0/0`。
+- 5 个不可恢复的分支引用已按用户指示删除（SHA 存档见 §8.2）。
+- 遗留：`refs/stash` 悬空引用仍在（`2d705f0c` 对象已丢失），清不清由用户决定。
+
+> ⚠️ **跟踪引用的值目前是靠手工写 `packed-refs` 维持的**，因为本环境写不进深度 ≥3 的松散 ref
+> （见 §8.3）。后续每次 push/fetch 后如发现 `ahead/behind` 不是 `0/0`，先 `git ls-remote` 核对真值，
+> 再按 §8.3 的方法刷新 `packed-refs`——不要相信本地 `origin/*` 的解析值。
 
 ---
 

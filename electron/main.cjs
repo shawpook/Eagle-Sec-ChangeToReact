@@ -5,6 +5,15 @@ const https = require('node:https');
 const os = require('node:os');
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, screen, shell, Tray } = require('electron');
 
+// R2-5（2026-09-17 验收整改）：本机 GPU 进程在自动化会话下会反复崩溃
+// （`gpu_process_host.cc(991) GPU process exited unexpectedly` →
+// `gpu_data_manager_impl_private.cc(440) GPU process isn't usable. Goodbye.`），
+// Chromium 随即 FATAL 杀掉整个浏览器进程，表现为「Electron 类测试无故超时」。
+// `--in-process-gpu` 可绕过（把 GPU 放进浏览器进程）；**这里只在显式设置
+// EAGLE_ELECTRON_IN_PROCESS_GPU=1 时生效，生产默认完全不变**。
+// 逃生口仅用于本机跑自动化门禁；它改变的是渲染后端，故结论归档时必须注明（见工作记录 §15）。
+if (process.env.EAGLE_ELECTRON_IN_PROCESS_GPU === '1') app.commandLine.appendSwitch('in-process-gpu');
+
 const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
 const apiBase = process.env.EAGLE_API_URL || 'http://localhost:41695';
 // R1：工作台等 URL 从预览 URL 推导，生产态不再硬编码开发端口 5176。

@@ -1,4 +1,8 @@
 import { getWindowScope } from './scopeFace';
+// R1-4：本模块历史上真实发生过「空 catch 吞掉 ReferenceError → URL 静默变空串」的故障
+// （见下方 URL_MODULE 注释：详情原图无 URL → smoothZoom 不装载 → 交付闸门永不释放）。
+// 这一族 catch 全部改为上报，杜绝同类问题再次静默。
+import { reportSwallowed } from './swallowReport';
 /**
  * c1：FileUrlHelper 逐字移植（bundle 2287 起对象字面量提取；b1 数据面接管前置）。
  * 机械替换：$bodyScope → getWindowScope()（本窗作用域——子窗 preview-window 亦消费本模块，
@@ -33,7 +37,7 @@ export const FileUrlHelper = {
             if (!image || !image.name) return "";
             return path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/metadata.json`);
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getMetadataPath', err); }
     },
     getRawPath: function (image: any) {
         try {
@@ -41,7 +45,7 @@ export const FileUrlHelper = {
             let rawPath = path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
             return rawPath;
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getRawPath', err); }
     },
     getThumbnailPath: function (image: any) {
         try {
@@ -61,14 +65,14 @@ export const FileUrlHelper = {
                 return thumbnailPath;
             }
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getThumbnailPath', err); }
     },
     getThumbnailUrl: function (image: any) {
         try {
             var thumbnailPath = FileUrlHelper.getThumbnailPath(image);
             return URL_MODULE.pathToFileURL(thumbnailPath).href;
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getThumbnailUrl', err); }
     },
     getLastestThumbnailUrl: function (image: any) {
         try {
@@ -78,13 +82,13 @@ export const FileUrlHelper = {
             }
             return thumbnailUrl;
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getLastestThumbnailUrl', err); }
     },
     getRawUrl: function (image: any) {
         try {
             return URL_MODULE.pathToFileURL(FileUrlHelper.getRawPath(image)).href;
         }
-        catch (err) { }
+        catch (err) { reportSwallowed('FileUrlHelper.getRawUrl', err); }
     }
 }
 

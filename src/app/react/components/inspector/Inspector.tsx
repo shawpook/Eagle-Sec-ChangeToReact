@@ -1,4 +1,6 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
+// R1-4：格式插件 webview 的 create/run 发送失败若静默吞掉，表现为「插件面板永远空白」。
+import { reportSwallowed } from '../../core/swallowReport';
 // M6-3：格式插件 webview 的 preload 走**唯一**解析点（原先此处内联的惯用式恒产出 http:// URL）。
 import { resolveFormatExtensionPreloadFromHost } from '../../core/pluginFormatPreload';
 import React, { useEffect, useRef, useState } from 'react';
@@ -1006,7 +1008,9 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
           try {
             webview.send('plugin-create', plugin);
             webview.send('plugin-run');
-          } catch (err) {}
+          } catch (err) {
+            reportSwallowed('Inspector.formatPluginWebview.createRun', err);
+          }
         }, 100);
 
         clearInterval(st.heightInterval);

@@ -4,6 +4,8 @@
  * electronLog → window.electronLog 兜底 console。
  */
 import { ipcRenderer as ipcRendererFn } from '../global/eagleGlobals';
+// R1-4：IPC 发送失败若被静默吞掉，表现为「点了没反应」且无任何线索，是最难排查的一类。
+import { reportSwallowed } from './swallowReport';
 
 const ipcRenderer: any = ipcRendererFn();
 const electronLog: any = (window as any).electronLog || console;
@@ -17,7 +19,7 @@ export const IPCHelper = {
 			}
 		}
 		catch (err) {
-
+			reportSwallowed('IPCHelper.send', err);
 		}
 	},
 	sendTo: function (id: any, channel: any, params?: any, ignoreLogging: any = false) {
@@ -28,7 +30,7 @@ export const IPCHelper = {
 			}
 		}
 		catch (err) {
-
+			reportSwallowed('IPCHelper.sendTo', err);
 		}
 	}
 };;

@@ -6,6 +6,8 @@ import { getIpc } from '../detail/detailHooks';
 import { delegateTarget } from '../../utils/domQuery';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
+// R1-4：openPluginById 失败若静默吞掉，表现为「点了安装/打开插件却毫无反应」。
+import { reportSwallowed } from '../../core/swallowReport';
 
 import { openPluginCenterChannel, openPluginCenterDetailChannel, refreshPluginCenterChannel } from '../../global/bus';
 import { useMiscRawState } from '../../store/miscRawState';
@@ -604,7 +606,9 @@ export function PluginCenter() {
       await openRef.current();
       try {
         await openPluginById(pluginId);
-      } catch (e) {}
+      } catch (e) {
+        reportSwallowed('PluginCenter.onInstallPlugin.openPluginById', e);
+      }
       bumpAll();
 
       if (!rootRef.current.pluginDetails[pluginId]) {
@@ -651,7 +655,9 @@ export function PluginCenter() {
       await openRef.current();
       try {
         await openPluginById(pluginId);
-      } catch (e) {}
+      } catch (e) {
+        reportSwallowed('PluginCenter.openPluginCenterDetail.openPluginById', e);
+      }
       bumpAll();
     });
 

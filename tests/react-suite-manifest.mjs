@@ -42,6 +42,18 @@ export const REACT_SUITE = [
   // 本项补三道闸：落盘窗口几何必须经可见性对账、主进程依赖面快照（增删改 require 必须更新基线）、
   // 生产可达代码不得残留 /mock- 伪造路径常量；另附 webPreferences 安全面快照。
   'tests/electron-main-gates.mjs',
+  // R1-4（2026-09-17 验收整改 §12）：`swallowReport` 集中上报通道的契约测试
+  // （纯 Node + typescript 内存转译，无 Electron、秒级）。
+  // 守护「被吞掉的错误重新变得不可观测」——这个模块一旦坏是**静默地**坏，故必须有门禁。
+  // 覆盖零依赖装载、限流（同 key 前 3 次上报后只计数，防逐帧 catch 打爆日志）、
+  // 自身绝不抛错（含注入敌意 Map 的负向自证）、跨 realm 取 message、环形缓冲上限。
+  'tests/swallow-report.mjs',
+  // R1-4（2026-09-17 验收整改 §12）：空 catch **棘轮门禁**（纯 Node + AST，无 Electron、秒级）。
+  // 一次性清理数百处不现实，可持久的是「不再新增」：存量登记在基线里，
+  // 任何未带 /* @swallow: 理由 */ 的新增空 catch 一律判红；允许减少不允许增加。
+  // 含三条自保断言：扫描器失效（数量异常偏少）时门禁必须红而不是空洞变绿、
+  // 基线文件可用、上报通道零依赖。
+  'tests/empty-catch-gate.mjs',
   // R2：shim 模块跨模块标识符完整性（纯 Node + typescript CompilerHost，无 Electron、秒级）。
   // 拆分 core/shim/* 后，「标识符留在别的模块、此处未 import」是运行期 ReferenceError 的主因，
   // 且 @ts-nocheck 与打包器都不报——本项以剥离 nocheck 的类型检查精确拦截。
@@ -263,6 +275,8 @@ export const TEST_CLASSES = {
   'tests/boot-ready-sequence.mjs': 'static',
   'tests/electron-window-geometry.mjs': 'static',
   'tests/electron-main-gates.mjs': 'static',
+  'tests/swallow-report.mjs': 'static',
+  'tests/empty-catch-gate.mjs': 'static',
   'tests/image-ops-writeback.mjs': 'static',
   'tests/image-transform-dispatch.mjs': 'static',
   'tests/runtime-services-contract.mjs': 'static',

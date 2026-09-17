@@ -257,8 +257,19 @@ frontend/public/mock-library/**/backup/
 
 **不可恢复的损失**：
 
-- 5 个从未推送到远端的本地分支 tip：`shawpook/m1-f04-boot`、`m1-f06-frontend`、
-  `m2-runtime-services`、`m5-tools-address`、`ui-change-attempt-glm`。
+- 5 个从未推送到远端的本地分支 tip（**已按用户指示删除引用**，SHA 存档如下以备查证）：
+
+  | 分支 | 原 tip SHA |
+  |---|---|
+  | `shawpook/m1-f04-boot` | `e8a654a46da7511d4dfe9994dff76d0db5485e28` |
+  | `shawpook/m1-f06-frontend` | `bbea9c6b5c7a338f98b5b1ba00ce33ec7127abf9` |
+  | `shawpook/m2-runtime-services` | `e8b3d2b18b91fd41a06823a2cbc71f933fa1e8bc` |
+  | `shawpook/m5-tools-address` | `61e8fe1256ba01a6a1dadd2ede91de56a3ac2977` |
+  | `ui-change-attempt-glm` | `2778f99c462c11ab96db5a78a92e0f1e7bf25011` |
+
+  删除理由：这些 tip 的对象已丢失且 `git ls-remote` 确认远端没有，**引用本身已不可读**；
+  留着会让**每次 `git fetch` 都失败**（`fatal: bad object ...` → `did not send all necessary objects`），
+  导致远端跟踪引用永远无法自动更新。
   这些分支的内容若已合入 `react-in-place` 则不受影响（分支历史本身在远端/当前分支里），
   仅这 5 个 tip 提交对象及其独占内容丢失。
 - 1 个旧 stash（`2d705f0c`，本次会话**之前**产生的）：对象已不在，

@@ -411,12 +411,15 @@ refs/remotes 目录: （空）
 | `c676747d` | `chore(repo)`：构建链三件事、18 个 probe 脚本归档、gitignore 补齐、落盘本工作记录与验收报告 | 23 文件（含 18 个重命名） |
 | `9adca7b8` | `docs(d14)`：Electron 下 `require('http')` 实机取证，闭合 R1-3 与 §3.2 | — |
 | `f086ca56` | `chore(repo)`：删除 5 个对象已丢失的分支引用，使 `git fetch` 恢复正常 | — |
+| `9cf213e8` | （上一批收尾） | — |
+| `7a847a39` | R1-4：空 catch 全量清单 + 上报通道 + 棘轮门禁（见 §12） | — |
+| `a2c17953` | R2-3：部署根四处耦合点的运行期探针 + 共享 `tests/deployment-root.mjs`（见 §13） | 5 文件 |
 
 **仓库健康度（最终复核）**：
 
 - `git fetch origin` 退出码 **0**（此前恒为 1）；`git fsck --connectivity-only` **0 错误**
   （仅剩 2 条无害的 dangling blob/tree）。
-- 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`f086ca56`**；
+- 三方一致：本地 `HEAD` = 本地 `origin/react-in-place` = 远端 `git ls-remote` = **`a2c17953`**（R2-3 推送后复核）；
   `ahead/behind = 0/0`。
 - 5 个不可恢复的分支引用已按用户指示删除（SHA 存档见 §8.2）。
 - 遗留：`refs/stash` 悬空引用仍在（`2d705f0c` 对象已丢失），清不清由用户决定。

@@ -293,9 +293,13 @@ test('行为逐项等价性：重构前后对全部 34 个分支返回形态逐�
   assert.ok(typeof s7 === 'function', 'n-readlines 应为行读取器');
 
   // 8. appdata-path
+  // R1-2（2026-09-17）：不再返回硬编码的 /mock-user-data —— 该伪造路径会让「缩略图临时目录」
+  // 等派生路径一路流到业务里却指向不存在的目录。现在转调 desktopCapability.app.getPath 真值；
+  // 本沙箱无桌面桥（演示态），真值不可得时按 M2 显式降级为空串。
   const s8 = reg.requireModule('/src/my_modules/appdata-path');
   assert.equal(typeof s8, 'function');
-  assert.equal(s8(), '/mock-user-data');
+  assert.notEqual(s8(), '/mock-user-data', 'appdata-path 不得再返回伪造的用户数据目录');
+  assert.equal(s8(), '', '无桌面桥时真值不可得，返回空串并登记能力缺口');
 
   // 9. junk
   const s9 = reg.requireModule('/src/my_modules/junk');
@@ -317,10 +321,18 @@ test('行为逐项等价性：重构前后对全部 34 个分支返回形态逐�
   assert.equal(s12.check('dir'), false);
 
   // 13. access
+  // 13. access
+  // R1-1（2026-09-17）：修前三函数**恒 true**，而唯一活消费者 libraryDomain.ts 用它判断
+  // 库路径写权限——恒真等于该检查不存在。现在：有原生 fs → 真实 accessSync；无原生 fs 且非
+  // 演示态 → 抛错；演示态（本沙箱）保留 true 但**空路径一律抛错**，杜绝"什么都不传也放行"。
   const s13 = reg.requireModule('/src/my_modules/access');
-  assert.equal(s13.checkALCs(), true);
-  assert.equal(s13.checkAccess(), true);
-  assert.equal(s13.checkACL(), true);
+  assert.equal(s13.checkALCs('/mock/library'), true, '演示态无原生 fs，保留演示语义');
+  assert.equal(s13.checkAccess('/mock/library'), true);
+  assert.equal(s13.checkACL('/mock/library'), true);
+  for (const kind of ['checkALCs', 'checkAccess', 'checkACL']) {
+    assert.throws(() => s13[kind](''), /缺少待检查路径/, `${kind} 空路径必须明确失败，不得静默放行`);
+    assert.throws(() => s13[kind](undefined), /缺少待检查路径/);
+  }
 
   // 14. remainingFilenameLength.js
   const s14 = reg.requireModule('/src/app/js/utils/remainingFilenameLength.js');
@@ -423,7 +435,8 @@ test('可观测性契约：被截获请求记录结构化日志，不抛错且�
   assert.ok(records[0].timestamp > 0);
 
   assert.equal(records[1].pattern, '/my_modules/access');
-  assert.equal(records[1].category, 'stub-security');
+  // R1-1：access 已从恒 true 的替身升级为「真实权限判定门面」，分类随之改名。
+  assert.equal(records[1].category, 'facade-security');
 
   reg.resetInterceptedRequests();
   assert.equal(reg.getInterceptedRequests().length, 0);

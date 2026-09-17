@@ -32,6 +32,16 @@ export const REACT_SUITE = [
   // 覆盖未就绪期跨窗调用的可观测失败、装配顺序与「挂载/接管同处同步前缀」不变量、
   // 重复 startBoot/重复装载的幂等，以及 main.tsx 的静态接线（动态 import 保留但真正 await）。
   'tests/boot-ready-sequence.mjs',
+  // R0-1（2026-09-17 验收整改 §3.1）：窗口几何的**纯函数门禁**（纯 Node、秒级、无 Electron）。
+  // 守护「启动后窗口不见」那个缺陷：陈旧 window-state.json 把主窗建到屏幕外时，落盘几何必须被丢弃。
+  // 逻辑已抽到 electron/window-geometry.cjs（不依赖 electron 才能被穷举），main.cjs 只剩薄封装；
+  // 含负向自证（修复前实现必被判死）与接线自证（main.cjs 不得自带第二份实现）。
+  'tests/electron-window-geometry.mjs',
+  // R0-2（2026-09-17 验收整改 §3.1）：`electron/**` 的静态门禁（纯 Node、秒级、无 Electron）。
+  // 主进程此前不在任何门禁视野内（tsconfig 只收 React 子树、哨兵只扫 TS/TSX、全仓扫描不收 .cjs），
+  // 本项补三道闸：落盘窗口几何必须经可见性对账、主进程依赖面快照（增删改 require 必须更新基线）、
+  // 生产可达代码不得残留 /mock- 伪造路径常量；另附 webPreferences 安全面快照。
+  'tests/electron-main-gates.mjs',
   // R2：shim 模块跨模块标识符完整性（纯 Node + typescript CompilerHost，无 Electron、秒级）。
   // 拆分 core/shim/* 后，「标识符留在别的模块、此处未 import」是运行期 ReferenceError 的主因，
   // 且 @ts-nocheck 与打包器都不报——本项以剥离 nocheck 的类型检查精确拦截。
@@ -199,6 +209,12 @@ export const REACT_SUITE = [
   // 负向自证（Coordinator 独立实跑）：移除 webviewTag 后 constructorName=HTMLElement、
   // 无 guest、零 attach 事件、guestProbe=null → 0/4 通过、4 红。
   'tests/webview-tag-enabled.mjs',
+  // R0-4（2026-09-17 验收整改 §3.1）：窗口可见性的**实机**门禁（起真实 Electron，约 15s）。
+  // 与 --smoke 类冒烟的区别：它断言「主窗 bounds 与某个显示器工作区交叠 ≥ 阈值」，
+  // 而不只是「进程起得来」。测试向临时 userData 注入屏外几何（y=1262 的真实缺陷样本形态），
+  // 起真实主进程后读回最终 bounds；另有一组合法几何证明坐标不是被一律丢弃。
+  // 判据复用 electron/window-geometry.cjs，不在测试里抄第二份阈值。
+  'tests/electron-window-bounds.mjs',
   // M7-3：发布资产登记的**单一事实源**对账（纯 Node，秒级，无 Electron、不依赖 dist）。
   // 任务书 M7 点名两条：发布资产从整树 copy 改为登记驱动；必要资源复制失败即失败。
   // 本项钉住：清单必须显式登记 src/my_modules 且不得退回父目录整树条目、现存条目/
@@ -245,6 +261,8 @@ export const TEST_CLASSES = {
   'tests/react-ipc-bridge-routing.mjs': 'static',
   'tests/continuous-grid-layout.mjs': 'static',
   'tests/boot-ready-sequence.mjs': 'static',
+  'tests/electron-window-geometry.mjs': 'static',
+  'tests/electron-main-gates.mjs': 'static',
   'tests/image-ops-writeback.mjs': 'static',
   'tests/image-transform-dispatch.mjs': 'static',
   'tests/runtime-services-contract.mjs': 'static',
@@ -266,6 +284,8 @@ export const TEST_CLASSES = {
   'tests/plugin-format-preload.mjs': 'static',
   // 起 Vite dev（URL 为 /src/app/... 源码路径）并驱动真实 Electron 行为 → dev-probe。
   'tests/webview-tag-enabled.mjs': 'dev-probe',
+  // 起真实 Electron 主进程（不依赖 Vite dev 与源码路径），只校验窗口几何 → dev-probe。
+  'tests/electron-window-bounds.mjs': 'dev-probe',
   'tests/publish-asset-manifest.mjs': 'static',
   'tests/f08f09-action-supply-contract.mjs': 'static',
   'tests/image-transform-closed-loop.mjs': 'static',

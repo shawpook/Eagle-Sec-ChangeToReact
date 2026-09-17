@@ -23,6 +23,10 @@ const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery
 const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
 const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
 const regressionHostMode = process.argv.includes('--regression-host');
+// R0-4（2026-09-17 验收整改 §3.1）：窗口可见性的**实机**断言模式。
+// 与 --smoke 的区别：--smoke 只证明「进程起得来」，本模式把主窗 bounds 与当前全部显示器
+// 工作区一并打印，由 tests/electron-window-bounds.mjs 断言「窗口真的在可视区内」。
+const windowBoundsSmokeMode = process.argv.includes('--smoke-window-bounds');
 const dragSmokeMode = process.argv.includes('--smoke-drag') || process.env.EAGLE_DRAG_SMOKE === '1';
 // b1-9ae：后台窗通道族闭环 smoke——真实渲染层 ipcRenderer.send → main handler → backend
 // 数据面全链验证（duplicate-file/export-as-folder/export-images/regenerate-thumbnail/
@@ -175,39 +179,31 @@ function loadWindowState() {
 // 而本机虚拟屏只有 1920x1080（副屏被拔掉/分辨率改小/上一个窗口被拖到屏幕下缘都会留下这种
 // 陈旧几何），createWindow 原样沿用就把主窗整个建在可视区之外。
 // 判定：与任一显示器工作区的交叠在横纵两个方向都小于阈值即视为不可见，丢弃 x/y 交给系统居中。
-const MIN_VISIBLE_WINDOW_PX = 80;
+//
+// R0-1（2026-09-17，验收整改 §3.1）：判定逻辑已抽到 `electron/window-geometry.cjs` 的纯函数，
+// 由 `tests/electron-window-geometry.mjs` 穷举覆盖；此处只保留「取当前显示器」的薄封装。
+// 抽离前它住在 main.cjs 里，而 main.cjs 既不进 tsconfig 也不被任何静态门禁扫描，
+// 等于「删掉可见性校验」不会让任何门禁变红——这正是原缺陷能一路漏到用户手上的原因。
+const {
+  boundsVisibleEnough: boundsVisibleEnoughPure,
+  clampWindowState: clampWindowStatePure,
+} = require('./window-geometry.cjs');
 
-function boundsVisibleEnough(bounds) {
-  let displays = [];
+function currentDisplays() {
   try {
-    displays = screen.getAllDisplays();
+    return screen.getAllDisplays();
   } catch (err) {
     // app 尚未 ready 时拿不到 screen，此时不拦（真正的窗口创建都发生在 ready 之后）。
-    return true;
+    return [];
   }
-  if (displays.length === 0) return true;
-  return displays.some((display) => {
-    const area = display.workArea;
-    const overlapWidth = Math.min(bounds.x + bounds.width, area.x + area.width) - Math.max(bounds.x, area.x);
-    const overlapHeight = Math.min(bounds.y + bounds.height, area.y + area.height) - Math.max(bounds.y, area.y);
-    return overlapWidth >= MIN_VISIBLE_WINDOW_PX && overlapHeight >= MIN_VISIBLE_WINDOW_PX;
-  });
+}
+
+function boundsVisibleEnough(bounds) {
+  return boundsVisibleEnoughPure(bounds, currentDisplays());
 }
 
 function clampWindowState(saved) {
-  if (!saved || typeof saved !== 'object') return {};
-  const next = { ...saved };
-  if (typeof next.x !== 'number' || typeof next.y !== 'number') {
-    delete next.x;
-    delete next.y;
-    return next;
-  }
-  const width = typeof next.width === 'number' ? next.width : 1280;
-  const height = typeof next.height === 'number' ? next.height : 800;
-  if (boundsVisibleEnough({ x: next.x, y: next.y, width, height })) return next;
-  delete next.x;
-  delete next.y;
-  return next;
+  return clampWindowStatePure(saved, currentDisplays());
 }
 
 function normalizeClipboardPath(value) {
@@ -983,6 +979,18 @@ function registerIpc() {
     return true;
   });
 
+  // R1-2（2026-09-17 验收整改 §3.2）：渲染层取 app 路径真值的**同步**频道。
+  // 背景：渲染层的 `app.getPath('userData')` 此前恒返回 '/mock-user-data'（app 属主进程模块、
+  // 且本仓无 @electron/remote），于是「缩略图临时目录」等派生路径一律落在不存在的目录里，
+  // 且**看起来完全正常**。取不到时返回空串（而不是伪造路径），由 shim 侧显式登记能力缺口。
+  ipcMain.on('app:get-path', (event, name) => {
+    try {
+      const value = typeof name === 'string' ? app.getPath(name) : '';
+      event.returnValue = typeof value === 'string' ? value : '';
+    } catch (err) {
+      event.returnValue = '';
+    }
+  });
   ipcMain.on('window:query', (event, key) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) {
@@ -1836,7 +1844,7 @@ async function loadServicePlugins() {
   console.log(`Loaded service plugin: ${plugin.manifest.name} (${plugin.manifest.id})`);
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode || writePathSmokeMode || persistenceSmokeMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode || writePathSmokeMode || persistenceSmokeMode || windowBoundsSmokeMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -3669,6 +3677,21 @@ app.whenReady().then(async () => {
       clearTimeout(timeout);
       app.quit();
     });
+    return;
+  }
+  if (windowBoundsSmokeMode) {
+    // R0-4：把真实落盘几何喂给 createWindow（此时 userData 已被测试指向临时目录），
+    // 再把「最终 bounds + 全部显示器工作区」原样吐出，由测试侧判定可见性。
+    const savedBefore = loadWindowState();
+    const win = createWindow({ show: false });
+    const payload = {
+      saved: savedBefore,
+      bounds: win.getBounds(),
+      displays: screen.getAllDisplays().map((display) => display.workArea),
+      minVisiblePx: 80,
+    };
+    console.log(`WINDOW_BOUNDS_SMOKE ${JSON.stringify(payload)}`);
+    app.quit();
     return;
   }
   createWindow({ show: !smokeMode, persistState: true });

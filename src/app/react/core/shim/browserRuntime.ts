@@ -228,14 +228,53 @@ export class BrowserBuffer extends Uint8Array {
   }
 }
 
+/**
+ * 原生 `node:os` 的消费面（只声明本模块用到的两个路径函数）。
+ *
+ * R1-2（2026-09-17 验收整改 §3.2）：`tmpdir/homedir` 修前分别恒返回 `/mock-tmp` 与
+ * `/mock-user-data`——Electron 生产态下同样返回这两个**不存在的路径**，且看起来完全正常。
+ * 现改为：有原生 os 桥时给真值；没有时返回空串（不可得就是不可得），不再伪造路径。
+ */
+interface NativeOsFace {
+  tmpdir?: () => string;
+  homedir?: () => string;
+}
+
+let nativeOs: NativeOsFace | null = null;
+let nativeOsProbed = false;
+
+function getNativeOs(): NativeOsFace | null {
+  if (nativeOsProbed) return nativeOs;
+  nativeOsProbed = true;
+  if (!isElectronRuntime || !nativeRequire) return null;
+  try {
+    nativeOs = (nativeRequire('node:os') as NativeOsFace) || null;
+  } catch (err) {
+    nativeOs = null;
+  }
+  return nativeOs;
+}
+
+function nativeOsPath(key: 'tmpdir' | 'homedir'): string {
+  const os = getNativeOs();
+  const fn = os ? os[key] : null;
+  if (typeof fn !== 'function') return '';
+  try {
+    const value = fn.call(os);
+    return typeof value === 'string' ? value : '';
+  } catch (err) {
+    return '';
+  }
+}
+
 export const osModule = {
   platform: 'win32',
   arch: 'x64',
   type: () => 'Windows_NT',
   hostname: () => 'EAGLE-REVERSE',
   release: () => '10.0.22631',
-  tmpdir: () => '/mock-tmp',
-  homedir: () => '/mock-user-data',
+  tmpdir: () => nativeOsPath('tmpdir'),
+  homedir: () => nativeOsPath('homedir'),
   EOL: '\n',
   cpus: () => [],
   totalmem: () => 0,

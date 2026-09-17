@@ -15,12 +15,12 @@
  *    （原版 `src/app/js/plugin/index.js` 依赖 Angular 运行时，真实执行会抛错导致静默降级）。
  * 4. 可观测性：每次截获均结构化记录入 {@link interceptedRequests}，供诊断面板与契约测试查询。
  */
-import { isElectronRuntime, nativeFs, nativePath, nativeRequire } from "./environment";
+import { isDemoRuntime, isElectronRuntime, nativeFs, nativePath, nativeRequire } from "./environment";
 import {
   BrowserBuffer, JsonRestServerStub, dirname, electronLog, fsModule, genericStub,
   lineByLineMock, osModule, pathModule, pluginModule, syncText, urlModule,
 } from "./browserRuntime";
-import { electron, remote, writeFileAtomic } from "./desktopCapability";
+import { app, electron, remote, writeFileAtomic } from "./desktopCapability";
 import { MockI18n, electronSettings, readSetting, writeSetting } from "./settingsI18n";
 
 /** 宿主 window 扩展面（纯类型窄化，经 hostWindow 读取，不借助 any 传播）。 */
@@ -146,6 +146,47 @@ function normalizeUrlPath(input: string): string {
     out.push(part);
   }
   return '/' + out.join('/');
+}
+
+/** 原生 fs 的 `accessSync` 消费面（只声明权限判定用到的成员，不做全量镜像）。 */
+interface NativeAccessFs {
+  accessSync?: (target: string, mode?: number) => void;
+  constants?: { W_OK?: number };
+}
+
+/**
+ * R1-1（2026-09-17 验收整改 §3.2）：`/my_modules/access` 的真实权限判定。
+ *
+ * 修前 `checkALCs/checkAccess/checkACL` **恒返回 true**，而它唯一的活消费者
+ * `libraryDomain.ts:1117` 用它判断「当前库路径有没有写权限」——恒真等于这道检查在生产中
+ * 根本不存在（库落在只读位置/被 ACL 拒绝时不会有任何提示）。
+ *
+ * 现在的三态：
+ *  1. 有原生 fs 桥（Electron 生产态）→ 真实 `accessSync(path, W_OK)`，真结果；
+ *  2. 无原生 fs 桥且是真实业务态（browser-connected）→ **抛错**，不允许静默放行；
+ *  3. 无原生 fs 桥且是演示态 → 保留旧值 true：演示态的库是内存 seed、本就没有文件系统，
+ *     此处返回 true 属演示语义；真实业务态永远走不到这条分支。
+ */
+function checkPathWritable(kind: string, target: unknown): boolean {
+  const targetPath = typeof target === 'string' ? target.trim() : '';
+  if (!targetPath) {
+    throw new Error(`[eagle-shim] ACCESS.${kind}: 缺少待检查路径；权限判定无法给出结论时不返回静默 true`);
+  }
+  const fs = nativeFs as NativeAccessFs | null;
+  if (!fs || typeof fs.accessSync !== 'function') {
+    if (isDemoRuntime()) return true;
+    throw new Error(
+      `[eagle-shim] ACCESS.${kind} 不可用：当前运行态没有原生 fs 桥，无法判定 "${targetPath}" 的权限`
+      + '（按 M2「能力缺失即明确失败」，不再返回恒 true）',
+    );
+  }
+  const mode = (fs.constants && fs.constants.W_OK) || 2;
+  try {
+    fs.accessSync(targetPath, mode);
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 /**
@@ -298,9 +339,9 @@ export const INTERCEPT_TABLE: readonly InterceptEntry[] = [
   },
   {
     pattern: '/my_modules/appdata-path',
-    category: 'stub-runtime',
-    reason: '应用用户数据目录获取函数（固定返回 /mock-user-data）',
-    resolve: () => () => '/mock-user-data',
+    category: 'facade-desktop',
+    reason: 'R1-2（2026-09-17）：应用用户数据目录——转调 desktopCapability.app.getPath(\'userData\') 真值，不再返回硬编码的 mock 用户数据目录',
+    resolve: () => () => app.getPath('userData'),
   },
   {
     pattern: '/my_modules/junk',
@@ -337,9 +378,13 @@ export const INTERCEPT_TABLE: readonly InterceptEntry[] = [
   },
   {
     pattern: '/my_modules/access',
-    category: 'stub-security',
-    reason: '权限检查模块替身（checkALCs/checkAccess/checkACL 恒返回 true）',
-    resolve: () => ({ checkALCs: () => true, checkAccess: () => true, checkACL: () => true }),
+    category: 'facade-security',
+    reason: 'R1-1（2026-09-17）：权限检查门面——有原生 fs 时做真实可写判定，无原生 fs 且非演示态即明确抛错（不再恒 true）',
+    resolve: () => ({
+      checkALCs: (target: unknown) => checkPathWritable('checkALCs', target),
+      checkAccess: (target: unknown) => checkPathWritable('checkAccess', target),
+      checkACL: (target: unknown) => checkPathWritable('checkACL', target),
+    }),
   },
   {
     pattern: '/app/js/utils/remainingFilenameLength.js',

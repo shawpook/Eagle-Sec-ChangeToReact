@@ -88,6 +88,13 @@ interface DesktopCapabilityBridge {
   readonly dialog?: DesktopDialogFace | null;
   readonly item?: DesktopItemFace | null;
   readonly clipboard?: DesktopClipboardFace | null;
+  /** 通用 IPC 面（`preload.cjs:80-89`），R1-2 起用于向主进程取 `app.getPath` 真值。 */
+  readonly ipc?: DesktopIpcFace | null;
+}
+
+/** 通用 IPC 面的本模块消费成员（只声明用到的 `sendSync`）。 */
+interface DesktopIpcFace {
+  sendSync?(channel: string, ...args: unknown[]): unknown;
 }
 
 /** `library.updateStructure` 的入参（消费点见本文件 `writeFileAtomic`，逐字保留原实参）。 */
@@ -378,15 +385,30 @@ export const currentWindow = {
  *  - 既有 preload 面 `eagleDesktop.getAppInfo()`（`preload.cjs:61`）只回
  *    `{name,version,electron,platform}`，不含路径与 `isPackaged`，且为异步
  *    （`app.getPath` 是同步契约，改签名会波及既有消费者）。
- * 真值不可得时按调研 §E.5 同款做法**显式降级**：登记缺口 + 单次告警，并保留既有回落值
- * 使真实流程不中断。补真值须改 `electron/preload.cjs` / `electron/main.cjs`（本批不可触碰）→ 遗留清单。
+ *
+ * ── R1-2（2026-09-17 验收整改 §3.2）：真值通道已补上 ──
+ * 主进程新增同步频道 `app:get-path`（`electron/main.cjs` 的 `ipcMain.on` 处理器，
+ * 经 `preload.cjs:88` 既有的通用 `ipc.sendSync` 直达），渲染层因此能在**同步契约不变**的
+ * 前提下拿到真实 `userData` 等路径。取不到时才按调研 §E.5 显式降级：登记缺口 + 单次告警，
+ * 并返回**空串**——修前返回 `/mock-user-data` 会让「缩略图临时目录 = 不存在的路径」这类
+ * 伪造值一路流到业务里，比空串更难排查。
  */
 function appPathGap(capability: string) {
   warnCapability(capability, '渲染层无 app 真值来源（app 为主进程模块、无 @electron/remote）；需 preload 补路径 IPC');
 }
 
-/** 演示态 / 无真值来源时的路径回落（与修前逐字一致，仅在降级后使用）。 */
-const APP_PATH_FALLBACK = '/mock-user-data';
+/** 同步取主进程 `app.getPath(name)` 的真值；不可得返回 `undefined`，由调用方显式降级。 */
+function appPathFromMain(name: string): string | undefined {
+  const ipc = desktopBridge && desktopBridge.ipc;
+  const sendSync = ipc ? ipc.sendSync : null;
+  if (typeof sendSync !== 'function') return undefined;
+  try {
+    const value = sendSync.call(ipc, 'app:get-path', name);
+    return typeof value === 'string' && value ? value : undefined;
+  } catch (err) {
+    return undefined;
+  }
+}
 
 export const app = {
   get isPackaged() {
@@ -397,6 +419,9 @@ export const app = {
     return false;
   },
   getPath(name: string) {
+    // R1-2：真值优先——主进程同步频道（生产态唯一可靠来源）。
+    const fromMain = appPathFromMain(name);
+    if (fromMain) return fromMain;
     const nativeApp = nativeElectronExport('app');
     const nativeGetPath = nativeMethod<[string]>(nativeApp, 'getPath');
     if (nativeGetPath) {
@@ -408,7 +433,7 @@ export const app = {
       }
     }
     appPathGap(`app.getPath(${String(name || 'unknown')})`);
-    return APP_PATH_FALLBACK;
+    return '';
   },
   getLocale: () => 'zh-CN',
   getName: () => 'Eagle',

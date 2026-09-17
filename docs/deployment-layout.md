@@ -3,7 +3,15 @@
 > 本文件固化「生产部署副本必须长成什么形状」这一契约。它源自用户裁决 **D34：固化部署根布局，不改产品代码**
 > ——即 M8-1 隔离部署门禁发现的四处「运行时资源根与发布清单落点不同根」，由**布局**收敛，不由改产品代码收敛。
 >
-> 门禁实现：`tests/isolated-deployment.mjs`（本文件每条契约在那里都有**会失败**的断言，不是打印登记）。
+> 门禁实现（两层，缺一不可）：
+> - `tests/isolated-deployment.mjs`——**静态布局**断言：本文件每条契约在那里都有**会失败**的断言，不是打印登记。
+>   另含「实际读了什么」的文件访问探针（起完整生产栈 + Electron，重）。
+> - `tests/deployment-root-runtime-probe.mjs`——**运行期**断言（R2-3）：在真实部署根里起真实后端，
+>   发真实 HTTP 请求，断言四处耦合点在**运行期**解析出的绝对路径落在部署根内、且读到的是**部署根里那一份**。
+>   只起后端、不起 Electron，秒级～分钟级；单独跑（与其它自起后端的测试争端口）。
+>
+> 两层的分工：静态层证明「把路径拼出来时存在」，运行期层证明「跑起来时真的解析到了部署根里那一份」。
+> `projectRoot` 若哪天被指回源工作区，静态层照样绿，只有运行期层会红。
 
 ---
 
@@ -122,7 +130,14 @@ const formatExtensionPreloadPath = path.join(
 | --- | --- | --- | --- | --- |
 | ① | `electron/preload.cjs:14-16`（锚点 `:15`） | `path.join(__dirname, '..', 'src', 'app', 'js', 'plugin', 'api-format-extension.js')` | `<部署根>/src/app/js/plugin/api-format-extension.js` | file |
 | ② | `backend/src/server.js:1489`、`backend/src/server.js:2483` | `path.join(projectRoot, 'src/app/collect-window/assets/images/base/icons/default-library-icon.png')` | `<部署根>/src/app/collect-window/assets/images/base/icons/default-library-icon.png` | file |
-| ③ | `backend/src/server.js:3264-3267` | `resolveThumbnailPath` 的 `roots = [path.join(projectRoot, 'frontend/public'), path.join(projectRoot, 'src')]` | `roots[1]` → `<部署根>/src`（`/src/...` 虚拟路径的解析根）；`roots[0]` → `<部署根>/frontend/public` | dir ×2 |
+| ③ | `backend/src/server.js:3264-3267` | `resolveThumbnailPath` 的 `roots = [path.join(projectRoot, 'frontend/public'), path.join(projectRoot, 'src')]` | `roots[0]` → `<部署根>/frontend/public`（`/mock-library/...` 虚拟前缀的解析根）；`roots[1]` → `<部署根>/src`；**两者同时是 `:3280` 绝对路径白名单的成员** | dir ×2 |
+
+> **③ 的校正（R2-3 运行期实测）**：`roots` 的 `/src/...` 虚拟前缀**实际是死的**——
+> `:3269-3270` 对 `/src/X` 取 `slice(1)` 得 `src/X`，再与 `roots[1] = <root>/src` 拼接 ⇒ 找的是
+> `<root>/src/src/X`，恒不命中（`roots[0]` 侧同理为 `<root>/frontend/public/src/X`）。
+> 现网无调用方（缩略图 URL 由 `FileUrlHelper.getThumbnailUrl` 产成**库内绝对路径**，走 `:3280` 的白名单分支），
+> 故该缺陷**休眠**；已按现状钉在 `tests/deployment-root-runtime-probe.mjs` 的 `DORMANT_BRANCHES` 里
+> （行为一变就红）。本表不再把 `/src/...` 写作 ③ 的解析目标。
 | ④ | `backend/src/library-store.js:110` | `path.join(projectRoot, value.replace(/^\//, ''))`，其中 `value` 起手 `/src/` | `<部署根>/src/...`（如 `/src/package.json` → `<部署根>/src/package.json`） | dir（代表路径为 file） |
 
 逐条用途：
@@ -195,3 +210,39 @@ const formatExtensionPreloadPath = path.join(
 
 > 为什么不能靠 grep：四处耦合点的路径字符串在源码里**依然存在且是正确的**——它们指向的
 > `projectRoot/src/...` 是相对表达，源码里 grep 不到任何绝对路径。布局对不对，只有「实际读到了什么」说了算。
+
+---
+
+## 7. R2-3：四处耦合点的**运行期**探针
+
+§6 第 1 层是**静态**的：把 `path.join(...)` 的结果 `existsSync` 一下。它证明「拼出来的路径存在」，
+证明不了「运行期真的解析到了部署根里那一份」——`projectRoot` 若被指回源工作区，静态层照样绿。
+
+`tests/deployment-root-runtime-probe.mjs` 补的就是这一层（R2-3，2026-09-17）。做法：
+
+1. 按同一份 `DEPLOYMENT_TREE`（已抽到 `tests/deployment-root.mjs`，两个门禁共用一份，防止漂移）构造部署根；
+2. 往部署根里写**哨兵**——只有部署根才有的内容：
+   把默认库图标换成一张 1×1 PNG、在 `src/__probe__/` 放一个哨兵缩略图与一个哨兵 `.library`；
+3. **在部署根里起真实后端进程**（`projectRoot = <backend>/../..` ⇒ 自动等于部署根），发真实 HTTP 请求；
+4. 断言每条耦合点**运行期吐回来的字节/路径与哨兵一致**——源工作区没有这些哨兵，
+   解析根一旦漂移就是 404 或字节不符。
+
+四条与哨兵/判据的对应：
+
+| # | 运行期怎么探 | 判据 |
+| --- | --- | --- |
+| ① | `vm` 真实装载 `<部署根>/electron/preload.cjs`（桩掉 electron 桥、注入真实 `__dirname`），真实调用 `formatExtensionPreload()` | `ok:true` 且 `diskPath` == `<部署根>/src/app/js/plugin/api-format-extension.js` |
+| ② | `GET /api/library/icon` 与 `GET /api/v2/library/icon` | 200 + `image/png` + 字节 == 部署根哨兵图标 |
+| ③ | 缩略图服务 `/file/<encoded>`：虚拟前缀 `/mock-library/...`（`roots[0]`）、部署根内绝对路径（白名单）、**部署根外绝对路径（必须拒收）** | 200 + 字节 == 哨兵；越界那条必须 404 |
+| ④ | `POST /api/library/switch { libraryPath: '/src/__probe__/DeployRootProbe.library' }` | 200 且 `data.path` == `<部署根>/src/__probe__/DeployRootProbe.library` |
+
+**两条负向自证**（`EAGLE_DEPLOY_PROBE_NEGATIVE=...`，都必须把脚本跑红）：
+
+- `missing-src`：把部署根的 `src/` 段挪走 ⇒ 四条**全部**必须判红（任何一条还绿，说明它没真正锚在部署根上）；
+- `anchor-source`：后端改在**源工作区**启动 ⇒ ②③④ 必须判红（哨兵只在部署根），而 **① 必须仍然通过**
+  ——它的锚点是 `__dirname`，本就不该随 cwd 漂移。这条自证同时说明 ① 与 ②③④ 的锚点性质不同。
+
+覆盖完整性：探针的覆盖集合与 `RUNTIME_ROOT_GAPS` 的登记集合**必须相等**，
+多一条少一条都判红 ⇒ 新增第五处耦合点而探针没跟上时，门禁立刻红。
+
+用法：`npm run build && node tests/deployment-root-runtime-probe.mjs`（**单独跑**，会自起后端）。

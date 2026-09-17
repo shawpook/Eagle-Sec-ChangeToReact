@@ -22,7 +22,8 @@
 | R1-2 六项替身 / `/mock-user-data` | ⚠️ 部分 | 只做 `app.getPath('userData')` 真值这条根因；其余转未做项 |
 | R1-3 D14 取证 | ✅ | 已实机取证，见 §11 |
 | R1-4 空 catch 分类 | ✅ | 538 处全量清单 + 11 处改为上报 + 棘轮门禁，见 §12 |
-| R2-* 运行证据（插件/RAW/部署根/L3 全量） | ❌ | 需真机长跑，转未做项 |
+| R2-3 部署根四处耦合点的**运行期**探针 | ✅ | 新增 `tests/deployment-root-runtime-probe.mjs`，见 §13 |
+| R2-1/R2-2/R2-4/R2-5 运行证据（插件 / RAW 样本 / flaky 归零 / L3 全量） | ❌ | 需真实样本与真机长跑，转未做项 |
 | R3-* 架构债 | ❌ | 体量过大，转未做项 |
 | R4-1 probe 脚本归档 | ✅ | 移出 `tests/` |
 | R4-2 gitignore | ✅ | |
@@ -362,12 +363,13 @@ refs/remotes 目录: （空）
 > R1-3（D14 取证）**已于 §11 完成实机取证**，已从下表移除。
 > R1-4（空 catch 分类）**已于 §12 完成**：全量清单见 `docs/r1-4-empty-catch-inventory.md`，
 > 已从下表移除；但其中「遗留层待接线 / 待逐项裁决」的部分如实保留在清单里，不伪装成已完成。
+> R2-3（部署根运行期探针）**已于 §13 完成**，已从下表移除；
+> 但 `isolated-deployment.mjs` 本身（起完整生产栈 + Electron）在本环境仍未实跑，见 §13.6。
 
 | # | 验收原文要点 | 未做原因 |
 |---|---|---|
 | R2-1 | 造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通（含 guest 内 preload 真实执行、加载失败、退出清理） | 需造插件 + 实机 |
 | R2-2 | 准备 RAW / TIFF / HEIF / UDOC 真实样本，跑通解码矩阵 | 缺样本 |
-| R2-3 | 部署根四处耦合点补运行期探针（当前只有静态布局断言），覆盖 `/api/library/icon` 与缩略图解析根 | 需运行期改造 |
 | R2-4 | 处理 `screenshot-regression` 3/16 既有红、`main-ui-workflow` 的 IPC 超时抖动、`thumbnail-task` 的端口黑名单 flaky | 既有的三项不稳定，需复现条件 |
 | R2-5 | 跑一次真正的 L3 全量（102 + 6 + 7）并归档结果；**必须在普通终端跑**（沙箱内 CDP 类测试必失败） | 需普通终端长跑 |
 | R3-1 | 拆 `tsconfig`：为 Electron 主进程、Node 脚本、扩展、Worker 各建独立配置并分批纳入门禁 | 体量大 |
@@ -564,5 +566,94 @@ Emscripten 产物 `dcraw.js` 与 `libheif.js`。排除后**第一方生产代码
   散落着若干「用户操作后无反应」的吞错，也混着可选读取，需逐处确认是否有后备路径后再定。
 
 ---
+
+---
+
+## 13. R2-3 · 部署根四处耦合点的**运行期**探针
+
+### 13.1 验收报告点的是什么
+
+`docs/audit-verification-2026-09-17.md` §R2-3：四处「解析根不一致」耦合点
+（`preload-format-extension` / `library-default-icon` / `thumbnail-resolve-roots` /
+`library-store-src-mapping`）**只有静态存在性断言，运行期探针覆盖为零**。
+
+核对属实：`tests/isolated-deployment.mjs` 对这四条的判据是
+`assertDeploymentLayout()` 里的 `path.join(部署根, …)` + `existsSync` —— 它证明的是
+「**把路径拼出来时存在**」，不是「**运行期真的解析到了部署根里那一份**」。
+`projectRoot = path.resolve(<backend/src>, '../..')`，若哪天被指回源工作区，静态断言照样绿。
+
+### 13.2 怎么做
+
+新增 `tests/deployment-root-runtime-probe.mjs`（只起后端、不起 Electron，约 30～60 秒）：
+
+1. 按**同一份** `DEPLOYMENT_TREE` 构造部署根。为此把 `DEPLOYMENT_TREE` / `RUNTIME_ROOT_GAPS` / `copyTree`
+   从 `isolated-deployment.mjs` 抽到 **`tests/deployment-root.mjs`**（单一事实源）——
+   两份清单一旦漂移，「隔离门禁绿的布局」与「运行期探针绿的布局」就不是同一个东西。
+2. 往部署根写**哨兵**：把默认库图标换成一张只有部署根才有的 1×1 PNG、在 `src/__probe__/`
+   放哨兵缩略图与哨兵 `.library`。源工作区没有它们 ⇒ 解析根一漂移就是 404 或字节不符。
+3. 在部署根里起真实后端进程，发真实 HTTP 请求；断言「吐回来的东西 == 部署根哨兵」。
+
+四条各自的运行期入口与判据：
+
+| # | 入口 | 判据 |
+| --- | --- | --- |
+| ① | `vm` 真实装载 `<部署根>/electron/preload.cjs`（桩 electron 桥、注入真实 `__dirname`），真实调用 `formatExtensionPreload()` | `ok:true` 且 `diskPath` == `<部署根>/src/app/js/plugin/api-format-extension.js` |
+| ② | `GET /api/library/icon`、`GET /api/v2/library/icon` | 200 + `image/png` + 字节 == 哨兵 |
+| ③ | 缩略图服务 `/file/<encoded>`：`/mock-library/...`（`roots[0]` 虚拟前缀）、部署根内绝对路径（白名单）、**部署根外绝对路径（必须拒收）** | 前两条 200 且字节 == 哨兵；越界那条必须 404 |
+| ④ | `POST /api/library/switch { libraryPath: '/src/__probe__/DeployRootProbe.library' }` | 200 且 `data.path` == `<部署根>/src/__probe__/DeployRootProbe.library` |
+
+实测结果：`4/4` 通过（`DEPLOY_ROOT_RUNTIME_PROBE_OK {"covered":"4/4",…}`）。
+
+### 13.3 两条负向自证（都必须把脚本跑红）
+
+| 模式 | 破坏 | 预期 |
+| --- | --- | --- |
+| `EAGLE_DEPLOY_PROBE_NEGATIVE=missing-src` | 把部署根 `src/` 段挪走 | 四条**全部**判红（任何一条还绿 ⇒ 它没真锚在部署根上） |
+| `EAGLE_DEPLOY_PROBE_NEGATIVE=anchor-source` | 后端改在**源工作区**启动 | ②③④ 判红；**① 仍通过** |
+
+`missing-src` 实测四条全红 ✅。`anchor-source` 实测：②③④ 红、① 绿 ✅——
+这条自证同时说明 **① 与 ②③④ 的锚点性质不同**（`__dirname` vs `projectRoot`），不是同一类断言。
+
+覆盖完整性另有一道断言：探针覆盖集合必须与 `RUNTIME_ROOT_GAPS` 登记集合**相等**，
+多一条少一条都判红 ⇒ 将来新增第五处耦合点而探针没跟上，门禁立刻红。
+
+### 13.4 顺带挖出一个休眠缺陷（未修，已按现状钉住）
+
+③ 的 `/src/...` **虚拟前缀实际是死的**：`server.js:3269-3270` 对 `/src/X` 取 `slice(1)` 得 `src/X`，
+再与 `roots[1] = <root>/src` 拼接 ⇒ 找的是 `<root>/src/src/X`，恒不命中（`roots[0]` 侧同理）。
+推演（可复算）：
+
+```
+/src/app/x.png        -> <root>/frontend/public/src/app/x.png | <root>/src/src/app/x.png
+/mock-library/a/b.png -> <root>/frontend/public/mock-library/a/b.png | <root>/src/mock-library/a/b.png
+```
+
+现网无调用方：缩略图 URL 由 `FileUrlHelper.getThumbnailUrl` 产成**库内绝对路径**
+（`preload.cjs` 的 `thumbnailUrl` → `<thumbnailBase>/file/<encodeURIComponent(绝对路径)>`），
+走的是 `server.js:3280` 的**白名单分支**（`roots` 在那里是 allowlist，不是前缀基）——所以缺陷休眠。
+
+处置：**不改产品代码**（仍守 D34 口径），改两处文档——
+`docs/deployment-layout.md` §4 的表格不再把 `/src/...` 写作 ③ 的解析目标；
+`tests/deployment-root-runtime-probe.mjs` 的 `DORMANT_BRANCHES` 把**现状（404）钉住**，
+行为一变就红（既防改坏没人知道，也防修好没人知道）。
+若将来要修（把 `rel` 改成 `decoded.replace(/^\/src\//, '')`，或把 `roots[1]` 改成 `projectRoot`），
+需**先确认调用方**，因为白名单分支同时依赖 `roots` 的现有取值。
+
+### 13.5 这一批动过的文件
+
+- 新增：`tests/deployment-root.mjs`（共享：部署清单 / 四处耦合点 / 构造过程）
+- 新增：`tests/deployment-root-runtime-probe.mjs`（运行期探针，含两条负向自证）
+- 改：`tests/isolated-deployment.mjs`——删掉本地 `DEPLOYMENT_TREE` / `RUNTIME_ROOT_GAPS` / `copyTree`，
+  改为 import 共享模块。**已逐字比对**：三块内容与 `git show HEAD:` 的原文 `diff` 结果为空（`IDENTICAL`），
+  仅去掉/加上 `export` 关键字。
+- 改：`docs/deployment-layout.md`——门禁由一层变两层，新增 §7；§4 表格校正 ③。
+
+### 13.6 仍未覆盖的
+
+- `isolated-deployment.mjs` 本身（起完整生产栈 + Electron）在本环境跑不完（历史记录：15～22 分钟无结论），
+  本次**未实跑**；本批对它的改动只做了「逐字等价」校验 + `node --check`。要确证需在有头终端跑一次。
+- ① 仍不是「Electron 真的把 preload 装进 webview」——那是 R2-1（造真实插件 + M6-4 三处 webview 端到端）的活。
+  本探针证明的是「preload 自己算出来的磁盘路径就是部署根里那一份」。
+
 
 按验收 R0-3 的口径：本报告结论只针对 §10 记录的 HEAD 这一状态；此后再有新增提交，需重新验收。

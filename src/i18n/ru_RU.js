@@ -131,7 +131,6 @@
 	"appmenu.help>installExtension": "Расширения для браузеров",
 	"appmenu.help>license-retrieval": "Восстановить лицензию",
 	"appmenu.help>openTips": "Показать руководство ",
-	"appmenu.help>privacy": "Политика конфиденциальности",
 	"appmenu.help>roadmap": "Карта развития",
 	"appmenu.help>shortcuts": "Горячие клавиши",
 	"appmenu.help>tips": "Советы и рекомендации",

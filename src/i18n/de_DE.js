@@ -131,7 +131,6 @@
 	"appmenu.help>installExtension": "Erweiterungen installieren",
 	"appmenu.help>license-retrieval": "Lizenz wiederherstellen",
 	"appmenu.help>openTips": "Lernprogramm ansehen",
-	"appmenu.help>privacy": "Datenschutz",
 	"appmenu.help>roadmap": "Entwicklungs-Roadmap",
 	"appmenu.help>shortcuts": "Tastenkombinationen",
 	"appmenu.help>tips": "Tipps und Tricks",

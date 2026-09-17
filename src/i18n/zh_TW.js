@@ -131,7 +131,6 @@
 	"appmenu.help>installExtension": "安裝瀏覽器擴充",
 	"appmenu.help>license-retrieval": "找回產品序號",
 	"appmenu.help>openTips": "查看教學指南",
-	"appmenu.help>privacy": "隱私權政策",
 	"appmenu.help>roadmap": "產品路線圖",
 	"appmenu.help>shortcuts": "快速鍵",
 	"appmenu.help>tips": "查看秘訣",

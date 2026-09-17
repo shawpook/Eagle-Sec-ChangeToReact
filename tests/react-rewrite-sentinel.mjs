@@ -89,6 +89,13 @@ const deadSenders = ['MOVE_TO_FOLDER', 'OPEN_IMAGE_FILTER', 'OPEN_LIBRARY_PANEL'
 const deadReceivers = ['INSPECTOR_SAVE_CHANGES', 'PLUGIN_UNINSTALL', 'UPDATE_PLUGIN_PANEL'];
 const retiredVendorTags = ['jquery-long-click.js', 'jquery.bez.js'];
 
+// 需求面移除（帮助菜单「隐私权政策 / Eagle API / Twitter - @eagle_app」三项按需求整体摘除）：
+// 菜单项、store 槽位、图标、i18n 键四面一并不再存在，禁止复活。
+// 为什么需要哨兵：本仓返工的主因是「照原 bundle 逐字复刻」——后续任何批次重移植该菜单，
+// 这三个符号与两张图标会被静默带回来（旧 bundle 里它们就在 55323-55347，是最容易被抄回的形态）。
+// 注：ic-developer.svg 不在清单内，它仍被插件面板与偏好设定「开发者」页使用。
+const removedHelpMenuSurfaces = ['openPrivacy', 'openAPIDocument', 'openTwitter', 'ic-privacy\\.svg', 'ic-twitter\\.svg'];
+
 const failures = [];
 const decreases = [];
 
@@ -127,6 +134,10 @@ for (const ch of deadReceivers) {
 for (const tag of retiredVendorTags) {
   // 只认 script 标签形态——允许注释提及文件名。
   if (indexHtml.includes(`src="js/vendors/${tag}"`)) failures.push(`retired vendor script present in index.html: ${tag}`);
+}
+for (const surface of removedHelpMenuSurfaces) {
+  // 注释行由 hasLiveMatch 自行排除（迁移说明必然要写出被删的名字）。
+  if (hasLiveMatch(new RegExp(`\\b${surface}\\b`))) failures.push(`removed help-menu surface resurrected: ${surface}`);
 }
 
 // ── b1-9bz-C 永久禁项：全仓 scope 面 digest / 事件调用清零 ──

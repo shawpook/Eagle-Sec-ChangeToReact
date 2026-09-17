@@ -131,7 +131,6 @@
 	"appmenu.help>installExtension": "확장 프로그램 설치",
 	"appmenu.help>license-retrieval": "라이선스 복구",
 	"appmenu.help>openTips": "자습서 열기",
-	"appmenu.help>privacy": "개인 정보 처리 방침",
 	"appmenu.help>roadmap": "개발 로드맵",
 	"appmenu.help>shortcuts": "단축키",
 	"appmenu.help>tips": "팁과 트릭",

@@ -131,7 +131,6 @@
 	"appmenu.help>installExtension": "ブラウザー拡張機能",
 	"appmenu.help>license-retrieval": "ライセンスを忘れた",
 	"appmenu.help>openTips": "チュートリアルを見る",
-	"appmenu.help>privacy": "プライバシーポリシー",
 	"appmenu.help>roadmap": "開発ロードマップ",
 	"appmenu.help>shortcuts": "ショートカット",
 	"appmenu.help>tips": "ヒントとテクニック",

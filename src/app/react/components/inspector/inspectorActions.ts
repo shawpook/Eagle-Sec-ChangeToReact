@@ -758,8 +758,11 @@ export function tagsInputMouseDown(event: any, tag?: string) {
   }
 }
 
-/* ---------------- 底部帮助菜单（55212-55297） ---------------- */
+/* ---------------- 底部帮助菜单（55212-55297；原 55323-55347 的三项按需求移除，见下） ---------------- */
 
+// 「隐私权政策 / Eagle API / Twitter - @eagle_app」三项于本次需求整体移除：原 bundle 55323-55347
+// 的分隔符 + 三个菜单项，连同其唯一支撑面（store 的 openPrivacy/openAPIDocument/openTwitter 槽位、
+// i18n `appmenu.help>privacy`、ic-privacy.svg / ic-twitter.svg）一并摘除。故此处菜单止于「快捷键」。
 export function openHelpContextMenu() {
   const ipc = getIpc();
   contextMenuOpen({
@@ -819,31 +822,6 @@ export function openHelpContextMenu() {
           ipc.send('open.preferences', {
             panel: 'shortcuts',
           });
-        },
-      },
-      { role: 'separator' },
-      {
-        label: t('appmenu.help>privacy'),
-        icon: 'ic-privacy.svg',
-        keywords: 'privacy 隐私 プライバシー',
-        click: () => {
-          useMiscRawState.getState().openPrivacy();
-        },
-      },
-      {
-        label: 'Eagle API',
-        icon: 'ic-developer.svg',
-        keywords: 'api developer 開發者 開發者 開発者',
-        click: () => {
-          useMiscRawState.getState().openAPIDocument();
-        },
-      },
-      {
-        label: 'Twitter - @eagle_app',
-        icon: 'ic-twitter.svg',
-        keywords: 'twitter social media 社交媒体 社交媒體 ソーシャルメディア',
-        click: () => {
-          useMiscRawState.getState().openTwitter();
         },
       },
     ],

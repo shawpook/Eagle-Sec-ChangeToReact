@@ -23,7 +23,7 @@
 | R1-3 D14 取证 | ✅ | 已实机取证，见 §11 |
 | R1-4 空 catch 分类 | ✅ | 538 处全量清单 + 11 处改为上报 + 棘轮门禁，见 §12 |
 | R2-3 部署根四处耦合点的**运行期**探针 | ✅ | 新增 `tests/deployment-root-runtime-probe.mjs`，见 §13 |
-| R2-5 L3 全量归档 | ⚠️ 部分 | **未跑完**（套件 35/107 时停止）。但两个「本机跑不动」的环境根因已用正负对照坐实（GPU 进程 FATAL / 宿主批量删除护栏打崩后端启动），套件级成片假红已消除，见 §15 |
+| R2-5 L3 全量归档 | ⚠️ 部分 | **已跑完**：套件 107/107 全部跑到并归档（101 OK + 3 retry-OK + 3 FAIL，耗时 4291.3s），见 §15.6。仍算「部分」是因为：结果为 FAIL；产物 6 项里的 `isolated-deployment` 本环境挂死于 CDP 未取到证据；2 项单独复跑归因被叫停。另：两个「本机跑不动」的环境根因已用正负对照坐实（GPU 进程 FATAL / 宿主批量删除护栏打崩后端启动），套件级成片假红已消除，见 §15 |
 | R2-1/R2-2/R2-4 运行证据（插件 / RAW 样本 / flaky 归零） | ❌ | 需真实样本、产品决策与真机长跑，转未做项 |
 | R3-* 架构债 | ❌ | 体量过大，转未做项 |
 | R4-1 probe 脚本归档 | ✅ | 移出 `tests/` |
@@ -372,7 +372,7 @@ refs/remotes 目录: （空）
 | R2-1 | 造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通（含 guest 内 preload 真实执行、加载失败、退出清理） | **结构性阻塞**：格式插件内核在 React 侧被显式截获成 stub（三处宿主永不会创建插件 webview），需先有 React 侧插件装载实现（产品决策）。详见 §14 |
 | R2-2 | 准备 RAW / TIFF / HEIF / UDOC 真实样本，跑通解码矩阵 | 缺样本 |
 | R2-4 | 处理 `screenshot-regression` 3/16 既有红、`main-ui-workflow` 的 IPC 超时抖动、`thumbnail-task` 的端口黑名单 flaky | 既有的三项不稳定，需复现条件 |
-| R2-5 | 跑一次真正的 L3 全量（套件 107 + 产物 6 + 套件外 7）并归档结果 | **仍未完成**：本轮只跑到套件 35/107 即按用户裁决停止。**但已把「为什么跑不动」定位到两个可复算的环境根因**（GPU 进程 FATAL、宿主批量删除护栏打崩 `backend` 启动），并给出逃生口与复跑命令，见 §15 |
+| R2-5 | 跑一次真正的 L3 全量（套件 107 + 产物 6 + 套件外 7）并归档结果 | **跑完了但没通过**（§15.6）：套件 107/107 全部跑到、归档完整，结果 **101 OK + 3 retry-OK + 3 FAIL**，结论 `L3_FULL_FAIL`。3 项真红均为长跑后段的超时类（`source-mode-ui` 单独复跑 EXIT=0，倾向负载抖动；`preview-delivery` 单独跑 21 分钟不结束＝自身缺超时保护；`native-preview` 未取得单独复跑结论）；backend 段红于 `controlled-download` 的 1000ms 下载超时（既有 flaky，R2-4 对象）。**未取到证据的**：产物段 `isolated-deployment`（本环境挂死于 CDP，需有头终端） |
 | R3-1 | 拆 `tsconfig`：为 Electron 主进程、Node 脚本、扩展、Worker 各建独立配置并分批纳入门禁 | 体量大 |
 | R3-2 | D20 的 3 处 `(window as any)` 与同仓既有 85 处，通过在 `global/globals.d.ts` 加 `declare global` 一并消除 | 体量大 |
 | R3-3 | 清 `demoSeed.ts` 的 `capturePollTimer` 死变量；复核其他「声明了却从未赋值/消费」的残留 | 属清理，未做 |
@@ -856,37 +856,84 @@ Error: [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]
 flaky，不宜叠加风险）；改为把它从本轮 L3 的分段里摘出，另以 **5/6 项**口径归档，并在此如实登记。
 **建议后续**：给 `send()` 加「默认 30s、可配」超时，把这类挂死变成有名字的失败。
 
-### 15.6 本轮结果：**未跑完**，但两个环境根因已坐实，套件级级联已消除
+### 15.6 本轮结果：**已跑完**（107/107），3 项真红 + 1 项后端段红，均已定性
 
-**结论先说：R2-5 未能交付「一次完整的 L3 全量归档」，如实登记为未完成。**
-但本轮把「为什么本机跑不动 L3」从猜测变成了可复算的机制，且**消除了成片假红**。
+**结论先说：R2-5 的「跑一次真正的 L3 全量并归档」已经完成**——不是第 2 轮那个 35/107 的半截，
+而是**套件 107 项全部跑到、逐项解析完整（107/107）**。
+但结果是 **FAIL**，且失败项都是超时类，**不能宣称「L3 通过」**。
 
-| 轮次 | 条件 | 结果 |
-|---|---|---|
-| 第 1 轮 | 护栏开着、GPU 逃生口已开 | static 全绿 → 套件跑到第 17 项起 **成片 `backend startup timeout`**（13 项 × 2 次全红） |
-| 第 2 轮 | `CODEBUDDY_SAFE_DELETE_ENABLED=0` | 套件跑到 **35/107**：**0 项 `backend startup timeout`**；仅 `react-stage-smoke` 首跑 5 分钟超时、重跑通过（retry-OK 1） |
-
-第 2 轮跑到 35/107 时我停止了它（用户裁决「解决不了就算了」，不再继续耗）。
-**已跑部分的事实**：static 五段全 PASS；套件前 35 项除一次重试外全绿。
-**未跑部分**：套件第 36～107 项、套件外 7 项、产物 6 项、backend 段——**均未取得本轮证据，不得声称通过**。
-
-证据落盘在 `outputs/l3-full-2026-09-17-c/`（完整日志 `full.log`）；该轮是被中断的，
-故 `result.json` 未生成（驱动只在收尾写 JSON），**日志本身是逐条实时落盘的，仍可用**。
-
-**要在能跑的环境里补完，一条命令即可**（参数与口径都已在 `tests/run-l3-full.mjs` 里固化）：
+#### 15.6.1 信封（可直接复核）
 
 ```
-npm run build                                   # 用默认护栏单独构建（本轮实测 1m21s 通过）
+证据目录    outputs/l3-full-2026-09-17-d/（full.log 完整日志 + result.json 信封 + acceptance.json）
+提交        a4a8d5c866abe93d630fdd2f6b48f396246fb5c7（react-in-place，工作区有 90 项未提交）
+运行时      Node v22.22.2 / win32 / Electron 22.3.7
+分段        static, build(跳过，见 15.7), artifact(摘出 isolated-deployment，见 15.5), regression, backend
+耗时        4291.3s（约 71.5 分钟）
+退出码      1
+static      PASS
+套件逐项    107 项 = 101 OK + 3 retry-OK + 3 FAIL（解析 107/107，parseComplete=true）
+未通过分段  regression=FAIL, backend=FAIL
+结论        FRONTEND_ACCEPTANCE_FAILED → L3_FULL_FAIL
+```
+
+> 本轮两个环境开关都是**开着**的（信封里有记录，不会被当成默认配置）：
+> `EAGLE_ELECTRON_IN_PROCESS_GPU=1`、`CODEBUDDY_SAFE_DELETE_ENABLED=0`。
+> 按 §15.2 的代价说明：**用 `--in-process-gpu` 跑出的结论 ≠ 生产默认渲染后端下的结论，此处已标注。**
+
+#### 15.6.2 三个 retry-OK（首败重跑通过，不算红）
+
+| 测试 | 首败信息 |
+|---|---|
+| `tests/react-stage7a-smoke.mjs` | `grid boxes rendered timeout` |
+| `tests/react-stage1c2-smoke.mjs` | `grid boxes rendered timeout` |
+| `tests/react-stage1cz2-smoke.mjs` | `grid boxes rendered timeout` |
+
+三者首败信息完全一致（网格渲染超时），是**渲染慢于 5 分钟上限**的典型，重跑即过。
+属 flaky 面，记入 R2-4 的对象范围。
+
+#### 15.6.3 三个真红（首败 + 重跑都败，均在长跑后段、均为超时类）
+
+| 测试 | 首败 | 重跑 | 单独复跑结论 |
+|---|---|---|---|
+| `tests/source-mode-ui-closed-loop.mjs` | `switch folder button timeout` | 同左 | **单独跑 EXIT=0（`SOURCE_MODE_UI_OK`）** ⇒ 支持「长跑负载抖动」判断 |
+| `tests/preview-delivery-closed-loop.mjs` | `exit=null`，**无任何输出** | 同左 | **单独跑 21 分钟仍不结束、日志 0 字节** ⇒ 其内部缺超时保护（L3 里是被 5 分钟上限杀掉的），非「负载抖动」 |
+| `tests/native-preview-closed-loop.mjs` | `ai finalFile PNG written timeout` | 同左 | **未取得**（用户裁决收尾前未跑到，日志 0 字节） |
+
+`source-mode-ui` 与 `native-preview` 都是**长跑后段 + 超时类 + 单独跑可复现性未证伪**，
+倾向判为负载抖动；`preview-delivery` 的 `exit=null`（连错误都没打出来）形态与另两者不同，
+**更像自身缺少超时/错误出口**，是本轮新暴露的一个真问题（见 15.7）。
+
+#### 15.6.4 backend 段：红在 `controlled-download` 的 1 秒超时
+
+```
+tests/controlled-download-closed-loop.mjs:113
+Error: batch URL import failed: {"status":"error","message":"Download timed out after 1000 ms","code":"NETWORK_TIMEOUT"}
+```
+
+这是一个**把下载超时设成 1000ms 的测试**在 L3 负载下必然失败，属既有的 flaky 面（R2-4 对象），
+**与本次改动无关**。backend 段其余 48 项全过。
+
+#### 15.6.5 口径说明：什么是「完成」、什么不是
+
+**已完成**：一次完整跑完的 L3 全量（套件 107 项逐项有结果、日志与信封 JSON 归档、解析完整性断言通过）。
+
+**未取得本轮证据、不得声称通过**：
+
+- 产物 6 项中的 `isolated-deployment.mjs`（本环境挂死于 CDP，见 15.5，需有头终端）；
+- `native-preview-closed-loop` / `controlled-download-closed-loop` 的单独复跑归因（被用户叫停前未跑到）。
+
+**复跑命令**（参数与口径固化在 `tests/run-l3-full.mjs` 里）：
+
+```
+npm run build                                   # 用默认护栏单独构建（本轮实测 1m21s / 1m30s 通过）
 node tests/run-l3-full.mjs --out=outputs/l3-full-<日期> --stages=static,regression,backend
 ```
 
-另需单独跑的两块（原因见 15.5 / 15.7）：
+不重跑、只按日志重算信封（解析规则修好后就是用它重算的，无需再耗 70 分钟）：
 
 ```
-node tests/dist-entry-check.mjs && node tests/production-smoke.mjs \
-  && node tests/browser-extension-delivery.mjs && node tests/start-production-readiness.mjs \
-  && node tests/production-runtime-ports.mjs     # 产物 6 项里的 5 项
-node tests/isolated-deployment.mjs              # 第 6 项：本环境挂死于 CDP，需在有头终端跑
+node tests/run-l3-full.mjs --out=outputs/l3-full-2026-09-17-d --reparse
 ```
 
 ### 15.7 本轮顺带确认与顺带发现
@@ -900,13 +947,23 @@ node tests/isolated-deployment.mjs              # 第 6 项：本环境挂死于
 - **发现（未定位）**：在**关闭删除护栏的同一次运行里**，`npm run build` 段出现过长达
   14 分钟不出产物的情况（产物目录被清到一半）；同一命令在默认护栏下 1m21s 通过。
   **只观察到一次、未进一步定位**，故本轮 L3 改为「先单独构建、再跳过 build 段」。
+- **发现（本轮新暴露）**：`tests/preview-delivery-closed-loop.mjs` **内部没有超时/错误出口**——
+  单独跑 21 分钟不结束、日志 0 字节，在 L3 里则是被外层的 5 分钟上限杀掉、呈现为
+  `exit=null` + 无任何输出。也就是说它不是「跑得慢」，而是**卡住后不报错、不退出**。
+  与 §15.5 的 `react-cdp-harness.send()` 无超时是同一类病：**缺超时保护**。
+  建议与 R2-4 一起处理（给内部等待加显式上限，让挂死变成有名字的失败）。
+- **发现（归档工具自身的坑）**：`run-react-suite.mjs` 的 `OK (retry)` 是**另起一行、不带 `RUN`
+  前缀**的；按行正则会把「首败重跑通过」误判成 FAIL（首轮据此误报 6 FAIL / 0 retry-OK）。
+  已改为**按块解析**（看下一个 `RUN` 之前有没有 `OK (retry)`），重算后为
+  101 OK + 3 retry-OK + 3 FAIL。**教训：解析脚本必须有完整性断言**（本轮的
+  `parsed === expected`），否则「没解析到」会被静默当成「没失败」。
 
 ### 15.8 本轮改了什么（可复核）
 
 | 文件 | 改动 | 默认是否影响生产 |
 |---|---|---|
 | `electron/main.cjs` | 顶部新增：`EAGLE_ELECTRON_IN_PROCESS_GPU=1` 时 `app.commandLine.appendSwitch('in-process-gpu')` | **否**（默认关闭） |
-| `tests/run-l3-full.mjs` | 新增：L3 驱动 + 证据归档（边跑边落盘、信封 JSON、逐项解析完整性断言） | 否（测试基建） |
+| `tests/run-l3-full.mjs` | 新增：L3 驱动 + 证据归档（边跑边落盘、信封 JSON、逐项解析完整性断言）；随后两处修正：① 逐项解析改为**按块**（修 `OK (retry)` 误判成 FAIL）；② 新增 `--reparse`（只读已有 `full.log` 重算 `result.json`，不必再耗 70 分钟） | 否（测试基建） |
 | `docs/project-state.md` | 新增 **D42**（GPU 结论 + 逃生口 + 代价） | 否 |
 | `docs/remediation-log-2026-09-17.md` | 新增 §15 | 否 |
 

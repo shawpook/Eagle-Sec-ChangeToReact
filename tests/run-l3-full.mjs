@@ -47,6 +47,7 @@ const outDir = path.resolve(projectRoot, flag('out', `outputs/l3-full-${stamp}`)
 const stages = flag('stages', 'all');
 const gpuFix = !has('no-gpu-fix');
 const disableDeleteGuard = !has('keep-delete-guard');
+const reparse = has('reparse');
 
 fs.mkdirSync(outDir, { recursive: true });
 const logPath = path.join(outDir, 'full.log');
@@ -90,20 +91,43 @@ const envelope = {
 const logStream = fs.createWriteStream(logPath, { flags: 'a', encoding: 'utf8' });
 const emit = (chunk) => {
   process.stdout.write(chunk);
-  logStream.write(chunk);
+  // reparse 只读不写：否则汇总块会被追加进日志，下次 reparse 就会解析到两处「退出码」。
+  if (!reparse) logStream.write(chunk);
 };
 
 const env = { ...process.env };
 if (gpuFix) env.EAGLE_ELECTRON_IN_PROCESS_GPU = '1';
 if (disableDeleteGuard) env.CODEBUDDY_SAFE_DELETE_ENABLED = '0';
 
-const startedAt = Date.now();
-emit(`L3 开始 ${envelope.startedAt}　HEAD=${envelope.git.head}　${envelope.git.branch}\n`);
-emit(`逃生口　${envelope.gpuFixEscapeHatch}\n`);
-emit(`删除护栏　${envelope.deleteGuard}\n`);
-emit(`清单　　React 套件 ${envelope.manifestCounts.reactSuite} + 产物 ${envelope.manifestCounts.artifact} + 套件外 ${envelope.manifestCounts.extraRegression}\n`);
+const readLog = () => fs.readFileSync(logPath, 'utf8');
+// --reparse：不重跑，只读已有 full.log 重新生成 result.json。
+// 用途：解析逻辑修正后，让**已经归档的那一轮**拿到正确统计（重跑 L3 要 70+ 分钟）。
+let reparseMeta = null;
+if (has('reparse')) {
+  const prev = readLog();
+  const head = /^L3 开始 (\S+)　HEAD=(\S+)　(\S+)$/m.exec(prev);
+  if (!head) {
+    console.error('--reparse 需要日志首行的「L3 开始 … HEAD=…」；未找到');
+    process.exit(2);
+  }
+  envelope.startedAt = head[1];
+  envelope.git.head = head[2];
+  envelope.git.branch = head[3];
+  reparseMeta = {
+    durationSeconds: Number((/^耗时\s+([0-9.]+)s$/m.exec(prev) || [, '0'])[1]),
+    exitCode: Number((/^退出码\s+(\d+)/m.exec(prev) || [, '1'])[1]),
+  };
+}
 
-const exitInfo = await new Promise((resolve) => {
+const startedAt = Date.now();
+if (!has('reparse')) {
+  emit(`L3 开始 ${envelope.startedAt}　HEAD=${envelope.git.head}　${envelope.git.branch}\n`);
+  emit(`逃生口　${envelope.gpuFixEscapeHatch}\n`);
+  emit(`删除护栏　${envelope.deleteGuard}\n`);
+  emit(`清单　　React 套件 ${envelope.manifestCounts.reactSuite} + 产物 ${envelope.manifestCounts.artifact} + 套件外 ${envelope.manifestCounts.extraRegression}\n`);
+}
+
+const exitInfo = has('reparse') ? { code: reparseMeta.exitCode, signal: null, error: null } : await new Promise((resolve) => {
   const child = spawn(process.execPath, [
     'tests/frontend-acceptance.mjs',
     `--stages=${stages}`,
@@ -114,19 +138,36 @@ const exitInfo = await new Promise((resolve) => {
   child.on('error', (err) => resolve({ code: null, signal: null, error: err.message }));
   child.on('close', (code, signal) => resolve({ code, signal, error: null }));
 });
-const ms = Date.now() - startedAt;
+const ms = has('reparse') ? reparseMeta.durationSeconds * 1000 : Date.now() - startedAt;
 
-const logText = fs.readFileSync(logPath, 'utf8');
+const logText = readLog();
+// 逐项结果按「块」解析：run-react-suite.mjs 的输出是
+//   RUN <项> ... OK
+//   RUN <项> ... FAIL (exit=1) → RETRY
+//     [first-failure] ...
+//   OK (retry)                      ← 重跑通过时，**另起一行**，不带 RUN 前缀
+//   RUN <项> ... FAIL (exit=1) → RETRY
+//     [first-failure] ...
+//     [retry-failure] ...           ← 二连败，没有 OK (retry) 行
+// 首版把 `OK (retry)` 当成了 RUN 行的一部分，于是「首败重跑通过」被误判成 FAIL
+// （首轮 107 项里误报了 3 项）。必须按块看「下一个 RUN 之前有没有 OK (retry)」。
 const parseSuiteItems = () => {
+  const finish = (cur) => ({
+    test: cur.test,
+    status: cur.retried ? 'RETRY_OK' : (/FAIL \(exit=/.test(cur.first) ? 'FAIL' : 'OK'),
+  });
   const items = [];
-  const re = /^RUN (\S+) \.\.\. (.*)$/gm;
-  let m;
-  while ((m = re.exec(logText)) !== null) {
-    const rest = m[2];
-    const retried = /OK \(retry\)/.test(rest);
-    const failed = /FAIL \(exit=/.test(rest) && !retried;
-    items.push({ test: m[1], status: retried ? 'RETRY_OK' : failed ? 'FAIL' : 'OK' });
+  let cur = null;
+  for (const line of logText.split('\n')) {
+    const m = /^RUN (\S+) \.\.\. (.*)$/.exec(line);
+    if (m) {
+      if (cur) items.push(finish(cur));
+      cur = { test: m[1], first: m[2], retried: false };
+      continue;
+    }
+    if (cur && line.trim() === 'OK (retry)') cur.retried = true;
   }
+  if (cur) items.push(finish(cur));
   return items;
 };
 const suiteItems = parseSuiteItems();

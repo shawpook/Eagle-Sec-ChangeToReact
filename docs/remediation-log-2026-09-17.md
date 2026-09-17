@@ -368,7 +368,7 @@ refs/remotes 目录: （空）
 
 | # | 验收原文要点 | 未做原因 |
 |---|---|---|
-| R2-1 | 造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通（含 guest 内 preload 真实执行、加载失败、退出清理） | 需造插件 + 实机 |
+| R2-1 | 造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通（含 guest 内 preload 真实执行、加载失败、退出清理） | **结构性阻塞**：格式插件内核在 React 侧被显式截获成 stub（三处宿主永不会创建插件 webview），需先有 React 侧插件装载实现（产品决策）。详见 §14 |
 | R2-2 | 准备 RAW / TIFF / HEIF / UDOC 真实样本，跑通解码矩阵 | 缺样本 |
 | R2-4 | 处理 `screenshot-regression` 3/16 既有红、`main-ui-workflow` 的 IPC 超时抖动、`thumbnail-task` 的端口黑名单 flaky | 既有的三项不稳定，需复现条件 |
 | R2-5 | 跑一次真正的 L3 全量（102 + 6 + 7）并归档结果；**必须在普通终端跑**（沙箱内 CDP 类测试必失败） | 需普通终端长跑 |
@@ -658,5 +658,67 @@ Emscripten 产物 `dcraw.js` 与 `libheif.js`。排除后**第一方生产代码
 - ① 仍不是「Electron 真的把 preload 装进 webview」——那是 R2-1（造真实插件 + M6-4 三处 webview 端到端）的活。
   本探针证明的是「preload 自己算出来的磁盘路径就是部署根里那一份」。
 
+
+---
+
+## 14. R2-1 探查结论：**结构性阻塞**，未做（待裁决）
+
+验收原文：造一个真实可用的格式查看插件条目，把 M6-4 三处 `<webview>` 端到端跑通
+（含 guest 内 preload 真实执行、加载失败、退出清理）。
+
+本次把前置链路摸了一遍，得到三条结论，其中**两条改变了后续做法**。
+
+### 14.1 环境结论（可复用）：Electron 整栈在本机是能跑的，真因是 GPU 进程，不是沙箱
+
+此前记录（§8 附近的环境坑）写的是「凡走 CDP / 起 Vite+Electron 的测试，在沙箱内必报
+`backend startup timeout`，必须在普通终端跑」。**这个结论不准确**。本次实测：
+
+- 直接 `npx electron electron/main.cjs --smoke` 能起来（exit 0），但会打印
+  `ERROR:gpu_process_host.cc(991) GPU process exited unexpectedly`，N 次之后
+  `FATAL:gpu_data_manager_impl_private.cc(440) GPU process isn't usable. Goodbye.` 直接杀进程。
+- 逐个试开关（`--disable-gpu` / `--use-gl=swiftshader` / `--in-process-gpu` /
+  `--disable-gpu-sandbox --disable-gpu`）：**`--in-process-gpu` 有效**，GPU 报错归零。
+- 复跑既有 `tests/document-viewer-ui-closed-loop.mjs`（照抄其启动方式，仅给 electron 多传一个
+  `--in-process-gpu`）⇒ **`DOCUMENT_VIEWER_UI_CLOSED_LOOP_OK`**，全栈（backend + vite + Electron
+  真实主窗 + `executeJavaScript` 驱动）跑通。
+
+也就是说：卡住的是 **GPU 进程 FATAL**，不是沙箱。**结论要更新**——加 `--in-process-gpu`
+（或 `--disable-gpu-sandbox --disable-gpu`）后，R2-5（L3 全量）这类「原本认为只能普通终端跑」的
+批次，本机也能跑。单一 `--disable-gpu` **无效**，别再试它。
+
+### 14.2 结构性阻塞：格式插件内核在 React 侧被**显式截获成 stub**
+
+`src/app/react/core/shim/moduleRegistry.ts:322-324` 把 `/app/js/plugin` 登记进 `INTERCEPT_TABLE`，
+`category: 'stub-plugin'`，理由写在文件头注释里：**原版 `src/app/js/plugin/index.js` 依赖 Angular
+运行时，真实执行会抛错导致静默降级**，故一律返回 `browserRuntime.ts` 的假门面
+（`__unavailable: true`、三个 map 全空、`getInspectorPluginURL: () => ''`、`hasInspectorPlugin: () => false`）。
+
+后果（这是 R2-1 的真实阻塞）：
+
+- 格式插件的扫描发生在**遗留层**（`src/app/js/plugin/index.js:1018` 扫 `<electron userData>/Plugins`，
+  `registerPluginExtensions()` 填 `previewExtension` 各 map），这条路径在 React 应用里**根本不会执行**；
+- 于是 `Inspector.tsx:935` 的 `hasInspectorPlugin(item)` 恒 false ⇒ 检查器那处 webview 永远不会创建；
+  `DetailViewer` / `preview-window` 的插件分支同理取不到 `pluginViewerUrl`。
+
+**所以「造一个真实插件」并不能让三处宿主跑起来**——缺的不是插件，是 **React 侧的插件装载实现**。
+那是产品/架构决策（R3 级），不是测试任务，也不该由整改批次替用户决定。
+
+### 14.3 底层链路（真实 webview + 真实 preload）本次未取得结论
+
+退一步看「guest 内 preload 真实执行」这条最底下的机制能不能独立跑通：写了一次性探针
+`outputs/_r21-webview-spike.cjs`（真实 Electron 窗口 + `<webview preload="file://…/api-format-extension.js">`，
+等 guest `dom-ready` 后读 `window.eagle`）⇒ **40 秒内没等到 `dom-ready`**，未取得结论。
+可能方向（未定位）：guest 未 attach / preload 在 guest 里抛错 / `file://` 宿主页限制。
+
+### 14.4 建议的拆分（等用户裁决）
+
+1. **要不要做 React 侧插件装载**（让 `/app/js/plugin` 从 stub 变成真实或受控替身）——这是 R2-1 的
+   前置，属产品决策，不在整改批次内擅自决定。
+2. 在此之前，R2-1 可交付的只有**「webview + preload 机制」的实机门禁**（不依赖插件内核）：
+   先把 §14.3 那个探针的 timeout 定位掉，再把它做成 `--smoke-format-webview` + 测试，
+   覆盖「preload 真实执行 / 加载失败 / 退出清理」三项。
+3. R2-5（L3 全量）因 §14.1 的发现，可行性上升，可优先于 R2-1 推进。
+
+**本次未做 R2-1，如实登记。**
 
 按验收 R0-3 的口径：本报告结论只针对 §10 记录的 HEAD 这一状态；此后再有新增提交，需重新验收。

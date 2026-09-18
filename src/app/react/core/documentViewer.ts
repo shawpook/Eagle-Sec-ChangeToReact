@@ -8,8 +8,16 @@
  *    路由进 viewer 只会劣化预览）；
  *  - 侧栏/检查器测量、MutationObserver/ResizeObserver/轮询兜底、fallback 回原详情流、
  *    postMessage 握手（source === 'eagle-document-viewer'）全部保持不变；
- *  - 仅保留**驱动面**挂钩（scope.enterDetailMode 包装：文档扩展名 → 开工作区）。UI 面点击
- *    文档仍走各自 viewer 路由，与迁移前一致（见 shims 原注释与 P2 门控迁移记录）。
+ *  - F-DOC-1：入口由**唯一钩子函数** `maybeOpenDocumentViewer()` 承担，由
+ *    `miscDomain.machineryEnterDetailMode` 在任何分流之前同步调用——UI/检查器/驱动面三条
+ *    入口从此对齐。
+ *
+ * F-DOC-1 背景（原设计缺陷）：迁入时曾仅保留 scope.enterDetailMode 包装，注释断言「UI 面
+ * 点击文档仍走各自 viewer 路由」。但 React 侧所有入口（selectionService / inspectorActions /
+ * detailService / miscDomain）都直接 import 调用 `machineryEnterDetailMode`，与
+ * `scope.enterDetailMode` 非同一函数对象 —— 包装从未生效；而所承诺的「React 侧 viewer 路由」
+ * 在 DetailViewer 分支链中并不存在（无 document 分支），导致 md/json/csv 等点开完全空白、
+ * office 类只剩缩略图占位。现改为与 P2 交付门控同构的直挂方式（见 detailDeliveryGate.ts）。
  */
 import { getWindowScope } from './scopeFace';
 
@@ -22,7 +30,11 @@ const documentViewerExtensions = new Set([
   'xls', 'xlsb', 'xlsm', 'xlt', 'xltm', 'xltx',
 ]);
 
-let originalDetailModeEntry: any = null;
+/**
+ * F-DOC-1：兜底重入抑制。查看器握手失败回落到原详情流时置位，避免 `machineryEnterDetailMode`
+ * 内再次命中文档分支 → 又开查看器 → 又握手失败，形成无限循环。
+ */
+let inDocumentFallback = false;
 const documentViewerState: any = {
   itemId: '',
   mode: 'workspace',
@@ -239,6 +251,22 @@ function autoCollapseSidebar(): void {
   }
 }
 
+/**
+ * F-DOC-1：文档类条目入口钩子（唯一）。由 `machineryEnterDetailMode` 在**任何分流之前**同步调用。
+ *
+ * 判据与 shims 原包装体逐字一致：目标可解析 && 总开关开 && ext 命中白名单。
+ * 返回 true 表示已接管（调用方须立即 return，不得再走图片详情流程）。
+ */
+export function maybeOpenDocumentViewer(item: any): boolean {
+  if (inDocumentFallback) return false;
+  if (!item || !item.id || !documentViewerEnabled()) return false;
+  const extension = String(item.ext || '').toLowerCase();
+  if (!documentViewerExtensions.has(extension)) return false;
+  // 已在查看器内：不重开（避免同一文档重复挂载 iframe）。
+  if (documentViewerState.itemId && documentViewerState.itemId === item.id) return true;
+  return openDocumentViewer(item, 'workspace');
+}
+
 function openDocumentViewer(item: any, mode: string): boolean {
   if (!item || !item.id || !documentViewerEnabled()) return false;
   autoCollapseSidebar();
@@ -273,8 +301,18 @@ function fallbackToOriginalDetail(itemId: string): void {
     const item = (scope && Array.isArray(scope.raw))
       ? scope.raw.find((entry: any) => entry && entry.id === itemId)
       : null;
-    if (item && typeof originalDetailModeEntry === 'function') {
-      originalDetailModeEntry.call(scope, null, item);
+    if (!item) return;
+    // F-DOC-1：原先回落到 `scope.enterDetailMode`（被包装前的原函数），但 React 侧入口并不经
+    // scope 面，该引用在直挂改造后恒为 null → 兜底静默失效。改为直接调用同一挂载函数，
+    // 并用 inFallback 抑制再次进入文档分支（否则握手失败会无限重开查看器）。
+    const machinery: any = (window as any).__eagleMachinery;
+    const enterDetailMode = machinery && machinery.enterDetailMode;
+    if (typeof enterDetailMode !== 'function') return;
+    inDocumentFallback = true;
+    try {
+      enterDetailMode(null, item);
+    } finally {
+      inDocumentFallback = false;
     }
   } catch (err) {
     console.warn('[documentViewer] fallback failed', err);
@@ -341,7 +379,7 @@ function handleDocumentViewerMessage(event: MessageEvent): void {
 
 let installed = false;
 
-/** 安装文档工作区编排（主窗调用一次；幂等）。含驱动面 enterDetailMode/leaveDetailMode 挂钩。 */
+/** 安装文档工作区编排（主窗调用一次；幂等）。入口钩子见 `maybeOpenDocumentViewer`。 */
 export function installDocumentViewer(): void {
   if (installed) return;
   installed = true;
@@ -354,34 +392,23 @@ export function installDocumentViewer(): void {
   // Close the viewer when the shell reloads.
   window.addEventListener('beforeunload', () => closeDocumentViewer());
 
-  // ── 文档工作区入口（仅驱动面）──
-  // P2：位图原图交付门控在 core/detailDeliveryGate.ts（React 直接挂钩，UI 路径生效）。
-  // 此处保留原包装体的「文档扩展名 → 开 document workspace」分支——只对**驱动面**有意义。
+  // ── 文档工作区入口 ──
+  // F-DOC-1：不再包装 `scope.enterDetailMode`（React 侧入口直调 machineryEnterDetailMode，
+  // 与 scope 面非同一函数对象，包装恒不生效）；改由 miscDomain.machineryEnterDetailMode
+  // 在任何分流之前同步调用 `maybeOpenDocumentViewer`，与 P2 交付门控同构。
+  // `scope.leaveDetailMode` 仍包装：退出详情需顺带关闭工作区容器。
   const hookTimer = setInterval(() => {
     const scope: any = getWindowScope();
-    if (!scope || typeof scope.enterDetailMode !== 'function' || scope.enterDetailMode.__eagleDocumentEntry) return;
-    const enterDetailMode = scope.enterDetailMode;
-    originalDetailModeEntry = enterDetailMode;
-    scope.enterDetailMode = function (this: any, event: any, item: any) {
-      const target = item || (Array.isArray(this.selected) ? this.selected[this.selected.length - 1] : null);
-      const extension = String((target && target.ext) || '').toLowerCase();
-      if (target && documentViewerEnabled() && documentViewerExtensions.has(extension)) {
-        // Unified in-app document workspace: open the isolated viewer overlay
-        // instead of the original detail flow or the system default app.
-        openDocumentViewer(target, 'workspace');
-        return;
-      }
-      return enterDetailMode.apply(this, arguments as any);
-    };
-    scope.enterDetailMode.__eagleDocumentEntry = true;
-    if (typeof scope.leaveDetailMode === 'function' && !scope.leaveDetailMode.__eagleDocumentEntry) {
-      const leaveDetailMode = scope.leaveDetailMode;
-      scope.leaveDetailMode = function () {
-        closeDocumentViewer();
-        return leaveDetailMode.apply(this, arguments as any);
-      };
-      scope.leaveDetailMode.__eagleDocumentEntry = true;
+    if (!scope || typeof scope.leaveDetailMode !== 'function' || scope.leaveDetailMode.__eagleDocumentEntry) {
+      if (scope && scope.leaveDetailMode && scope.leaveDetailMode.__eagleDocumentEntry) clearInterval(hookTimer);
+      return;
     }
+    const leaveDetailMode = scope.leaveDetailMode;
+    scope.leaveDetailMode = function () {
+      closeDocumentViewer();
+      return leaveDetailMode.apply(this, arguments as any);
+    };
+    scope.leaveDetailMode.__eagleDocumentEntry = true;
     clearInterval(hookTimer);
   }, 25);
 }

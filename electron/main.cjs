@@ -2528,6 +2528,26 @@ app.whenReady().then(async () => {
               const item = await waitFor(() => scope.raw.find((entry) => entry && entry.id === itemId), 'document item', 10000);
 
               // Activate the document through the shim-patched double-click path.
+              // F-DOC-1：先经 **UI 真实路径**（__eagleMachinery.enterDetailMode，即网格双击
+              // selectionService.ts:215 直调的那个导出）验证文档分支生效；旧的
+              // scope.enterDetailMode 包装是另一函数对象，只覆盖驱动面、对 UI 无效——
+              // 这正是该功能此前「测试绿但实际点不开」的原因。
+              window.__eagleMachinery.enterDetailMode(null, item);
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              const uiPathOpened = Boolean(document.querySelector('#eagle-document-viewer-container'));
+              if (!uiPathOpened) throw new Error('UI path (__eagleMachinery.enterDetailMode) did not open document viewer');
+              // UI 路径下同时确认内容已握手渲染（不只是容器挂上），再关闭。
+              const uiContainer = document.querySelector('#eagle-document-viewer-container');
+              await waitFor(() => uiContainer.hasAttribute('data-viewer-ready'), 'ui path viewer ready handshake', 10000);
+              // 注：退出按钮 title 随阅读/编辑态不同——阅读态为「退出预览 (ESC)」，编辑态为「退出 (ESC)」。
+              const uiExitButton = await waitFor(() => {
+                const frame = uiContainer.querySelector('iframe');
+                const doc = frame && frame.contentDocument;
+                return doc && doc.querySelector('button[title^="退出"]');
+              }, 'ui path exit button', 15000);
+              uiExitButton.click();
+              await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'ui path viewer close', 8000);
+
               scope.enterDetailMode(null, item);
               await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -2544,7 +2564,7 @@ app.whenReady().then(async () => {
               const viewerDoc = await waitFor(() => {
                 const doc = iframe.contentDocument;
                 if (!doc) return null;
-                return doc.querySelector('.w-md-editor, .text-document-surface, .office-document-surface, .document-preview') ? doc : null;
+                return doc.querySelector('.w-md-editor, .text-document-surface, .office-document-surface, .document-preview, .office-docx-html') ? doc : null;
               }, 'viewer rendered surface', 20000);
 
               const bodyText = viewerDoc.body.textContent || '';
@@ -2552,8 +2572,10 @@ app.whenReady().then(async () => {
               // External-chrome mode: the generic stage actions (navigation,
               // favorite, reveal…) are hidden; the exit (×) action lives in
               // the viewer's editor toolbar right of the preview button.
+              // 注：退出按钮 title 随阅读/编辑态不同（「退出预览 (ESC)」/「退出 (ESC)」），
+              // 且 F-DOC-1 后 office 类素材也会走到这里，故用前缀匹配。
               const inIframeStageActions = Boolean(viewerDoc.querySelector('[data-preview-stage-actions]'));
-              const exitButton = viewerDoc.querySelector('button[title="退出 (ESC)"]');
+              const exitButton = viewerDoc.querySelector('button[title^="退出"]');
               const exitOk = Boolean(exitButton);
 
               // The document workspace auto-collapses the left rail on entry.
@@ -2598,6 +2620,7 @@ app.whenReady().then(async () => {
               return {
                 itemId: item.id,
                 itemExt: item.ext,
+                uiPathOpened,
                 containerMounted: true,
                 viewerUrl,
                 contentOk,
@@ -2611,7 +2634,7 @@ app.whenReady().then(async () => {
               };
             })()`
           );
-          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed;
+          const ok = result.uiPathOpened && result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

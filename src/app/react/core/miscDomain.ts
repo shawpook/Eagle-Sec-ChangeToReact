@@ -23,6 +23,7 @@ import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { getWindowScope } from './scopeFace';
 import { onDetailEnter, onDetailLeave } from './detailDeliveryGate';
+import { maybeOpenDocumentViewer } from './documentViewer';
 import { syncErrorCount, writeLocalhostError, writeLibraryPathPermissionError } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -1509,6 +1510,17 @@ export function machineryCheckTouchIDSupport(): void {
 export function machineryEnterDetailMode($event: any, image: any): void {
   const w = window as any;
   const $timeout = getTimeout();
+
+  // F-DOC-1：文档工作区入口。必须在**任何分流之前**判定（含 cssSet/门控/选区守卫）——文档类
+  // 条目由独立 viewer overlay 接管，不进图片详情流程。判据与 shims 原 enterDetailMode 包装体
+  // 逐字一致（目标可解析 && 总开关 && ext 白名单），见 core/documentViewer.ts。
+  {
+    const target = image || (useSelectionState.getState().selected.length
+      ? useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1]
+      : null);
+    if (maybeOpenDocumentViewer(target)) return;
+  }
+
   cssSet("#detail-container", { opacity: 0 });
 
   var duration = 100;

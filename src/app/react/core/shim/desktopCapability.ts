@@ -247,19 +247,80 @@ export function emitWindowEvent(channel: string, ...args: unknown[]): void {
   });
 }
 
-(function wireWindowStateEvents() {
+/**
+ * 订阅主进程的窗口状态推送（`maximize`/`unmaximize`/`enter-full-screen`/`leave-full-screen`）。
+ *
+ * ## 为什么必须延迟订阅（F-WIN-1 实证）
+ *
+ * 本订阅原先写作**模块求值期的 IIFE**：`desktopCapability.ts` 被 `install.ts:30` 顶层静态
+ * import，于是 IIFE 在模块图求值那一刻就执行 `windowApi()`。但**那一刻 `window.eagleDesktop`
+ * 尚未就绪**——`hostDesktopBridge`/`desktopApi` 同样在求值期快照（`environment.ts:128`），
+ * 得到 `null`，于是 `if (!api) return` 静默放弃订阅，永不重试。
+ *
+ * 实测后果（`winstat-probe`）：点最大化后 main 确实推了 `{maximized:true}`
+ * （直接 `onStateChanged` 订阅能收到），但 `scope.isMaximize` 与 `bodyState.isMaximize`
+ * **双双保持 false** → 最大化/还原按钮图标永不切换。这正是「控件没连通」的隐藏另一半：
+ * 动作发出去了，状态回不来。
+ *
+ * 现改为「首帧后重试订阅」：不赌求值顺序，等桥出现再订；已订则不重复。
+ */
+let windowStateWired = false;
+
+export function wireWindowStateEvents(): void {
+  if (windowStateWired) return;
   const api = windowApi();
   if (!api || typeof api.onStateChanged !== 'function') return;
+
+  windowStateWired = true;
   api.onStateChanged((state) => {
     const previous = { ...windowState };
     if (typeof state.maximized === 'boolean') windowState.maximized = state.maximized;
     if (typeof state.fullScreen === 'boolean') windowState.fullScreen = state.fullScreen;
-    if (windowState.maximized && !previous.maximized) emitWindowEvent('maximize');
-    if (!windowState.maximized && previous.maximized) emitWindowEvent('unmaximize');
+    if (windowState.maximized && !previous.maximized) {
+      emitWindowEvent('maximize');
+      emitRendererIpc('window.maximize');
+    }
+    if (!windowState.maximized && previous.maximized) {
+      emitWindowEvent('unmaximize');
+      emitRendererIpc('window.unmaximize');
+    }
     if (windowState.fullScreen && !previous.fullScreen) emitWindowEvent('enter-full-screen');
     if (!windowState.fullScreen && previous.fullScreen) emitWindowEvent('leave-full-screen');
   });
-})();
+}
+
+/**
+ * 把窗口状态变化投到渲染层 IPC 总线（`window.maximize` / `window.unmaximize`）。
+ *
+ * ## 为什么需要这条（F-WIN-1 实证的最后一环）
+ *
+ * 原 bundle 的接线是 `ipcRenderer.on('window.maximize', () => { $scope.isMaximize = true })`
+ * （bundle 22465/22484）—— **这两个通道全树没有任何发送方**：`main.cjs` 只发
+ * `window:state-changed`，`preload.cjs` 只把它包成 `onStateChanged`，而
+ * `core/shim/ipcBus.ts` 里也没有 `window.maximize` 的登记。
+ * 于是 `emitWindowEvent('maximize')` 只写到 shim 自己的 `windowListeners` 表里，
+ * **无人订阅**，`scope.isMaximize` 永不置位 → 最大化/还原图标不切换。
+ *
+ * 此处补上「状态 → IPC 通道」这最后一段，与原文的消费面（miscDomain:131-132 的
+ * `['window.maximize', ['$scope.isMaximize = true']]`）对接。
+ */
+function emitRendererIpc(channel: string): void {
+  try {
+    (window as any).__eagleIpc?.emit?.(channel);
+  } catch (err) {
+    /* 测试/浏览器态无总线：静默（与本文件其它降级一致） */
+  }
+}
+
+// 立即试一次（装配较早时即刻生效）；未就绪则由下方重试补上。
+wireWindowStateEvents();
+if (!windowStateWired) {
+  let attempts = 0;
+  const timer = setInterval(() => {
+    wireWindowStateEvents();
+    if (windowStateWired || ++attempts > 100) clearInterval(timer);
+  }, 50);
+}
 
 export const currentWindow = {
   id: 1,

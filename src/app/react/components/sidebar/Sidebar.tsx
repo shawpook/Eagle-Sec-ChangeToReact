@@ -848,10 +848,23 @@ export function Sidebar() {
 
   return createPortal(
     <div ref={wrapperRef}>
+      {/* 应用菜单入口（原版 `index.html:79`，⚠️ 用户指定落点：**侧栏左上角** `12,12`）。
+          原版条件 `ng-show="isLoading"` 只在加载期闪现，加载完就消失；
+          用户要求它**常驻**于左上角，故这里去掉条件、恒显示。
+          侧栏关闭时侧栏整体不渲染，入口由工具栏 `.breadcrumbs` 首位那份接管。
+
+          **必须显式覆盖类名带来的定位**：类名里的 `fixed` 会命中
+          `app.scss:90` 的 `body[platform=win32] .application-menu-btn.fixed
+          {z-index:99999;position:fixed;top:8px;left:0px}` —— 把按钮拽到**视口**左上角
+          （`fixed` 相对视口，而非 `#sidebar`）。原版正是用 inline
+          `position:absolute; z-index:12` 覆盖它，此处照做：
+          `z-index:12` 让它落在侧栏 header 的 `library-switch-btn`(z-index:1005) 之下，
+          与原版一致（早前只覆盖了 position，z-index 仍是 99999，会浮在 header 之上）。 */}
       <div
         className="icon-btn application-menu-btn fixed"
-        style={snapshot.isLoading ? { position: 'absolute', left: '12px', top: '12px' } : { display: 'none', position: 'absolute', left: '12px', top: '12px' }}
+        style={{ position: 'absolute', left: '12px', top: '12px', zIndex: 12 }}
         onClick={(e) => runInBodyScope(() => openApplicationContextMenu(e))}
+        onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
       >
         <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
       </div>

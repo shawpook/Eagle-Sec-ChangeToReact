@@ -118,11 +118,13 @@ export const useAppState = create<AppState>((set, get) => ({
     const state = get();
     const isAlwaysOnTop = !(state as any).isAlwaysOnTop;
     (state as any).isAlwaysOnTop = isAlwaysOnTop;
-    const currentWindow = (window as any).require?.('electron')?.remote?.getCurrentWindow?.();
+    // 经 preload 的 `window.eagleDesktop.window`（main.cjs:942 的 window:action）——
+    // 原 `window.require('electron').remote.getCurrentWindow()` 在本仓是死路：
+    // shim 的 electron 替身上 `.remote` 恒为 undefined（见 Toolbar 同处注释）。
     if (isAlwaysOnTop) {
-      currentWindow?.setAlwaysOnTop?.(true, 'pop-up-menu');
+      (window as any).eagleDesktop?.window?.setAlwaysOnTop?.(true);
     } else {
-      currentWindow?.setAlwaysOnTop?.(false);
+      (window as any).eagleDesktop?.window?.setAlwaysOnTop?.(false);
     }
   },
 

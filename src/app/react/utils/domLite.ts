@@ -77,6 +77,11 @@ function matchSpec(rec: HandlerRec, type: string, ns: string[]): boolean {
 function enrich(ev: any, delegateTarget: any, data: any): any {
   ev.delegateTarget = delegateTarget;
   ev.data = data;
+  // jQuery 把原生事件包成 jQuery.Event，其 `originalEvent` 指向原生事件本体。domLite 直接
+  // 透传原生事件，若不给 `originalEvent`，所有 `e.originalEvent.xxx` 的移植体会读到 undefined
+  // ——smoothZoomEngine.mouseDown 的 `te.pageX`（`te = e.originalEvent`）当场抛 TypeError，
+  // 拖拽起点 offX/offY 永远记录不到，mousemove 算出的位置恒为 NaN，表现为「拖不动 + 点击错位」。
+  if (ev.originalEvent === undefined) ev.originalEvent = ev;
   return ev;
 }
 
@@ -399,10 +404,50 @@ export class DomSet {
     const r = el.getBoundingClientRect();
     return { left: r.left + window.scrollX, top: r.top + window.scrollY };
   }
+  /**
+   * jQuery `.offsetParent()`：native offsetParent 已跳过 static 祖先，此处补 jQuery 的
+   * 「持续上溯直到非 static 或 body/html」收敛，保证与 jQuery 1.8 取到同一个父级。
+   */
+  private _offsetParent(): AnyNode {
+    const el = this.els[0];
+    let p: AnyNode = el ? el.offsetParent : null;
+    while (p && !/^(?:body|html)$/i.test(p.nodeName || '') &&
+           (typeof getComputedStyle === 'function' ? getComputedStyle(p).position : '') === 'static') {
+      p = p.offsetParent;
+    }
+    return p || document.body;
+  }
+
+  /**
+   * jQuery `.position()`（jquery-1.8.0.min.js 原文逐字）：
+   *   position = this.offset() − offsetParent.offset() − offsetParent 边框 − 自身 margin
+   *
+   * 关键：`offset()` 走 getBoundingClientRect，**包含 transform**；不能用 offsetLeft/offsetTop
+   * （不含 transform）。smoothZoomEngine 以 `transform: translate(x,y)` 平移图（left/top 恒为
+   * 0），鼠标按下时用它取当前位移量：
+   *   offX = stX − holderLeft − $image.position().left
+   * 若 position() 恒返回 0，mousemove 算得的 newX 只是「相对按下点的位移」而非绝对位置，
+   * 图片会瞬间跳掉居中偏移量 —— 即详情页「点击图像就错位、无法自然拖动」。
+   */
   position(): { left: number; top: number } {
     const el = this.els[0];
     if (!el) return { left: 0, top: 0 };
-    return { left: el.offsetLeft || 0, top: el.offsetTop || 0 };
+    const off = this.offset();
+    if (!off) return { left: el.offsetLeft || 0, top: el.offsetTop || 0 };
+
+    const ml = parseFloat(cssGet(el, 'marginLeft')) || 0;
+    const mt = parseFloat(cssGet(el, 'marginTop')) || 0;
+
+    const parent = this._offsetParent();
+    let pl = 0;
+    let pt = 0;
+    if (parent && !/^(?:body|html)$/i.test(parent.nodeName || '')) {
+      const poff = new DomSet(parent).offset();
+      if (poff) { pl = poff.left; pt = poff.top; }
+      pl += parseFloat(cssGet(parent, 'borderLeftWidth')) || 0;
+      pt += parseFloat(cssGet(parent, 'borderTopWidth')) || 0;
+    }
+    return { left: off.left - pl - ml, top: off.top - pt - mt };
   }
   scrollTop(value?: any): any {
     if (value === undefined) return this.els[0] ? this.els[0].scrollTop : 0;

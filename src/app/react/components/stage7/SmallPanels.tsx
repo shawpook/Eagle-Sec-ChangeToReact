@@ -905,6 +905,17 @@ export function AboutPanel() {
   return host
     ? createPortal(
         <>
+          {/* ⚠️ 定位/居中/铺满视口**不在这里**，而在宿主 `#eagle-about-host` 的
+              `modal-flex-center` 类上（`index.html`，`_modal.scss:1` 提供
+              `position:absolute; top:0; left:0; 100vw/100vh; flex 居中`）。
+              原版是 `<about-panel class="modal-flex-center">`（v1 index.html:2199）；
+              React 化时该类一度丢失，导致 `.about-panel` 只在**普通文档流**里排布
+              （它自身是 `display:none`，仅 `.open` 时 `display:flex`，**不负责定位**），
+              于是点了「关于 Eagle」没任何可见反应。已把类补回宿主元素。
+
+              注意 `.about-panel` 与 `.about-panel-overlay` **必须是兄弟**：
+              `_about-panel.scss:53` 的 `.about-panel.open ~ .about-panel-overlay{display:block}`
+              靠相邻兄弟关系驱动，中间夹一层 wrapper 就会断。 */}
           <div id="about-panel" className={`about-panel${open ? ' open' : ''}`}>
             <div className="about-panel-header">
               <div className="close" onClick={() => setOpen(false)} />

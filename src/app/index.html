@@ -136,7 +136,13 @@
         <!-- 錯誤提示彈窗（React 接管，舊 ErrorModalController 區塊已刪） -->
         <div id="eagle-error-modal-host" class="modal-flex-center"></div>
         <!-- 批次收藏面板（React 接管，舊 <batch-save-panel> 已刪） -->
-        <div id="eagle-batch-save-panel-host"></div>
+        <!-- ⚠️ 必须带 `modal-flex-center`：原版是
+             `<batch-save-panel class="modal-flex-center" …>`（v1 index.html:2175）。
+             `.batch-save-panel` 自身覆写了 `.modal` 的 `transform:none`，
+             只剩 `left:50%` 却**没有** X 轴回正 —— 靠 `.modal-flex-center .modal
+             {position:initial; transform:none}`（`_modal.scss:13-19`）把它交给 flex 居中。
+             缺这个类 → 面板右偏半个身位。 -->
+        <div id="eagle-batch-save-panel-host" class="modal-flex-center"></div>
 		<!-- 插件面板（React 接管，舊 <plugin-panel> 已刪） -->
 		<div id="eagle-plugin-panel-host"></div>
 		<!-- 插件建立器（React 接管，舊 <plugin-creator> 已刪） -->
@@ -173,7 +179,12 @@
     <div id="eagle-newversion-host"></div>
 
     <!-- 關於（React 接管） -->
-    <div id="eagle-about-host"></div>
+    <!-- ⚠️ 必须带 `modal-flex-center`：原版元素是
+         `<about-panel class="modal-flex-center" theme="theme">`（v1 的 index.html:2199），
+         定位/居中/铺满视口全靠这个类（`_modal.scss:1`）。
+         去掉它 → 面板即便 `.open` 也只是普通文档流排布，看起来「点了没反应」。
+         这与上方 quick-search / batch-rename 等宿主的写法一致。 -->
+    <div id="eagle-about-host" class="modal-flex-center"></div>
 
     <!-- 進度條（React 接管，舊 <empty-trash-progress> 等已刪） -->
     <div id="eagle-empty-trash-progress-host"></div>

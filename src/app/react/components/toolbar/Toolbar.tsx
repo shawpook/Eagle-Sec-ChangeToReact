@@ -97,18 +97,33 @@ function fuzzyHighlight(keyword: string, word?: string): string {
 
 export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSnapshot; hideAlwaysOnTop?: boolean }) {
   const { theme, platform, isAlwaysOnTop, isMaximize, keybinds } = snapshot;
-  const currentWindow = () => (window as any).require?.('electron')?.remote?.getCurrentWindow?.();
-  const minimize = () => currentWindow()?.minimize?.();
+  /**
+   * 窗口桥取用点 —— **唯一正确路径**。
+   *
+   * 原实现是 `window.require('electron').remote.getCurrentWindow()`，本仓是**死路**：
+   * `window.require` 在装配期已被 `core/shim/install.ts:152` 换成 shim 的 `requireModule`，
+   * 而 `requireModule('electron')` 返回的替身对象上 **`.remote` 为 undefined**
+   * （`desktopCapability.ts:699` 显式登记 `remote.*` 不可用）——实测 `getCurrentWindow()`
+   * 恒返回 undefined，四个控件全部静默空转（点击后桥上零调用）。
+   *
+   * 真实通路是 preload 经 contextBridge 暴露的 `window.eagleDesktop.window`
+   * （`electron/preload.cjs:220-237`），其 `window:action` 已在 `main.cjs:942` 接好。
+   */
+  const desktopWindow = () => (window as any).eagleDesktop?.window;
+  const minimize = () => desktopWindow()?.minimize?.();
   const maximize = () => {
-    const win = currentWindow();
-    if (!win) return;
-    if (win.isFullScreen()) win.setFullScreen(false);
-    else if (!win.isMaximized()) { win.maximize();  writeIsMaximize(true); }
-    else { win.unmaximize();  writeIsMaximize(false); }
+    const bridge = desktopWindow();
+    if (!bridge) return;
+    // 桥只暴露无参 maximize/unmaximize/setFullScreen/isMaximized/isFullScreen；
+    // 最大化态由 main 的 maximize/unmaximize 事件经 shim → miscDomain:131-132 回写
+    // scope.isMaximize，故此处不重复写 store（避免与事件回写打架）。
+    if (bridge.isFullScreen?.()) bridge.setFullScreen?.(false);
+    else if (!bridge.isMaximized?.()) bridge.maximize?.();
+    else bridge.unmaximize?.();
     syncToolbarFromScope();
   };
   const restore = maximize;
-  const close = () => currentWindow()?.close?.();
+  const close = () => desktopWindow()?.close?.();
   // F09（m1-f08f09-actions）：原 `runInBodyScope((s) => s.toggleAlwaysOnTop())` —— scope 面上
   // 从未挂载该名字（实现是 store 方法），无守卫直调 → TypeError 被 runInBodyScope 吞掉打 console.error，
   // 「窗口置顶」按钮恒死。改为直调 store 既有实现（@/store/appState 注释即 RootController 同名函数）。
@@ -151,7 +166,11 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
         <div data-click="minimize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-hide.svg')})` }} onClick={minimize} />
         <div data-click="maximize()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-fullscreen.svg')})`, ...(isMaximize ? { display: 'none' } : null) }} onClick={maximize} />
         <div data-click="restore()" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-restore.svg')})`, ...(!isMaximize ? { display: 'none' } : null) }} onClick={restore} />
-        <div className="close-btn-wrap" onClick={close}>
+        {/* F-WIN-1：`close` **只绑内层按钮**。原实现外层 `close-btn-wrap` 与内层 `#close-btn`
+            都挂了 onClick，按钮内部的点击会冒泡到外层 → 一次点击发出两次 `close`（实测
+            `calls: ['close','close']`）。第二次调用落在已销毁的窗口上虽被 main 侧 `if (!win)`
+            挡住，但属于无谓的重复 IPC 与潜在竞态，故收敛为单点绑定。 */}
+        <div className="close-btn-wrap">
           <div data-click="close()" id="close-btn" className="ic-btn windows-btn" style={{ backgroundImage: `url(${iconSrc(theme, 'ic-windows-close.svg')})` }} onClick={close} />
         </div>
       </div>
@@ -317,9 +336,32 @@ export function Toolbar() {
     <>
       {/* 麵包削 */}
       <div className="breadcrumbs" onDoubleClick={(e) => e.stopPropagation()}>
+        {/* 应用菜单入口 —— **仅侧栏关闭时**在此显示（原版 `index.html:560` 的
+            `ng-if="isHideSidebar"` 语义）。侧栏打开时入口在侧栏左上角 12,12
+            （`Sidebar.tsx`，原版 `index.html:79`）——两态各一处。
+
+            ## 为什么补 `marginLeft: 3` + `imgOpacity: 1`
+            两态必须是**同一视觉落点**，但两条渲染路径的盒模型不同：
+
+            | | 盒左缘 | 盒宽 | 图标左缘 |
+            |---|---|---|---|
+            | 侧栏态（硬钉 `left:12`） | 12 | 26 | `12+(26-16)/2` = **17** |
+            | 工具栏态（`.toolbar` padding-left 8 + `.ic-btn` margin-left 2） | 10 | 24 | `10+(24-16)/2` = **14** |
+
+            故补 3px 让图标左缘同为 17。宽度差 2px（侧栏 26 vs `.ic-btn` min-width 24）
+            是侧栏那条 `left:12` 自带 2px 内缩造成的，不影响视觉对齐。
+
+            亮度同理：`.toolbar .ic-btn img { opacity: .8 }`（`_toolbar.scss:469`）
+            会把图标压到 80%，而侧栏那条路径没有该规则 —— 这正是用户此前察觉的
+            「关掉侧栏后菜单按钮偏暗」。此处显式还原为 1。 */}
         {snapshot.isHideSidebar ? (
-          <div className="ic-btn application-menu-btn" data-click="openApplicationContextMenu($event)" onClick={call(openApplicationContextMenu)}>
-            <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
+          <div
+            className="ic-btn application-menu-btn"
+            style={{ marginLeft: 3 }}
+            data-click="openApplicationContextMenu($event)"
+            onClick={call(openApplicationContextMenu)}
+          >
+            <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} style={{ opacity: 1 }} />
           </div>
         ) : null}
         <div id="toggle-all-btn" className="ic-btn" data-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call(openSidebarVisibleContextMenu)}>

@@ -6,7 +6,6 @@ import { useSidebarState } from '../../store/sidebarState';
 import { useAppState } from '../../store/appState';
 // b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
 import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
-import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
 import { runInBodyScope } from '../../core/appCore';
 import { onSidebarResize } from '../../services/sidebarService';
@@ -135,21 +134,35 @@ export function BoxContainerBindings() {
   return null;
 }
 
-/** body 级 application-menu-btn（index.html 70-72 逐字；ng-show isLoading）。 */
-export function AppMenuButton() {
-  const isLoading = useBodyState((st) => st.isLoading);
-  const theme = useBodyState((st) => st.theme);
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    setHost(document.getElementById('eagle-app-menu-host'));
-  }, []);
-  if (!host || !isLoading) return null;
-  return createPortal(
-    <div className="icon-btn application-menu-btn fixed" style={{ position: 'absolute', left: 12, top: 12 }} onClick={(e) => runInBodyScope(() => openApplicationContextMenu(e))}>
-      <img src={`assets/images/${theme === 'light' || theme === 'lightgray' ? 'light' : 'dark'}/icons/ic-app-menu.svg`} />
-    </div>,
-    host
-  );
+/**
+ * 应用菜单入口 —— **本组件不再渲染任何 DOM**（F-DOC-11 终版）。
+ *
+ * ## 最终落点
+ *
+ * 原版 `index.html` 有三处同款元素，本项目按原版语义各归其位、**两态各恰好一处**：
+ *
+ * | 原版位置 | 条件 | 当前归属 |
+ * |---|---|---|
+ * | `index.html:560` | `ng-if="isHideSidebar"` | `Toolbar.tsx` `.breadcrumbs` 首位 |
+ * | `index.html:79`  | 无（`#sidebar` 内 `12,12`） | `Sidebar.tsx`（去掉了加载期条件，恒显示） |
+ * | `index.html:70`  | `ng-show="isLoading"` | **不实现**——加载期的临时占位，与上两者视觉重复 |
+ *
+ * ## 为什么曾挂在这里、又为什么撤走
+ *
+ * 中途曾把入口收敛到 body 级 `#eagle-app-menu-host`（本组件）图个「位置固定」，
+ * 但该 host 是 `<body>` 下的**绝对定位层**，与工具栏 `.breadcrumbs` 的流式布局无关：
+ * 侧栏一关，工具栏首位图标回到 `x=10`，body 级按钮（`x=14`、宽 26）就**压住了侧栏开关**
+ * （实测重叠区 14→34）。且它比侧栏态偏暗——因为走的是 `.ic-btn`（带
+ * `.toolbar .ic-btn img{opacity:.8}`）而不是侧栏的 `.icon-btn`。
+ *
+ * 结论：入口应**跟随各自所在的布局**（侧栏态在侧栏内、关闭态在工具栏内），
+ * 而不是钉在一个跨布局的浮层上。故撤销本组件的渲染。
+ *
+ * 保留空实现是因为它仍挂载在 `main.tsx:129`；`index.html:44` 的
+ * `#eagle-app-menu-host` 容器保留仅为兼容既有选择器。
+ */
+export function AppMenuButton(): null {
+  return null;
 }
 
 /**

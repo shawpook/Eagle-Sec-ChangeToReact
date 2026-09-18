@@ -17,6 +17,8 @@
  * - $filter → scope $root → machinery getFilter 双轨
  */
 import { ContextMenu } from '../core/contextMenuDomain';
+import { openApplicationMenuHtml } from './appMenuService';
+import { wireAppMenuActions } from './appMenuActions';
 
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
@@ -87,8 +89,7 @@ export function openFileListContextMenu(...args: any[]) {
 
 export function openApplicationContextMenu(...args: any[]) {
   try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-  return (function () {
-          var applicationMenu = Menu.getApplicationMenu();
+  return (function (event: any) {
           // b1-9ak：冒烟捕获分支——__EAGLE_MENU_SMOKE 时序列化菜单模板通报 main
           // （原生 popup 无法被 CDP 观察且会阻塞会话；dragSmokeMode 同款先例）。
           // 旗标由 preload 直通（shims 会 stub window.process/window.require，env 不可达）
@@ -97,7 +98,13 @@ export function openApplicationContextMenu(...args: any[]) {
               ipcRenderer.send('smoke:menu-popup', { site: 'application-menu' });
               return;
           }
-          applicationMenu.popup(currentWindow);
+          // 弹出真实应用菜单（原版八节模板，appMenuService 回迁自 app.bundle.js）。
+          // 渲染走项目内 HTML 菜单而非 `Menu.getApplicationMenu().popup(currentWindow)`：
+          // 后者在浏览器预览下 Menu 为 undefined（点击抛 TypeError），Electron 下弹出的
+          // 也只是 main.cjs setupMenu() 的脚手架三项（File/View/Help）；且本仓无真实
+          // @electron/remote（渲染层拿到的是 shim，popup 不弹也不报错）——F-DOC-7 实证。
+          wireAppMenuActions();
+          openApplicationMenuHtml(event);
       } as (...__args: any[]) => any).apply(null, args);
 }
 

@@ -20,6 +20,13 @@
  * office 类只剩缩略图占位。现改为与 P2 交付门控同构的直挂方式（见 detailDeliveryGate.ts）。
  */
 import { getWindowScope } from './scopeFace';
+import {
+  emptyDocumentViewerHeader,
+  writeDocumentViewerClosed,
+  writeDocumentViewerHeader,
+  writeDocumentViewerOpened,
+  type DocumentViewerCommand,
+} from '../store/documentViewerState';
 
 const documentViewerExtensions = new Set([
   'txt', 'md', 'markdown', 'log', 'rst', 'json', 'xml', 'yaml', 'yml', 'csv', 'tsv',
@@ -35,6 +42,13 @@ const documentViewerExtensions = new Set([
  * 内再次命中文档分支 → 又开查看器 → 又握手失败，形成无限循环。
  */
 let inDocumentFallback = false;
+
+/**
+ * F-DOC-2：header 状态累加器。stage 层（标题/序号/上下篇）与 surface 层（字体/配色/
+ * 编辑模式）分批上报，各自只带自己那几个字段；此处合并成完整快照后再交给 store，
+ * 避免任一层的上报把另一层的字段冲成默认值。
+ */
+let viewerHeaderAccumulator: Record<string, any> | null = null;
 const documentViewerState: any = {
   itemId: '',
   mode: 'workspace',
@@ -252,6 +266,23 @@ function autoCollapseSidebar(): void {
 }
 
 /**
+ * F-DOC-2：把原框架顶栏的用户操作下发到查看器 iframe。
+ * 查看器在 `DocumentViewerApp` 侧监听 `source === 'eagle-document-host'` 的 command 消息。
+ */
+export function sendDocumentViewerCommand(command: DocumentViewerCommand): void {
+  const frame = documentViewerState.iframe as HTMLIFrameElement | null;
+  if (!frame || !frame.contentWindow) return;
+  try {
+    frame.contentWindow.postMessage(
+      { source: 'eagle-document-host', type: 'command', command },
+      '*'
+    );
+  } catch (err) {
+    console.warn('[documentViewer] command postMessage failed', err);
+  }
+}
+
+/**
  * F-DOC-1：文档类条目入口钩子（唯一）。由 `machineryEnterDetailMode` 在**任何分流之前**同步调用。
  *
  * 判据与 shims 原包装体逐字一致：目标可解析 && 总开关开 && ext 命中白名单。
@@ -282,6 +313,8 @@ function openDocumentViewer(item: any, mode: string): boolean {
   const eagleTheme = document.body.getAttribute('theme') || 'dark';
   query.set('theme', eagleTheme);
   state.itemId = item.id;
+  viewerHeaderAccumulator = null;
+  writeDocumentViewerOpened();
   state.iframe.src = `${viewerBaseUrl()}?${query.toString()}`;
   applyViewerMode(mode);
   // If the viewer page never handshakes, fall back to the original detail flow.
@@ -348,6 +381,8 @@ function closeDocumentViewer(): void {
   documentViewerState.iframe = null;
   documentViewerState.itemId = '';
   documentViewerState.mode = 'workspace';
+  viewerHeaderAccumulator = null;
+  writeDocumentViewerClosed();
 }
 
 function handleDocumentViewerMessage(event: MessageEvent): void {
@@ -357,6 +392,24 @@ function handleDocumentViewerMessage(event: MessageEvent): void {
   if (message.type === 'ready') {
     window.clearTimeout(state.pendingFallbackTimer);
     if (state.container) state.container.setAttribute('data-viewer-ready', '1');
+    return;
+  }
+  // F-DOC-2：查看器 header 状态上报 —— 原生 Toolbar 据此改渲染文档控件组。
+  if (message.type === 'state') {
+    const payload = message.state;
+    if (!payload || typeof payload !== 'object') return;
+    // stage 层与 surface 层分别上报，按字段合并（空值沿用已有值）。
+    const merged: any = { ...emptyDocumentViewerHeader, ...(viewerHeaderAccumulator || {}), ...payload };
+    for (const key of Object.keys(payload)) {
+      const value = (payload as any)[key];
+      if (value === '' || value === undefined || value === null) {
+        if (viewerHeaderAccumulator && viewerHeaderAccumulator[key] !== undefined) {
+          merged[key] = viewerHeaderAccumulator[key];
+        }
+      }
+    }
+    viewerHeaderAccumulator = merged;
+    writeDocumentViewerHeader(merged);
     return;
   }
   if (message.type === 'mode') {

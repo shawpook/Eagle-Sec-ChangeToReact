@@ -28,6 +28,7 @@ import {
 } from '../hooks/use-preview'
 import { useI18n } from '../lib/i18n'
 import { useUIStore } from '../stores/ui-store'
+import { postViewerState, registerDocumentCommandHandler } from '../DocumentViewerApp'
 
 interface OfficeDocumentSurfaceProps {
   asset: Asset
@@ -354,6 +355,46 @@ export default function OfficeDocumentSurface({
       },
     })
   }
+
+  // F-DOC-2：向 Eagle 宿主上报 Surface 层状态（编辑模式/保存态）并接收指令。
+  // 必须位于下方早退分支之前（hook 顺序恒定）；Office 类无字体选择，故不报 fontOptions。
+  // `forceClosePreview` 原本只在内层子组件里取（L591），此处补一个同源 selector，
+  // 供宿主下发的 close 指令使用。
+  const forceClosePreview = useUIStore((state) => state.forceClosePreview)
+
+  useEffect(() => {
+    postViewerState({
+      editorMode: mode,
+      editable: presentation === 'editor',
+      colorMode: surfaceTheme === 'eagle-light' ? 'light' : 'dark',
+      statusLabel: isSaving
+        ? t('保存中…', 'Saving...')
+        : lastSaveOutcome === 'error'
+          ? t('保存失败', 'Save failed')
+          : isDirty
+            ? t('未保存', 'Unsaved')
+            : lastSaveOutcome === 'saved'
+              ? t('已保存', 'Saved')
+              : '',
+    })
+  }, [mode, presentation, surfaceTheme, t, isSaving, isDirty, lastSaveOutcome])
+
+  useEffect(() => {
+    const handler = (command: { type: string; value?: unknown }) => {
+      switch (command.type) {
+        case 'setEditorMode':
+          setMode(command.value as OfficeWorkspaceMode)
+          break
+        case 'close':
+          forceClosePreview()
+          break
+        default:
+          // 其余（上下篇/收藏/全屏/字体）由 Stage 层或 Text surface 处理。
+          break
+      }
+    }
+    return registerDocumentCommandHandler(handler)
+  }, [forceClosePreview])
 
   if (presentation === 'compact') {
     if (!document && documentQuery.isLoading) {

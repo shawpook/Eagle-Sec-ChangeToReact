@@ -2519,6 +2519,8 @@ app.whenReady().then(async () => {
               });
               const itemId = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_ITEM_ID || '')};
               const expectedText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_EXPECTED_TEXT || '')};
+              const siblingId = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_SIBLING_ID || '')};
+              const siblingText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_SIBLING_TEXT || '')};
               const scope = await waitFor(() => {
                 // b1-9bz-E5-2：就绪探针改读显式驱动面 window.__eagleDriver（主窗 main.tsx 启动期安装，
                 // 见 core/driverApi.ts）；raw/listDone 均在该面白名单内（store 后端），语义与原 scope 面一致。
@@ -2589,6 +2591,17 @@ app.whenReady().then(async () => {
               await waitFor(() => !document.body.classList.contains('hide-sidebar'), 'sidebar expanded', 8000);
               await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
               const sidebarExpandedLeft = container.style.left;
+              const appMenuVisibleWhenSidebarShown = (() => {
+                const host = document.getElementById('eagle-toolbar-host');
+                const el = host ? host.querySelector('.breadcrumbs .application-menu-btn') : null;
+                if (!el) return false;
+                const style = getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+              })();
+              if (!appMenuVisibleWhenSidebarShown) {
+                throw new Error('application menu button must stay visible while sidebar is expanded');
+              }
 
               // Collapse it again for the close step.
               scope.toggleAll();
@@ -2613,9 +2626,194 @@ app.whenReady().then(async () => {
                 }
               })();
 
+              // ── F-DOC-2：原生顶栏改造断言（必须在关闭之前断言）──
+              // 文档查看器打开且握手完成后，**原生 Toolbar 组件本身**改渲染文档控件组：
+              //   - 原生内容（面包屑链接/缩放条/插件按钮/搜索框）根本不渲染；
+              //   - 顶栏左上角是「返回键 + 计数器」，与图像详情同构。
+              // 注意这里断言的是「原生内容不存在」，而不是「被 CSS 藏起来」——后者是
+              // 套层皮的做法，已被明确否决。
+              const toolbarHost = await waitFor(
+                () => document.getElementById('eagle-toolbar-host'),
+                'toolbar host', 8000
+              );
+              const docChrome = await waitFor(
+                () => toolbarHost.querySelector('.doc-chrome'),
+                'document chrome group', 8000
+              );
+              const docBack = toolbarHost.querySelector('.breadcrumbs .ic-btn.prev');
+              const docCounter = toolbarHost.querySelector('.breadcrumbs .counter');
+              const docCounterText = docCounter ? (docCounter.textContent || '').trim() : '';
+              const docBackOk = Boolean(docBack && docBack.querySelector('img'));
+              // 左上角必须与图像详情同构：侧栏开关（原生 #toggle-all-btn）在返回键**之前**。
+              const docToggle = toolbarHost.querySelector('.breadcrumbs #toggle-all-btn');
+              const docToggleOk = Boolean(docToggle && docToggle.querySelector('img'));
+              if (!docToggleOk) {
+                throw new Error('document chrome sidebar toggle button missing');
+              }
+              // 应用菜单按钮（hamburger）：文档态也应当是**可见**的入口。
+              const docAppMenu = toolbarHost.querySelector('.breadcrumbs .application-menu-btn');
+              const docAppMenuVisible = (() => {
+                if (!docAppMenu) return false;
+                const style = getComputedStyle(docAppMenu);
+                const rect = docAppMenu.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+              })();
+              // 端到端：点真实的 hamburger 按钮，确认它真的打开应用菜单（File/View/Help）。
+              // 原生 popup 无法被 CDP 观察且会阻塞会话，故由 main 侧在 __EAGLE_MENU_SMOKE 下
+              // 序列化菜单模板落盘（见 ipc 'smoke:menu-popup' 的 application-menu 分支），
+              // 断言由外层测试读取该文件完成。
+              const docAppMenuClicked = (() => {
+                if (!docAppMenuVisible || !docAppMenu) return false;
+                docAppMenu.click();
+                return true;
+              })();
+              // 给 ipc 往返留出时间（菜单模板由主进程写文件）。
+              if (docAppMenuClicked) {
+                await new Promise((resolve) => setTimeout(resolve, 600));
+              }
+              // DOM 顺序断言：toggle-all-btn 必须出现在 doc-chrome-back 之前。
+              if (docToggle && docBack) {
+                const order = docToggle.compareDocumentPosition(docBack);
+                const toggleFirst = Boolean(order & Node.DOCUMENT_POSITION_FOLLOWING);
+                if (!toggleFirst) {
+                  throw new Error('sidebar toggle must precede the back arrow in .breadcrumbs');
+                }
+              }
+              // 返回键图标（ic-toolbar-exit.svg）也必须走同一套墨迹归一：
+              // viewBox 23×23 但墨迹仅 11px（填充率 48%），盒子需 ~27px 才能与其他图标等重。
+              const docBackImg = docBack ? docBack.querySelector('img') : null;
+              const docBackBox = docBackImg ? Number(docBackImg.getAttribute('width') || 0) : 0;
+              const docBackRendered = docBackImg ? Math.round(docBackImg.getBoundingClientRect().height) : 0;
+              if (!(docBackBox >= 24)) {
+                throw new Error('back button icon not normalized (expected box >= 24): ' + docBackBox);
+              }
+              const docCounterOk = /^[0-9]+\\s*\\/\\s*[0-9]+$/.test(docCounterText);
+              if (!docBackOk) throw new Error('document chrome back button missing');
+              if (!docCounterOk) throw new Error('document chrome counter missing/invalid: ' + JSON.stringify(docCounterText));
+              // 原生工具栏内容必须**不在 DOM 中**（真正的分支渲染，而非视觉遮盖）。
+              // 注意：#toggle-all-btn（侧栏开关）**不在**此列 —— 它是图像详情顶栏也有的
+              // 公共控件，文档态同样需要保留（用户要求左上角与图像详情一致）。
+              const nativeLeftovers = toolbarHost.querySelectorAll(
+                '.sliders-bar, .pinned-plugins, input[type="search"]'
+              ).length;
+              if (nativeLeftovers > 0) {
+                throw new Error('native toolbar content still rendered during document chrome: ' + nativeLeftovers);
+              }
+              // 圆形图标按钮计数（不含原生 .ic-btn 形状的 prev/next）。
+              // 当前构成：主题 + 编辑 + 分栏 + 预览 + 收藏 + 打开原文件 + 全屏 + 关闭 = 8。
+              const docRoundBtnCount = toolbarHost.querySelectorAll('.doc-chrome .doc-chrome-btn').length;
+              if (docRoundBtnCount < 6) {
+                throw new Error('expected document chrome buttons, got ' + docRoundBtnCount);
+              }
+              // 图标光学尺寸一致性：各按钮内 icon 的**可见墨迹**必须落在同一区间。
+              // 原生图标 SVG 的 viewBox 差异极大（exit 23 / prev 24 / close 10 / zoom-fit 14），
+              // 且墨迹填充率从 48% 到 101% 不等；若按统一 width/height 强制缩放，
+              // prev/next 的可见箭头会只有 close 的一半高——这正是「icon 大小不一」的缺陷。
+              // 注意：prev/next 是原生 .ic-btn（在 .doc-chrome 直接子级），不在 .doc-chrome-btn 内。
+              const docIconMetrics = (() => {
+                const nodes = toolbarHost.querySelectorAll(
+                  '.doc-chrome .doc-chrome-btn, .doc-chrome > .ic-btn.prev, .doc-chrome > .ic-btn.next'
+                );
+                const out = [];
+                nodes.forEach((btn) => {
+                  const el = btn.querySelector('img, svg');
+                  if (!el) return;
+                  const rect = el.getBoundingClientRect();
+                  const isImg = el.tagName.toLowerCase() === 'img';
+                  const name = isImg
+                    ? (el.getAttribute('src') || '').split('/').pop()
+                    : 'lucide';
+                  out.push({
+                    name,
+                    w: Math.round(rect.width * 10) / 10,
+                    h: Math.round(rect.height * 10) / 10,
+                    box: isImg ? Number(el.getAttribute('width') || 0) : null,
+                  });
+                });
+                return out;
+              })();
+              // 归一表生效的直接证据：prev/next 的盒子必须显著大于 close（填充率补偿），
+              // 否则说明又退回了「统一尺寸」的写法。
+              const boxOf = (n) => {
+                const hit = docIconMetrics.find((m) => m.name === n);
+                return hit ? hit.box : null;
+              };
+              const prevBox = boxOf('ic-toolbar-prev.svg');
+              const closeBox = boxOf('ic-toolbar-close.svg');
+              if (!(prevBox > closeBox)) {
+                throw new Error(
+                  'icon box normalization not applied: prev=' + prevBox + ' close=' + closeBox
+                );
+              }
+              const docIconSizes = docIconMetrics.map((entry) => entry.h);
+              const docIconMin = docIconSizes.length ? Math.min.apply(null, docIconSizes) : 0;
+              const docIconMax = docIconSizes.length ? Math.max.apply(null, docIconSizes) : 0;
+              // 宿主必须可见（原生 Toolbar 在 isDetailMode 会 display:none，接管期间需复位）。
+              if (getComputedStyle(toolbarHost).display === 'none') {
+                throw new Error('toolbar host hidden during document viewer takeover');
+              }
+
+              // ── F-DOC-3：顶栏「下一个素材」必须真的把 iframe 切走 ──
+              // 缺陷背景：查看器的素材列表与当前项来自 iframe URL 参数（id/ids），
+              // 宿主点 prev/next 只改了宿主 React 状态，iframe 内 store 毫不知情，
+              // 画面始终停在最初那篇（用户反馈「切换失败、卡在文本框里」）。
+              // 这里点真实按钮，然后断言 iframe **内容标题**真的换成了兄弟文档。
+              // 两个方向都判：当前项是最后一篇就点「上一篇」，否则点「下一篇」。
+              const docNextBtn = toolbarHost.querySelector('#doc-chrome-next');
+              const docPrevBtn = toolbarHost.querySelector('#doc-chrome-prev');
+              if (!docNextBtn || !docPrevBtn) {
+                throw new Error('document chrome nav buttons missing');
+              }
+              const nextDisabled = docNextBtn.classList.contains('disabled');
+              const prevDisabled = docPrevBtn.classList.contains('disabled');
+              const navBtn = !nextDisabled ? docNextBtn : (!prevDisabled ? docPrevBtn : null);
+              const navDirection = !nextDisabled ? 'next' : 'prev';
+              let navOk = null;
+              let navContentText = '';
+              if (siblingId && navBtn) {
+                navBtn.click();
+                navOk = await waitFor(() => {
+                  const frame = document.querySelector('#eagle-document-viewer-container iframe');
+                  if (!frame) return null;
+                  try {
+                    const doc = frame.contentDocument;
+                    if (!doc) return null;
+                    const text = (doc.body ? doc.body.innerText : '') || '';
+                    return text.includes(siblingText) ? true : null;
+                  } catch (err) {
+                    return null;
+                  }
+                }, 'viewer navigated to sibling document', 12000);
+                const frame = document.querySelector('#eagle-document-viewer-container iframe');
+                try {
+                  navContentText = frame && frame.contentDocument ? (frame.contentDocument.body.innerText || '').slice(0, 160) : '';
+                } catch (err) { navContentText = ''; }
+              }
+              // 切走后计数器应随之变化。
+              const navCounterText = (() => {
+                const el = toolbarHost.querySelector('.breadcrumbs .counter');
+                return el ? (el.textContent || '').trim() : '';
+              })();
+
               // Close via the viewer's exit (×) button in the editor toolbar.
-              exitButton.click();
+              // 注意：导航后 surface 会重挂载，必须**重新查询**退出按钮，
+              // 早先捕获的节点已随上一份文档一起卸载（否则 close 会超时）。
+              const liveFrame = document.querySelector('#eagle-document-viewer-container iframe');
+              const liveDoc = liveFrame ? liveFrame.contentDocument : null;
+              const liveExitButton = liveDoc ? liveDoc.querySelector('button[title^="退出"]') : null;
+              if (!liveExitButton) {
+                throw new Error('exit button missing after navigation');
+              }
+              liveExitButton.click();
               await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'viewer close', 8000);
+              // 关闭后原生工具栏必须回来（分支切回，而非残留文档控件）。
+              const nativeRestored = await waitFor(() => {
+                const host = document.getElementById('eagle-toolbar-host');
+                if (!host) return null;
+                if (host.querySelector('.doc-chrome')) return null;
+                if (host.querySelector('input[type="search"]')) return true;
+                return null;
+              }, 'native toolbar restored', 8000);
 
               return {
                 itemId: item.id,
@@ -2628,13 +2826,31 @@ app.whenReady().then(async () => {
                 exitOk,
                 autoCollapsed,
                 sidebarExpandedLeft,
+                appMenuVisibleWhenSidebarShown,
                 sidebarCollapsedLeft,
                 iframeAppRegionCount,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
+                docBackOk,
+                docToggleOk,
+                docAppMenuVisible,
+                docBackBox,
+                docBackRendered,
+                docCounterText,
+                docRoundBtnCount,
+                docIconMetrics,
+                docIconMin,
+                docIconMax,
+                prevBox,
+                closeBox,
+                navOk,
+                navDirection,
+                navCounterText,
+                nativeLeftovers,
+                nativeRestored,
               };
             })()`
           );
-          const ok = result.uiPathOpened && result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed;
+          const ok = result.uiPathOpened && result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed && result.docBackOk === true && /^\d+\s*\/\s*\d+$/.test(result.docCounterText || '') && result.docRoundBtnCount >= 6 && result.prevBox > result.closeBox && result.docBackBox >= 24 && result.docToggleOk === true && result.navOk === true && result.nativeLeftovers === 0 && result.nativeRestored === true;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

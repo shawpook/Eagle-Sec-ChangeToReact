@@ -36,6 +36,7 @@ import { api } from '../lib/api'
 import { persistSettingsPatch } from '../lib/settings'
 import { useUIStore } from '../stores/ui-store'
 import { useSystemLightDarkTheme } from '../lib/system-theme'
+import { postViewerState, registerDocumentCommandHandler } from '../DocumentViewerApp'
 
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
@@ -335,6 +336,60 @@ export default function TextDocumentSurface({
       setDocumentEditorColorMode(previousPreference)
     })
   }
+
+  // F-DOC-2：向 Eagle 宿主上报 Surface 层控件状态（字体/配色/编辑模式/可编辑性），
+  // 供原生 Toolbar 改渲染同一组控件；并接收宿主下发的对应指令。
+  //
+  // 注意：这两个 effect **必须位于下方早退分支之前** —— React 要求 hook 每次渲染都按
+  // 同序执行，若放在早退之后，loading → 就绪 的切换会改变 hook 数量并抛
+  // "Rendered more hooks than during the previous render"。因此依赖项里的派生值
+  // （statusLabelText 等）也一并提前计算。
+  const statusLabelText = !hasTextSaveApi
+    ? (locale === 'zh' ? '仅预览' : 'Preview only')
+    : !effectiveEditable
+      ? (locale === 'zh' ? '只读预览' : 'Read-only preview')
+      : hasSaveError
+        ? (locale === 'zh' ? '保存失败' : 'Save failed')
+        : isSavePending
+          ? (locale === 'zh' ? '保存中…' : 'Saving…')
+          : isDirty
+            ? (locale === 'zh' ? '未保存' : 'Unsaved changes')
+            : (locale === 'zh' ? '已保存' : 'Saved')
+
+  useEffect(() => {
+    postViewerState({
+      fontPreset: documentFontPreset,
+      fontOptions: documentFontOptions.map((option) => ({ value: option.value, label: option.label })),
+      colorMode: editorColorMode,
+      editorMode: previewMode,
+      editable: effectiveEditable,
+      encoding: encodingLabel ? String(encodingLabel).toUpperCase() : '',
+      statusLabel: statusLabelText,
+    })
+  }, [documentFontPreset, documentFontOptions, editorColorMode, previewMode, effectiveEditable, encodingLabel, statusLabelText])
+
+  useEffect(() => {
+    const handler = (command: { type: string; value?: unknown }) => {
+      switch (command.type) {
+        case 'setFont':
+          handleDocumentFontChange(command.value as DocumentFontPreset)
+          break
+        case 'toggleColorMode':
+          handleDocumentEditorColorModeToggle()
+          break
+        case 'setEditorMode':
+          setPreviewMode(command.value as EditorPreviewMode)
+          break
+        case 'close':
+          forceClosePreview()
+          break
+        default:
+          // 其余（上下篇/收藏/全屏）由 Stage 层处理。
+          break
+      }
+    }
+    return registerDocumentCommandHandler(handler)
+  }, [documentFontPreset, colorModePreference, previewMode, editorColorMode])
 
   if ((documentQuery.isLoading || isFallbackLoading) && !hydratedRef.current) {
     return (

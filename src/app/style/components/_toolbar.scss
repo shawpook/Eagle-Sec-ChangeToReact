@@ -485,4 +485,128 @@
             width: 4px;
         }
     }
+
+    // ── F-DOC-2：文档查看器接管态 ──
+    // 说明：文档查看器打开时，原生 `Toolbar` 组件**直接改渲染**文档控件组
+    // （见 DocumentToolbar.tsx），原生内容根本不渲染——因此这里没有「遮盖」规则，
+    // 只有文档控件组自己的形状/间距定义，全部沿用 .toolbar 既有体系与主题变量。
+    .doc-chrome {
+        gap: 6px;
+        height: 36px;
+    }
+
+    // 导航类原生按钮（返回键 `.breadcrumbs > .ic-btn.prev`、上/下一篇 `.doc-chrome > .ic-btn.prev/.next`）
+    // 均沿用原生 `.ic-btn` 外观：无外框、hover 仅换背景。
+    // 其图标 ic-toolbar-exit / prev / next 的 viewBox 墨迹填充率仅 48%~50%，
+    // 需按 DocumentToolbar.tsx 的 ICON_FILL 归一表放大盒子，可见墨迹才与其他图标等重。
+    .breadcrumbs > .ic-btn.prev,
+    .doc-chrome > .ic-btn.prev,
+    .doc-chrome > .ic-btn.next {
+        img {
+            display: block;
+            object-fit: contain;
+        }
+    }
+
+    // 字体下拉：形状对齐查看器内原生 select（32px 高 / 6px 圆角 / 主题色边框）。
+    .doc-chrome-font {
+        height: 32px;
+        max-width: 160px;
+        flex: 0 0 auto;
+        padding: 0 10px;
+        font-size: 12px;
+        line-height: 30px;
+        color: var(--color-text-primary);
+        background-color: var(--color-bg-hover);
+        border: 1px solid var(--color-border-secondary);
+        border-radius: 6px;
+        outline: none;
+        cursor: pointer;
+        -webkit-app-region: no-drag;
+        transition: border-color 150ms var(--timing-function-super);
+
+        &:hover,
+        &:focus {
+            border-color: var(--color-primary);
+        }
+        option {
+            color: var(--color-text-primary);
+        }
+    }
+
+    // 图标按钮：**沿用原生 `.ic-btn` 的外观**（无边框、无圆形外框，hover 仅换背景）。
+    // 原生 `.ic-btn` 已是 inline-flex / 24px 高 / 4px 圆角，这里只补尺寸与居中，
+    // 不再自造圆角描边——否则会出现用户反馈的「圆外框」。
+    .doc-chrome-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+        min-width: 28px;
+        padding: 0;
+        border: 0;
+        border-radius: 4px;
+        background-color: transparent;
+        color: var(--color-text-primary);
+        box-sizing: border-box;
+        cursor: pointer;
+        opacity: 0.85;
+        transition:
+            opacity 150ms var(--timing-function-super),
+            background-color 150ms var(--timing-function-super);
+
+        // 原生资源图标：盒子尺寸由 <img width/height> 属性给出（见 DocumentToolbar.tsx 的
+        // ICON_FILL 光学归一表）。这里**绝不能**写死统一的 width/height —— 各
+        // ic-toolbar-*.svg 的墨迹填充率差异极大（exit 48%、prev/next 50%、
+        // close 101%、open-default 100%），统一尺寸会让前者看起来只有后者的一半。
+        img {
+            display: block;
+            object-fit: contain;
+            opacity: 0.8;
+        }
+
+        // hover 只用背景色反馈，与原生工具栏一致（不再改边框色）。
+        &:hover:not(:disabled) {
+            opacity: 1;
+            background-color: var(--color-bg-hover);
+            img { opacity: 1; }
+        }
+
+        &.active {
+            opacity: 1;
+            background-color: var(--color-primary-10);
+            color: var(--color-primary);
+        }
+
+        &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+    }
+
+    // lucide 描边图标（主题/编辑/分栏/预览/收藏）——原生资源集中无对应文件，
+    // 沿用查看器 ModeButton 原本的图标语汇。
+    // lucide 的 ink 铺满整个 viewBox，故取与原生图标归一后相同的可见墨迹尺寸（13px），
+    // 使同一按钮组内「原生资源图标」与「lucide 图标」视觉等重。
+    .doc-chrome-glyph {
+        width: 13px;
+        height: 13px;
+        flex: 0 0 13px;
+        opacity: 0.85;
+    }
+
+    .doc-chrome-starred {
+        color: var(--color-primary);
+        fill: currentColor;
+        opacity: 1;
+    }
+
+    // 窗口较窄时先收窄字体下拉，避免控件溢出。
+    @container (max-width: 860px) {
+        .doc-chrome-font {
+            max-width: 104px;
+        }
+    }
 }

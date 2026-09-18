@@ -7,6 +7,7 @@ import { cn } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import AssetPreviewSurface from './AssetPreviewSurface'
 import { ChevronLeft, ChevronRight, Copy, ExternalLink, FolderOpen, Maximize2, Minimize2, Star, X } from 'lucide-react'
+import { postViewerState, registerDocumentCommandHandler } from '../DocumentViewerApp'
 import type { PreviewMode } from '../shared/types'
 
 interface AssetPreviewStageProps {
@@ -140,6 +141,68 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [asset, closeStagePreview, isActive, navigatePreview, nextAssetId, openDetailPlayback, prevAssetId, updateAsset])
+
+  // F-DOC-2：把 stage 层状态（标题/序号/上下篇/收藏/全屏）上报给 Eagle 宿主，
+  // 供原生 Toolbar 改渲染文档控件组。Surface 层（字体/配色/编辑模式）会在其后合并补报，
+  // 宿主按字段合并，互不覆盖。
+  useEffect(() => {
+    if (!isActive) return
+    const total = visibleAssetIds.length
+    postViewerState({
+      name: asset?.name ?? '',
+      extension: String(asset?.extension ?? '').replace(/^\./, ''),
+      pageIndicator: currentIndex >= 0 ? `${currentIndex + 1} / ${total}` : '',
+      currentIndex,
+      totalCount: total,
+      hasPrev: Boolean(prevAssetId),
+      hasNext: Boolean(nextAssetId),
+      // F-DOC-3：把相邻项 id 一并上报，宿主按钮可直接下发精确的 navigate 指令。
+      prevId: prevAssetId ?? '',
+      nextId: nextAssetId ?? '',
+      starred: Boolean(asset?.favorite),
+      fullscreen: mode === 'fullscreen',
+    })
+  }, [isActive, asset?.name, asset?.extension, asset?.favorite, currentIndex, visibleAssetIds.length, prevAssetId, nextAssetId, mode])
+  // F-DOC-2：处理 stage 层指令（上下篇 / 收藏 / 打开原文件 / 全屏 / 关闭）。
+  // Surface 层对同一条广播也会收到，各自只处理自己关心的类型（见 registerDocumentCommandHandler）。
+  useEffect(() => {
+    const handler = (command: { type: string; value?: unknown }) => {
+      switch (command.type) {
+        case 'prev':
+          if (prevAssetId) navigatePreview(prevAssetId)
+          break
+        case 'next':
+          if (nextAssetId) navigatePreview(nextAssetId)
+          break
+        // F-DOC-3：宿主顶栏的上下篇按钮直接给 id。
+        // 为什么不能只靠 prev/next：宿主算出的「相邻项」用的是**宿主侧**列表，
+        // 与 iframe URL 里烘进来的 ids 可能不同步（宿主导航过的项，iframe 并不知道）。
+        // 传 id 可让 iframe 无条件切到宿主认定的那一项，避免两边各自推进造成错位。
+        case 'navigate':
+          if (typeof command.value === 'string' && command.value) {
+            navigatePreview(command.value)
+          }
+          break
+        case 'toggleStar':
+          if (asset) updateAsset.mutate({ id: asset.id, input: { favorite: !asset.favorite } })
+          break
+        case 'openExternal':
+          if (asset) void api.asset.open(asset.id)
+          break
+        case 'toggleFullscreen':
+          if (mode === 'fullscreen') setPreviewMode('workspace', null)
+          else setPreviewMode('fullscreen', 'workspace')
+          break
+        case 'close':
+          closeStagePreview()
+          break
+        default:
+          // 其余（字体/配色/编辑模式）由 Surface 层处理。
+          break
+      }
+    }
+    return registerDocumentCommandHandler(handler)
+  }, [asset, closeStagePreview, mode, navigatePreview, nextAssetId, prevAssetId, setPreviewMode, updateAsset])
 
   if (!isActive) {
     return null

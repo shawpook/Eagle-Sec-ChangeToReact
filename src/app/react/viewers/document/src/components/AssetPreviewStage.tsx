@@ -7,7 +7,7 @@ import { cn } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import AssetPreviewSurface from './AssetPreviewSurface'
 import { ChevronLeft, ChevronRight, Copy, ExternalLink, FolderOpen, Maximize2, Minimize2, Star, X } from 'lucide-react'
-import { postViewerState, registerDocumentCommandHandler } from '../DocumentViewerApp'
+import { postViewerNavRequest, postViewerState, registerDocumentCommandHandler } from '../DocumentViewerApp'
 import type { PreviewMode } from '../shared/types'
 
 interface AssetPreviewStageProps {
@@ -114,14 +114,16 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
           closeStagePreview()
           break
         case 'ArrowLeft':
-          if (!prevAssetId) break
           event.preventDefault()
-          navigatePreview(prevAssetId)
+          // F-DOC-4：external chrome（Eagle 宿主）下导航权威在宿主——下一项可能是图片/视频，
+          // 宿主会关闭 overlay 换原生详情；iframe 自己那份 URL 烘干的列表不再用于导航。
+          if (externalChrome) postViewerNavRequest('prev')
+          else if (prevAssetId) navigatePreview(prevAssetId)
           break
         case 'ArrowRight':
-          if (!nextAssetId) break
           event.preventDefault()
-          navigatePreview(nextAssetId)
+          if (externalChrome) postViewerNavRequest('next')
+          else if (nextAssetId) navigatePreview(nextAssetId)
           break
         case 'f':
         case 'F':
@@ -140,7 +142,7 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [asset, closeStagePreview, isActive, navigatePreview, nextAssetId, openDetailPlayback, prevAssetId, updateAsset])
+  }, [asset, closeStagePreview, externalChrome, isActive, navigatePreview, nextAssetId, openDetailPlayback, prevAssetId, updateAsset])
 
   // F-DOC-2：把 stage 层状态（标题/序号/上下篇/收藏/全屏）上报给 Eagle 宿主，
   // 供原生 Toolbar 改渲染文档控件组。Surface 层（字体/配色/编辑模式）会在其后合并补报，

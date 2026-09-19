@@ -33,8 +33,6 @@ import { useFolderState } from '../../store/folderState';
 import { useLayoutState } from '../../store/layoutState';
 import { useAppState } from '../../store/appState';
 import { writeKeyword } from '../../store/listState';
-import { useDocumentViewerHostState } from '../../store/documentViewerState';
-import { DocumentToolbarBranch } from './DocumentToolbar';
 /**
  * 阶段3a：工具栏接管。
  *
@@ -261,30 +259,26 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
 export function Toolbar() {
   const snapshot = useToolbarState((s) => s.snapshot);
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null);
-  // F-DOC-2：文档查看器接管顶栏。true 时直接渲染文档控件分支，
-  // 原生工具栏内容**根本不渲染**（而非被 CSS 盖住）。
-  const documentChromeActive = useDocumentViewerHostState((s) => s.chromeActive);
 
   useEffect(() => {
     setToolbarHost(document.getElementById('eagle-toolbar-host'));
   }, []);
 
   // 原 .toolbar 上的 ng-show="!isDetailMode || isInlineMode" 与 ng-dblclick="maximize()"
-  // F-DOC-2：文档查看器期间原生 Toolbar 会被 isDetailMode 置 display:none，但此时顶栏
-  // 必须可见（它承载文档控件），故把 documentChromeActive 并入可见性判据。
+  // F-DOC-4：文档控件分支已迁回**详情工具栏**（DetailToolbar → DocumentToolbarBranch）——
+  // 文档详情现在是详情模式内的一个分支，顶栏自然挂在详情工具栏的宿主上；网格工具栏
+  // 在详情模式下的原生隐藏行为恢复原样。
   useLayoutEffect(() => {
     const host = toolbarHost;
     if (!host) return;
-    const visible = documentChromeActive || !snapshot.isDetailMode || snapshot.isInlineMode;
+    const visible = !snapshot.isDetailMode || snapshot.isInlineMode;
     host.style.display = visible ? '' : 'none';
     const onDblClick = (e: MouseEvent) => {
-      // 文档控件组内的双击不应触发窗口最大化（原 ng-dblclick 语义不变）。
-      if (documentChromeActive) return;
       runInBodyScope(() => maximize(e));
     };
     host.addEventListener('dblclick', onDblClick);
     return () => host.removeEventListener('dblclick', onDblClick);
-  }, [toolbarHost, snapshot.isDetailMode, snapshot.isInlineMode, documentChromeActive]);
+  }, [toolbarHost, snapshot.isDetailMode, snapshot.isInlineMode]);
 
   const tippyRef = useRef<HTMLElement | null>(null);
   tippyRef.current = toolbarHost;
@@ -321,13 +315,6 @@ export function Toolbar() {
   }, [snapshot.pinnedPlugins.length, snapshot.ready, toolbarHost]);
 
   if (!toolbarHost) return null;
-
-  // F-DOC-2：文档查看器接管 —— 直接改渲染文档控件组，原生工具栏内容不渲染。
-  // 这是**对原框架的改造**（同一组件、同一宿主、同一套 .toolbar 类名与图标体系），
-  // 不是外面套一层覆盖。
-  if (documentChromeActive) {
-    return createPortal(<DocumentToolbarBranch theme={snapshot.theme} />, toolbarHost);
-  }
 
   const { viewMode } = snapshot;
   const normalRightVisible = viewMode !== 'random';

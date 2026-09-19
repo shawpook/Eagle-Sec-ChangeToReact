@@ -26,6 +26,8 @@ import { resolveFormatExtensionPreloadFromHost } from '../../core/pluginFormatPr
 
 import { openItemContextMenu } from '../../services/itemMenuService';
 
+import { isDocumentViewerItem } from '../../core/documentViewer';
+
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode, machineryToggleSlideshow } from '../../core/miscDomain';
 import { useSelectionState } from '../../store/selectionState';
@@ -554,7 +556,14 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
 
   let branch: React.ReactNode = null;
 
-  if (pluginExt === 'plugin') {
+  // F-DOC-4：文档类条目（txt/md/json/office/pdf…白名单）的原生分支**置空**——渲染归
+  // 文档查看器 overlay（core/documentViewer.ts，盖在原生详情之上）。置空而非 return：
+  // 容器尾部的强制 1px 图是 zoom 引擎初始化（on_IMAGE_LOAD → opacity/showDetailImage 链）的
+  // 依赖，必须保留。总开关关闭（__EAGLE_ORCABOX_DOCUMENT_VIEWER_ENABLED=false）时判据
+  // 不命中，pdf/docx 等回落原生分支。
+  if (isDocumentViewerItem(current)) {
+    branch = null;
+  } else if (pluginExt === 'plugin') {
     branch = (
       <div className={`detail-wrap${!pluginAllowZoom ? ' fixed' : ''}`}>
         {!pluginAllowZoom && <PluginView snapshot={snapshot} />}

@@ -14,9 +14,10 @@ import type { PreviewMode } from './shared/types'
 
 interface ParentMessage {
   source: 'eagle-document-viewer'
-  type: 'ready' | 'mode' | 'close' | 'state'
+  type: 'ready' | 'mode' | 'close' | 'state' | 'navRequest'
   mode?: PreviewMode
   state?: unknown
+  direction?: 'prev' | 'next'
 }
 
 /** F-DOC-2：宿主（Eagle 主窗）下发的指令消息。 */
@@ -55,26 +56,36 @@ function dispatchDocumentCommand(command: { type: string; value?: unknown }): vo
 
 /**
  * F-DOC-2：把查看器的 header 状态上报给宿主。
- * 用 rAF 节流 + JSON 去重：stage/surface 两层的 effect 会在同一帧里各报一次，
- * 合并成一次 postMessage，避免宿主侧重复渲染。
+ * 用「rAF + 超时兜底」节流 + JSON 去重：stage/surface 两层的 effect 会在同一帧里各报一次，
+ * 合并成一次 postMessage，避免宿主侧重复渲染。rAF 兜底：隐藏/最小化窗口的 rAF 可能
+ * 长时间不触发，超时后强制 flush，否则宿主永远等不到握手后的首帧状态。
  */
 let pendingState: Record<string, unknown> | null = null
 let stateFrame = 0
+let stateFallbackTimer = 0
 let lastStateJson = ''
+
+function flushViewerState(): void {
+  stateFrame = 0
+  if (stateFallbackTimer) {
+    clearTimeout(stateFallbackTimer)
+    stateFallbackTimer = 0
+  }
+  const payload = pendingState
+  pendingState = null
+  if (!payload) return
+  const json = JSON.stringify(payload)
+  if (json === lastStateJson) return
+  lastStateJson = json
+  postParent({ source: 'eagle-document-viewer', type: 'state', state: payload })
+}
 
 export function postViewerState(state: Record<string, unknown>): void {
   pendingState = { ...(pendingState || {}), ...state }
   if (stateFrame) return
-  stateFrame = requestAnimationFrame(() => {
-    stateFrame = 0
-    const payload = pendingState
-    pendingState = null
-    if (!payload) return
-    const json = JSON.stringify(payload)
-    if (json === lastStateJson) return
-    lastStateJson = json
-    postParent({ source: 'eagle-document-viewer', type: 'state', state: payload })
-  })
+  stateFrame = requestAnimationFrame(flushViewerState)
+  // F-DOC-4：隐藏窗口的 rAF 可能不触发，100ms 后兜底 flush（幂等：stateFrame 已清零）。
+  stateFallbackTimer = window.setTimeout(flushViewerState, 100)
 }
 
 function postParent(message: ParentMessage) {
@@ -85,6 +96,17 @@ function postParent(message: ParentMessage) {
   } catch {
     // Ignore postMessage failures (sandboxed preview page).
   }
+}
+
+/**
+ * F-DOC-4：把「上/下一个素材」请求上交宿主。
+ *
+ * external chrome 模式下查看器不再持有导航权威——iframe URL 里烘干的 ids 列表会过期，
+ * 且下一项可能根本不是文档（宿主要关 overlay 换原生详情）。键盘 ←/→ 一律 postMessage
+ * 给宿主，由原生 machinerySelectPrev/Next 推进，与顶栏按钮同一条路径。
+ */
+export function postViewerNavRequest(direction: 'prev' | 'next'): void {
+  postParent({ source: 'eagle-document-viewer', type: 'navRequest', direction } as ParentMessage)
 }
 
 export default function DocumentViewerApp() {

@@ -23,7 +23,7 @@ import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { getWindowScope } from './scopeFace';
 import { onDetailEnter, onDetailLeave } from './detailDeliveryGate';
-import { maybeOpenDocumentViewer } from './documentViewer';
+import { openDocumentViewerForDetailItem, closeDocumentViewer } from './documentViewer';
 import { syncErrorCount, writeLocalhostError, writeLibraryPathPermissionError } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -1511,14 +1511,15 @@ export function machineryEnterDetailMode($event: any, image: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
-  // F-DOC-1：文档工作区入口。必须在**任何分流之前**判定（含 cssSet/门控/选区守卫）——文档类
-  // 条目由独立 viewer overlay 接管，不进图片详情流程。判据与 shims 原 enterDetailMode 包装体
-  // 逐字一致（目标可解析 && 总开关 && ext 白名单），见 core/documentViewer.ts。
+  // F-DOC-4：文档工作区入口。文档类条目由查看器 overlay 接管**渲染**，但原生详情流
+  // 照常初始化（选区/current/isDetailMode/检查器）——查看器是详情模式内的文档分支，
+  // 不是截断详情的平行模式（early-return 语义已随 F-DOC-4 废除）。后续导航经
+  // machinerySelectNext/Prev → syncDocumentViewerWithDetailItem 在两分支间无缝切换。
   {
     const target = image || (useSelectionState.getState().selected.length
       ? useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1]
       : null);
-    if (maybeOpenDocumentViewer(target)) return;
+    openDocumentViewerForDetailItem(target);
   }
 
   cssSet("#detail-container", { opacity: 0 });
@@ -1662,6 +1663,10 @@ export function machineryLeaveDetailMode($event?: any): void {
   const $timeout = getTimeout();
   // P2：退出详情立即解除原图交付门控（与 shims 原包装体同序：先解除再走原逻辑）。
   onDetailLeave();
+  // F-DOC-4：文档查看器是详情模式内的文档分支——退出详情必须同时卸载 overlay。
+  // 放在 machinery 本体（而非 scope.leaveDetailMode 包装）：scope 面 / __eagleMachinery /
+  // 驱动面 / UI 全部汇聚到本函数，一处关闭全路径生效。
+  closeDocumentViewer();
 
   writeIsCropMode(false);
   syncDetailFromScope();

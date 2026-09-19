@@ -9,6 +9,9 @@ import {
 import { t } from '../../global/eagleGlobals';
 import { sendDocumentViewerCommand } from '../../core/documentViewer';
 import { useDocumentViewerHostState } from '../../store/documentViewerState';
+import { useDetailState } from '../../store/detailState';
+import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
+import { machineryLeaveDetailMode } from '../../core/miscDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { openApplicationContextMenu, openSidebarVisibleContextMenu } from '../../services/miscMenuService';
 import { runInBodyScope, SCOPED_HANDLER } from '../../core/appCore';
@@ -26,6 +29,13 @@ import { runInBodyScope, SCOPED_HANDLER } from '../../core/appCore';
  *   - 右栏 `.right`：控件组。图标优先取 `assets/images/<theme>/icons/` 原生资源；
  *     该资源集中不存在的语义（主题/编辑/预览/收藏）沿用查看器 `ModeButton` 原有的
  *     lucide 描边图标——它们本就是这套控件组的原始外观。
+ *
+ * F-DOC-4：导航权威在宿主。计数器/上下篇禁用态与 DetailToolbar 同源
+ * （`useDetailState` 快照的 currentIndex/allDataCount，即全部素材中的位置），
+ * prev/next/返回键直调原生 machinery（machinerySelectPrev/Next / machineryLeaveDetailMode）
+ * ——iframe 只是文档类条目的渲染分支，不再持有导航状态（修掉「下一项不是文档时
+ * iframe 只能渲染占位图」的根因：非文档目标由 sync 层关闭 overlay、露出原生详情）。
+ * iframe 上报的 header 仅保留表面状态（字体/配色/编辑模式/收藏/全屏）。
  */
 
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
@@ -126,12 +136,14 @@ const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: an
 export function DocumentToolbarBranch({ theme }: { theme: string }) {
   const { header } = useDocumentViewerHostState();
   const send = sendDocumentViewerCommand;
+  // F-DOC-4：计数器与上下篇禁用态取自宿主 detail 快照（与 DetailToolbar 同一来源、同一语义：
+  // currentIndex 为 1 起始的全体素材位置）。文档分支与图像分支在顶栏导航上完全同构。
+  const { currentIndex, allDataCount } = useDetailState((s: any) => s.snapshot);
 
   const fontOptions = header?.fontOptions ?? [];
   const editable = Boolean(header?.editable);
   const editorMode = header?.editorMode ?? '';
   const colorMode = header?.colorMode;
-  const hasCounter = Boolean(header && header.totalCount > 0);
 
   return (
     <>
@@ -162,14 +174,14 @@ export function DocumentToolbarBranch({ theme }: { theme: string }) {
           id="doc-chrome-back"
           className="ic-btn prev no-padding"
           title={t('toolbar.exitBtn')}
-          onClick={() => send({ type: 'close' })}
+          onClick={call(machineryLeaveDetailMode)}
         >
           <NativeIcon theme={theme} icon="ic-toolbar-exit.svg" />
         </div>
         <ul>
           <li className="show">
             <div className="counter">
-              {hasCounter ? `${header!.currentIndex + 1} / ${header!.totalCount}` : ''}
+              {allDataCount > 0 ? `${currentIndex} / ${allDataCount}` : ''}
             </div>
           </li>
         </ul>
@@ -229,30 +241,25 @@ export function DocumentToolbarBranch({ theme }: { theme: string }) {
         <span className="separator" />
 
         {/*
-          F-DOC-3：上/下一篇用**原生 .ic-btn.prev / .next**（无外框、无圆形背景），
+          F-DOC-3/F-DOC-4：上/下一篇用**原生 .ic-btn.prev / .next**（无外框、无圆形背景），
           与图像详情的同类按钮完全一致。
-          点击时下发带目标 id 的 navigate 指令——只发 prev/next 会让 iframe 基于它自己
-          那份可能已过期的列表推进，导致画面停在原处。
+          点击直调原生 machinerySelectPrev/Next（F-DOC-4 起不再向 iframe 下发 navigate）：
+          目标仍是文档时由 sync 层原地切页；目标不是文档时关闭 overlay、露出原生详情。
+          禁用态与 DetailToolbar 同源：首篇禁 prev、末篇禁 next。
         */}
         <div
           id="doc-chrome-prev"
-          className={`ic-btn prev no-padding${header?.hasPrev ? '' : ' disabled'}`}
+          className={`ic-btn prev no-padding${currentIndex <= 1 ? ' disabled' : ''}`}
           title="上一个素材"
-          onClick={() => {
-            if (!header?.prevId) return;
-            send({ type: 'navigate', value: header.prevId });
-          }}
+          onClick={call(machinerySelectPrev)}
         >
           <NativeIcon theme={theme} icon="ic-toolbar-prev.svg" />
         </div>
         <div
           id="doc-chrome-next"
-          className={`ic-btn next no-padding${header?.hasNext ? '' : ' disabled'}`}
+          className={`ic-btn next no-padding${currentIndex >= allDataCount ? ' disabled' : ''}`}
           title="下一个素材"
-          onClick={() => {
-            if (!header?.nextId) return;
-            send({ type: 'navigate', value: header.nextId });
-          }}
+          onClick={call(machinerySelectNext)}
         >
           <NativeIcon theme={theme} icon="ic-toolbar-next.svg" />
         </div>
@@ -275,7 +282,8 @@ export function DocumentToolbarBranch({ theme }: { theme: string }) {
             icon={header?.fullscreen ? 'ic-toolbar-zoom-fit.svg' : 'ic-toolbar-zoom-actual.svg'}
           />
         </DocRoundBtn>
-        <DocRoundBtn title="关闭预览" onClick={() => send({ type: 'close' })}>
+        {/* F-DOC-4：关闭预览 = 退出详情（machineryLeaveDetailMode 会同步卸载 overlay 回网格）。 */}
+        <DocRoundBtn title="关闭预览" onClick={call(machineryLeaveDetailMode)}>
           <NativeIcon theme={theme} icon="ic-toolbar-close.svg" />
         </DocRoundBtn>
       </div>

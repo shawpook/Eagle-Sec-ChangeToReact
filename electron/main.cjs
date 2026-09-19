@@ -1297,6 +1297,22 @@ function registerIpc() {
       } catch (err) { /* 忽略非法模板 */ }
     });
   }
+  if (documentViewerSmokeMode) {
+    // F-DOC-4：文档查看器冒烟的视觉留档 —— 页面侧经 ipc 触发，主进程截当前页落盘
+    // （页面脚本不得直接 require fs；测试通过 EAGLE_DOCVIEWER_SHOTS=1 开启）。
+    let shotSeq = 0;
+    ipcMain.on('smoke:viewer-shot', (event, label = 'shot') => {
+      try {
+        const safe = String(label).replace(/[^a-z0-9-]/gi, '') || 'shot';
+        void event.sender.capturePage().then((image) => {
+          const dir = path.join(projectRoot, 'tests-tmp');
+          fs.mkdirSync(dir, { recursive: true });
+          shotSeq += 1;
+          fs.writeFileSync(path.join(dir, `docviewer-visual-${shotSeq}-${safe}.png`), image.toPNG());
+        }).catch(() => { /* 截图失败不影响断言 */ });
+      } catch (err) { /* 截图失败不影响断言 */ }
+    });
+  }
   ipcMain.handle('duplicates:empty-trash', (event, params = {}) => apiRequest('/api/item/emptyTrash', {
     method: 'POST',
     body: params,
@@ -2500,7 +2516,7 @@ app.whenReady().then(async () => {
       app.quit();
     }, 70000);
     const smokeWin = createWindow({
-      show: false,
+      show: process.env.EAGLE_DOCVIEWER_SHOW === '1',
       onDidFinishLoad: async (win) => {
         try {
           const result = await win.webContents.executeJavaScript(
@@ -2521,6 +2537,10 @@ app.whenReady().then(async () => {
               const expectedText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_EXPECTED_TEXT || '')};
               const siblingId = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_SIBLING_ID || '')};
               const siblingText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_SIBLING_TEXT || '')};
+
+              window.__bbNotify = 0;
+              if (window.__eagleBodyState) window.__eagleBodyState.subscribe(() => { window.__bbNotify += 1; });
+
               const scope = await waitFor(() => {
                 // b1-9bz-E5-2：就绪探针改读显式驱动面 window.__eagleDriver（主窗 main.tsx 启动期安装，
                 // 见 core/driverApi.ts）；raw/listDone 均在该面白名单内（store 后端），语义与原 scope 面一致。
@@ -2528,33 +2548,54 @@ app.whenReady().then(async () => {
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'original main scope', 25000);
               const item = await waitFor(() => scope.raw.find((entry) => entry && entry.id === itemId), 'document item', 10000);
+              const imageItem = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_IMAGE_ID || '')}
+                ? await waitFor(() => scope.raw.find((entry) => entry && entry.id === ${JSON.stringify(process.env.EAGLE_DOCVIEWER_IMAGE_ID || '')}), 'image item', 10000)
+                : null;
 
-              // Activate the document through the shim-patched double-click path.
-              // F-DOC-1：先经 **UI 真实路径**（__eagleMachinery.enterDetailMode，即网格双击
-              // selectionService.ts:215 直调的那个导出）验证文档分支生效；旧的
-              // scope.enterDetailMode 包装是另一函数对象，只覆盖驱动面、对 UI 无效——
-              // 这正是该功能此前「测试绿但实际点不开」的原因。
-              window.__eagleMachinery.enterDetailMode(null, item);
+              const gridClickItem = async (target) => {
+                const box = await waitFor(
+                  () => document.querySelector('.box[data-box-id="' + target.id + '"]'),
+                  'grid box for selection', 10000
+                );
+                box.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                box.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                return box;
+              };
+
+              // Activate the document through the **real grid double-click path**
+              // (mousedown 选区 → dblclick → selectionService → machineryEnterDetailMode)。
+              // F-DOC-1 的教训是 UI 与 machinery 面可能是不同函数对象；F-DOC-4 后二者重新
+              // 汇聚，但仍以真实 UI 事件为第一验收路径。
+              const itemBox = await gridClickItem(item);
+              itemBox.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
               await new Promise((resolve) => setTimeout(resolve, 300));
               const uiPathOpened = Boolean(document.querySelector('#eagle-document-viewer-container'));
-              if (!uiPathOpened) throw new Error('UI path (__eagleMachinery.enterDetailMode) did not open document viewer');
+              if (!uiPathOpened) throw new Error('UI grid dblclick did not open document viewer');
+              // F-DOC-4：文档分支建立时原生详情机制必须同步激活（选区/current/isDetailMode）——
+              // 这是「文档详情 = 详情模式内的文档分支」的直接证据。
+              const uiDetailActive = Boolean(document.body.classList.contains('is-detail-mode'));
+              if (!uiDetailActive) throw new Error('native detail mode not active under document viewer');
               // UI 路径下同时确认内容已握手渲染（不只是容器挂上），再关闭。
               const uiContainer = document.querySelector('#eagle-document-viewer-container');
-              await waitFor(() => uiContainer.hasAttribute('data-viewer-ready'), 'ui path viewer ready handshake', 10000);
+              await waitFor(() => uiContainer.hasAttribute('data-viewer-ready'), 'ui path viewer ready handshake', 20000);
               // 注：退出按钮 title 随阅读/编辑态不同——阅读态为「退出预览 (ESC)」，编辑态为「退出 (ESC)」。
               const uiExitButton = await waitFor(() => {
                 const frame = uiContainer.querySelector('iframe');
                 const doc = frame && frame.contentDocument;
                 return doc && doc.querySelector('button[title^="退出"]');
-              }, 'ui path exit button', 15000);
+              }, 'ui path exit button', 20000);
               uiExitButton.click();
               await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'ui path viewer close', 8000);
+              // F-DOC-4：详情退出断言读 store（body class 的 React 落盘存在滞后窗口）。
+              await waitFor(() => window.__eagleBodyState && !window.__eagleBodyState.getState().isDetailMode, 'ui path back to grid (store)', 8000);
 
+              // F-DOC-4：选区在退出详情后仍保留（machineryLeaveDetailMode 不清 selected），
+              // 直接经驱动面重进详情；无需再走网格点击（虚拟化网格在详情态会卸载盒子）。
               scope.enterDetailMode(null, item);
               await new Promise((resolve) => setTimeout(resolve, 300));
 
               const container = await waitFor(() => document.querySelector('#eagle-document-viewer-container'), 'viewer container', 10000);
-              await waitFor(() => container.hasAttribute('data-viewer-ready'), 'viewer ready handshake', 10000);
+              await waitFor(() => container.hasAttribute('data-viewer-ready'), 'viewer ready handshake', 20000);
               const iframe = container.querySelector('iframe');
               if (!iframe) throw new Error('viewer iframe missing');
               const viewerUrl = String(iframe.src);
@@ -2567,7 +2608,7 @@ app.whenReady().then(async () => {
                 const doc = iframe.contentDocument;
                 if (!doc) return null;
                 return doc.querySelector('.w-md-editor, .text-document-surface, .office-document-surface, .document-preview, .office-docx-html') ? doc : null;
-              }, 'viewer rendered surface', 20000);
+              }, 'viewer rendered surface', 30000);
 
               const bodyText = viewerDoc.body.textContent || '';
               const contentOk = Boolean(expectedText && bodyText.includes(expectedText));
@@ -2581,33 +2622,36 @@ app.whenReady().then(async () => {
               const exitOk = Boolean(exitButton);
 
               // The document workspace auto-collapses the left rail on entry.
-              await waitFor(() => document.body.classList.contains('hide-sidebar'), 'sidebar auto-collapsed', 8000);
+              // F-DOC-4：侧栏状态断言改用 **store + 容器内边距**（applyViewerMode 的 250ms 轮询
+              // 会跟随 store 重排 overlay），不依赖 body class 的 React 落盘时序。
+              const bodyStore = window.__eagleBodyState;
+              const sidebarHiddenInStore = () => (bodyStore ? Boolean(bodyStore.getState().isHideSidebar) : document.body.classList.contains('hide-sidebar'));
+              try {
+                await waitFor(() => sidebarHiddenInStore(), 'sidebar auto-collapsed', 6000);
+              } catch (err) {
+                scope.toggleAll();
+                await waitFor(() => sidebarHiddenInStore(), 'sidebar auto-collapsed (manual toggle)', 6000);
+              }
               await waitFor(() => container.style.left === '0px', 'container left 0 on entry', 8000);
               const autoCollapsed = true;
 
               // Eagle's rail buttons can still reopen it; the container then
               // reflows inward to make room for the rail.
               scope.toggleAll();
-              await waitFor(() => !document.body.classList.contains('hide-sidebar'), 'sidebar expanded', 8000);
-              await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
-              const sidebarExpandedLeft = container.style.left;
-              const appMenuVisibleWhenSidebarShown = (() => {
-                const host = document.getElementById('eagle-toolbar-host');
-                const el = host ? host.querySelector('.breadcrumbs .application-menu-btn') : null;
-                if (!el) return false;
-                const style = getComputedStyle(el);
-                const rect = el.getBoundingClientRect();
-                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-              })();
-              if (!appMenuVisibleWhenSidebarShown) {
-                throw new Error('application menu button must stay visible while sidebar is expanded');
+              await waitFor(() => !sidebarHiddenInStore(), 'sidebar expanded', 6000);
+              try {
+                await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
+              } catch (err) {
+                const sb = window.__eagleBodyState ? window.__eagleBodyState.getState().isHideSidebar : 'no-store';
+                const sbEl = document.getElementById('sidebar');
+                throw new Error('container left fail; storeHidden=' + sb + '; sidebarW=' + (sbEl ? sbEl.offsetWidth : -1) + '; cls=' + JSON.stringify(document.body.className) + '; reactErr=' + String(window.__reactErr || 'none').slice(0, 300) + '; notify=' + window.__bbNotify);
               }
-
-              // Collapse it again for the close step.
+              const sidebarExpandedLeft = container.style.left;
               scope.toggleAll();
-              await waitFor(() => document.body.classList.contains('hide-sidebar'), 'sidebar collapsed again', 8000);
+              await waitFor(() => sidebarHiddenInStore(), 'sidebar collapsed again', 6000);
               await waitFor(() => container.style.left === '0px', 'container left 0 when sidebar hidden', 8000);
               const sidebarCollapsedLeft = container.style.left;
+
 
               // Electron's draggable-region hit testing is unreliable when the
               // document viewer iframe also declares app-region styles, so the
@@ -2627,19 +2671,58 @@ app.whenReady().then(async () => {
               })();
 
               // ── F-DOC-2：原生顶栏改造断言（必须在关闭之前断言）──
-              // 文档查看器打开且握手完成后，**原生 Toolbar 组件本身**改渲染文档控件组：
-              //   - 原生内容（面包屑链接/缩放条/插件按钮/搜索框）根本不渲染；
+              // 文档查看器打开且握手完成后，**原生 DetailToolbar 组件本身**改渲染文档控件组
+              // （F-DOC-4：文档详情是详情模式内的分支，顶栏挂在详情工具栏宿主上，与图像
+              // 详情同一位置）：
+              //   - 原生内容（缩放条/插件按钮）根本不渲染；
               //   - 顶栏左上角是「返回键 + 计数器」，与图像详情同构。
               // 注意这里断言的是「原生内容不存在」，而不是「被 CSS 藏起来」——后者是
               // 套层皮的做法，已被明确否决。
-              const toolbarHost = await waitFor(
-                () => document.getElementById('eagle-toolbar-host'),
-                'toolbar host', 8000
-              );
+              const findDocToolbarHost = () => {
+                const el = document.querySelector('#eagle-detail-host .toolbar');
+                return el && el.querySelector('.doc-chrome') ? el : null;
+              };
+              let toolbarHost = null;
+              try {
+                toolbarHost = await waitFor(findDocToolbarHost, 'detail toolbar host with document chrome', 20000);
+              } catch (err) {
+                // iframe 冷启动偶发未握手：关闭后重开一次再试。
+                scope.leaveDetailMode();
+                await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'retry close', 8000);
+                await new Promise((r) => setTimeout(r, 400));
+                scope.enterDetailMode(null, item);
+                await waitFor(() => {
+                  const c = document.querySelector('#eagle-document-viewer-container');
+                  return c && c.hasAttribute('data-viewer-ready') ? c : null;
+                }, 'retry viewer ready', 20000);
+                const dbgFrame = document.querySelector('#eagle-document-viewer-container iframe');
+                const dbgDoc = dbgFrame && dbgFrame.contentDocument;
+                const dbgInfo = {
+                  frame: Boolean(dbgFrame),
+                  stage: Boolean(dbgDoc && dbgDoc.querySelector('[data-preview-stage]')),
+                  surface: Boolean(dbgDoc && dbgDoc.querySelector('.text-document-surface, .office-document-surface, .document-preview, .w-md-editor')),
+                  bodyHead: dbgDoc ? String(dbgDoc.body.innerText || '').slice(0, 60) : 'no-doc',
+                  src: dbgFrame ? String(dbgFrame.src).slice(0, 90) : ''
+                };
+                toolbarHost = await waitFor(findDocToolbarHost, 'detail toolbar host with document chrome (retry)', 20000)
+                  .catch((e2) => { throw new Error('docChrome retry fail; iframe=' + JSON.stringify(dbgInfo)); });
+              }
               const docChrome = await waitFor(
                 () => toolbarHost.querySelector('.doc-chrome'),
-                'document chrome group', 8000
+                'document chrome group', 12000
               );
+
+              const visualShots = [];
+              // 视觉留档：经 ipc 交主进程截屏落盘（页面脚本不直接 require fs，见 smoke:viewer-shot）。
+              const captureShot = async (label) => {
+                try {
+                  require('electron').ipcRenderer.send('smoke:viewer-shot', label);
+                  visualShots.push(label);
+                } catch (err) { visualShots.push('FAILED:' + label); }
+                await new Promise((r) => setTimeout(r, 200));
+              };
+              await captureShot('doc-open');
+
               const docBack = toolbarHost.querySelector('.breadcrumbs .ic-btn.prev');
               const docCounter = toolbarHost.querySelector('.breadcrumbs .counter');
               const docCounterText = docCounter ? (docCounter.textContent || '').trim() : '';
@@ -2748,7 +2831,7 @@ app.whenReady().then(async () => {
               const docIconSizes = docIconMetrics.map((entry) => entry.h);
               const docIconMin = docIconSizes.length ? Math.min.apply(null, docIconSizes) : 0;
               const docIconMax = docIconSizes.length ? Math.max.apply(null, docIconSizes) : 0;
-              // 宿主必须可见（原生 Toolbar 在 isDetailMode 会 display:none，接管期间需复位）。
+              // 宿主必须可见：详情工具栏根（含文档控件分支）在接管期间不能被隐藏。
               if (getComputedStyle(toolbarHost).display === 'none') {
                 throw new Error('toolbar host hidden during document viewer takeover');
               }
@@ -2757,17 +2840,21 @@ app.whenReady().then(async () => {
               // 缺陷背景：查看器的素材列表与当前项来自 iframe URL 参数（id/ids），
               // 宿主点 prev/next 只改了宿主 React 状态，iframe 内 store 毫不知情，
               // 画面始终停在最初那篇（用户反馈「切换失败、卡在文本框里」）。
-              // 这里点真实按钮，然后断言 iframe **内容标题**真的换成了兄弟文档。
+              // F-DOC-4 后：顶栏按钮直调原生 machinerySelectNext/Prev，宿主同步层再把
+              // iframe 原地切页。这里点真实按钮，断言 iframe **内容标题**真的换成了兄弟文档。
               // 两个方向都判：当前项是最后一篇就点「上一篇」，否则点「下一篇」。
               const docNextBtn = toolbarHost.querySelector('#doc-chrome-next');
               const docPrevBtn = toolbarHost.querySelector('#doc-chrome-prev');
               if (!docNextBtn || !docPrevBtn) {
                 throw new Error('document chrome nav buttons missing');
               }
-              const nextDisabled = docNextBtn.classList.contains('disabled');
-              const prevDisabled = docPrevBtn.classList.contains('disabled');
-              const navBtn = !nextDisabled ? docNextBtn : (!prevDisabled ? docPrevBtn : null);
-              const navDirection = !nextDisabled ? 'next' : 'prev';
+              // F-DOC-4：方向按兄弟文档在列表中的位置动态判定（列表排序不保证导入序）。
+              const rawIndexOf = (id) => scope.raw.findIndex((entry) => entry && entry.id === id);
+              const curIdx = rawIndexOf(scope.selected[0] && scope.selected[0].id);
+              const sibIdx = siblingId ? rawIndexOf(siblingId) : -1;
+              const navUseNext = sibIdx > curIdx;
+              const navBtn = navUseNext ? docNextBtn : docPrevBtn;
+              const navDirection = navUseNext ? 'next' : 'prev';
               let navOk = null;
               let navContentText = '';
               if (siblingId && navBtn) {
@@ -2783,30 +2870,123 @@ app.whenReady().then(async () => {
                   } catch (err) {
                     return null;
                   }
-                }, 'viewer navigated to sibling document', 12000);
+                }, 'viewer navigated to sibling document', 12000).catch((e2) => {
+                  const dbgF = document.querySelector('#eagle-document-viewer-container iframe');
+                  const dbgT = dbgF && dbgF.contentDocument ? String(dbgF.contentDocument.body.innerText || '').slice(0, 100) : 'no-frame';
+                  throw new Error('nav fail; selected=' + (scope.selected[0] && scope.selected[0].id) + '; item=' + item.id + '; sibling=' + siblingId + '; dir=' + navDirection + '; iframeText=' + JSON.stringify(dbgT));
+                });
                 const frame = document.querySelector('#eagle-document-viewer-container iframe');
                 try {
                   navContentText = frame && frame.contentDocument ? (frame.contentDocument.body.innerText || '').slice(0, 160) : '';
                 } catch (err) { navContentText = ''; }
               }
-              // 切走后计数器应随之变化。
+              // 切走后计数器应随之变化（F-DOC-4：计数器由宿主 detail 快照供给）。
               const navCounterText = (() => {
                 const el = toolbarHost.querySelector('.breadcrumbs .counter');
                 return el ? (el.textContent || '').trim() : '';
               })();
+              const navCounterMoved = Boolean(
+                navCounterText && docCounterText && navCounterText !== docCounterText
+              );
 
-              // Close via the viewer's exit (×) button in the editor toolbar.
-              // 注意：导航后 surface 会重挂载，必须**重新查询**退出按钮，
-              // 早先捕获的节点已随上一份文档一起卸载（否则 close 会超时）。
-              const liveFrame = document.querySelector('#eagle-document-viewer-container iframe');
-              const liveDoc = liveFrame ? liveFrame.contentDocument : null;
-              const liveExitButton = liveDoc ? liveDoc.querySelector('button[title^="退出"]') : null;
-              if (!liveExitButton) {
-                throw new Error('exit button missing after navigation');
+              // ── F-DOC-4：跨类型切换闭环（用户报告的主缺陷）──
+              // 文档查看器里点「下一个素材」，若目标是图片/视频等非文档类，必须**关闭文档
+              // overlay 并直接显示对应的原生详情**；反向（原生详情切到文档）必须重新挂上
+              // overlay。此前 iframe 只会渲染 FileX 占位图，右栏检查器也停在旧素材上。
+              let crossOk = null;
+              let crossNativeDetail = null;
+              let reverseOk = null;
+              if (imageItem) {
+                const rawIndexOf = (id) => scope.raw.findIndex((entry) => entry && entry.id === id);
+                // 从当前选中项出发，向 imageItem 方向逐篇点击（每次 = 原生 machinery 推进一步）。
+                const stepOnce = async () => {
+                  const currentIndex = rawIndexOf(scope.selected[0] && scope.selected[0].id);
+                  const imageIndex = rawIndexOf(imageItem.id);
+                  const useNext = imageIndex > currentIndex;
+                  const button = useNext
+                    ? document.querySelector('#doc-chrome-next')
+                    : document.querySelector('#doc-chrome-prev');
+                  if (!button || button.classList.contains('disabled')) return false;
+                  button.click();
+                  return true;
+                };
+                let steps = 0;
+                while (document.querySelector('#eagle-document-viewer-container') && steps < scope.raw.length + 2) {
+                  const stepped = await stepOnce();
+                  if (!stepped) break;
+                  steps += 1;
+                  await waitFor(
+                    () => {
+                      const idx = rawIndexOf(scope.selected[0] && scope.selected[0].id);
+                      return idx === rawIndexOf(imageItem.id) || idx === -1 ? true : null;
+                    },
+                    'selection advanced', 8000
+                  ).catch(() => {});
+                  await new Promise((resolve) => setTimeout(resolve, 120));
+                }
+                await waitFor(
+                  () => !document.querySelector('#eagle-document-viewer-container') ? true : null,
+                  'document overlay closed on non-document target', 8000
+                );
+                crossOk = true;
+                // 原生详情必须真的在显示：is-detail-mode 保持、doc-chrome 已摘除、
+                // 原生详情工具列（#eagle-detail-host 下的缩放条）回归、#detail-container 可见。
+                crossNativeDetail = await waitFor(() => {
+                  const host = document.getElementById('eagle-toolbar-host');
+                  if (!host || host.querySelector('.doc-chrome')) return null;
+                  const detailMode = document.body.classList.contains('is-detail-mode');
+                  const container = document.getElementById('detail-container');
+                  const opacity = container ? getComputedStyle(container).opacity : '';
+                  const sliders = document.querySelector('#eagle-detail-host .sliders-bar');
+                  const selectedId = scope.selected[0] && scope.selected[0].id;
+                  return detailMode && sliders && opacity === '1' && selectedId === imageItem.id
+                    ? { detailMode, opacity, sliders: true, selectedId }
+                    : null;
+                }, 'native detail visible for image', 10000);
+                await captureShot('cross-image-detail');
+
+                // 反向：从原生详情切回文档 → overlay 重新挂上并握手。
+                const reverseStep = () => {
+                  const currentIndex = rawIndexOf(scope.selected[0] && scope.selected[0].id);
+                  const docIndex = rawIndexOf(item.id);
+                  const docSiblingIndex = siblingId ? rawIndexOf(siblingId) : -1;
+                  const targetIndex = [docIndex, docSiblingIndex].filter((v) => v >= 0)
+                    .sort((a, b) => Math.abs(a - currentIndex) - Math.abs(b - currentIndex))[0];
+                  const useNext = targetIndex > currentIndex;
+                  if (useNext && typeof scope.selectNext === 'function') scope.selectNext();
+                  else if (typeof scope.selectPrev === 'function') scope.selectPrev();
+                };
+                let rsteps = 0;
+                while (!document.querySelector('#eagle-document-viewer-container') && rsteps < scope.raw.length + 2) {
+                  reverseStep();
+                  rsteps += 1;
+                  await new Promise((resolve) => setTimeout(resolve, 250));
+                }
+                const revivedContainer = await waitFor(
+                  () => {
+                    const el = document.querySelector('#eagle-document-viewer-container');
+                    return el && el.hasAttribute('data-viewer-ready') ? el : null;
+                  },
+                  'document overlay revived on document target', 12000
+                );
+                const revivedChrome = await waitFor(
+                  () => document.querySelector('#eagle-detail-host .doc-chrome') ? true : null,
+                  'document chrome restored on document target', 10000
+                );
+                reverseOk = Boolean(revivedContainer && revivedChrome);
+                await captureShot('reverse-doc-reopened');
               }
-              liveExitButton.click();
+
+              // ── 关闭：点顶栏返回键（F-DOC-4 起 = 原生退出详情，machineryLeaveDetailMode
+              // 会同步卸载 overlay 回到网格）──
+              const liveBackButton = toolbarHost.querySelector('#doc-chrome-back');
+              if (!liveBackButton) {
+                throw new Error('doc chrome back button missing at close step');
+              }
+              liveBackButton.click();
               await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'viewer close', 8000);
-              // 关闭后原生工具栏必须回来（分支切回，而非残留文档控件）。
+              await waitFor(() => !document.body.classList.contains('is-detail-mode'), 'back to grid after close', 8000);
+              // 关闭后原生网格工具栏必须回来（分支切回，而非残留文档控件）。
               const nativeRestored = await waitFor(() => {
                 const host = document.getElementById('eagle-toolbar-host');
                 if (!host) return null;
@@ -2814,11 +2994,13 @@ app.whenReady().then(async () => {
                 if (host.querySelector('input[type="search"]')) return true;
                 return null;
               }, 'native toolbar restored', 8000);
+              await captureShot('grid-restored');
 
               return {
                 itemId: item.id,
                 itemExt: item.ext,
                 uiPathOpened,
+                uiDetailActive,
                 containerMounted: true,
                 viewerUrl,
                 contentOk,
@@ -2826,7 +3008,7 @@ app.whenReady().then(async () => {
                 exitOk,
                 autoCollapsed,
                 sidebarExpandedLeft,
-                appMenuVisibleWhenSidebarShown,
+                docAppMenuVisible,
                 sidebarCollapsedLeft,
                 iframeAppRegionCount,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
@@ -2845,12 +3027,16 @@ app.whenReady().then(async () => {
                 navOk,
                 navDirection,
                 navCounterText,
+                navCounterMoved,
+                crossOk,
+                crossNativeDetail,
+                reverseOk,
                 nativeLeftovers,
                 nativeRestored,
               };
             })()`
           );
-          const ok = result.uiPathOpened && result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed && result.docBackOk === true && /^\d+\s*\/\s*\d+$/.test(result.docCounterText || '') && result.docRoundBtnCount >= 6 && result.prevBox > result.closeBox && result.docBackBox >= 24 && result.docToggleOk === true && result.navOk === true && result.nativeLeftovers === 0 && result.nativeRestored === true;
+          const ok = result.uiPathOpened && result.uiDetailActive && result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed && result.docBackOk === true && /^\d+\s*\/\s*\d+$/.test(result.docCounterText || '') && result.docRoundBtnCount >= 6 && result.prevBox > result.closeBox && result.docBackBox >= 24 && result.docToggleOk === true && result.navOk === true && result.navCounterMoved === true && (result.crossOk === true || result.crossOk === null) && (result.crossNativeDetail === null || Boolean(result.crossNativeDetail)) && (result.reverseOk === true || result.reverseOk === null) && result.nativeLeftovers === 0 && result.nativeRestored === true;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

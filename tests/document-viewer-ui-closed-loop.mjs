@@ -108,19 +108,30 @@ try {
 
   const librariesRoot = path.join(tempRoot, 'libraries');
   fs.mkdirSync(librariesRoot, { recursive: true });
-  const markdownSource = path.join(tempRoot, 'Viewer Sample.md');
+  // 素材名带序号：列表排序（升/降序均可）保证 md1↔md2 相邻、png 在端点，
+  // 让「文档→兄弟文档」「文档→图片」两个导航断言与排序无关地成立。
+  const markdownSource = path.join(tempRoot, '1 Viewer Sample.md');
   const expectedText = 'Viewer E2E 中文标题';
   fs.writeFileSync(markdownSource, `# ${expectedText}\n\n- 列表一\n- 列表二\n\n\`\`\`js\nconst a = 1\n\`\`\`\n`, 'utf8');
-  // F-DOC-3：第二个文档用于验证顶栏「上/下一篇」真的能切走。
-  // 只有一个素材时 hasNext 恒为 false，导航缺陷会被掩盖。
-  const secondSource = path.join(tempRoot, 'Viewer Sibling.md');
+  const secondSource = path.join(tempRoot, '2 Viewer Sibling.md');
   const secondText = 'Viewer 兄弟文档 第二篇';
   fs.writeFileSync(secondSource, `# ${secondText}\n\n- 第二篇内容\n`, 'utf8');
+  // F-DOC-4：一张 1×1 PNG —— 跨类型切换目标。文档查看器里导航到它时必须关闭 overlay
+  // 并显示原生图片详情（此前只会渲染 FileX 占位图，即用户报告的主缺陷）。
+  const pngSource = path.join(tempRoot, '3 Viewer Cross.png');
+  fs.writeFileSync(
+    pngSource,
+    Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  );
 
   await postJson(apiBase, '/api/library/create', { name: 'Document Viewer UI', savePath: librariesRoot });
-  const imported = await postJson(apiBase, '/api/item/addFromPaths', { paths: [markdownSource, secondSource] });
-  const item = imported.find((entry) => entry && entry.id);
-  const sibling = imported.find((entry) => entry && entry.id && entry.id !== item.id);
+  const imported = await postJson(apiBase, '/api/item/addFromPaths', { paths: [pngSource, markdownSource, secondSource] });
+  const item = imported.find((entry) => entry && entry.id && entry.ext === 'md');
+  const sibling = imported.find((entry) => entry && entry.id && entry.ext === 'md' && entry.id !== item.id);
+  const image = imported.find((entry) => entry && entry.id && entry.ext === 'png');
 
   electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-document-viewer'], {
     ...baseEnv,
@@ -131,6 +142,7 @@ try {
     EAGLE_DOCVIEWER_EXPECTED_TEXT: expectedText,
     EAGLE_DOCVIEWER_SIBLING_ID: sibling ? sibling.id : '',
     EAGLE_DOCVIEWER_SIBLING_TEXT: secondText,
+    EAGLE_DOCVIEWER_IMAGE_ID: image ? image.id : '',
     EAGLE_ELECTRON_USER_DATA_DIR: path.join(tempRoot, 'electron-user-data'),
     // 应用菜单（hamburger）弹窗捕获：原生 popup 无法被 CDP 观察且会阻塞会话，
     // 故开启菜单冒烟模式，把模板序列化后回传断言（见 main.cjs smoke:menu-popup）。

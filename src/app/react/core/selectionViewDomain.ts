@@ -37,6 +37,7 @@ import { hide, offsetOf, qa, show } from '../utils/domQuery';
 import { moveCropToolChannel } from './../global/bus';
 import { getFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryCalculateImageBinding, machineryForceFitImageSize, machineryGetItemByElement, machineryPreloadImage, machineryRebindRefresh } from './itemDomain';
+import { syncDocumentViewerWithDetailItem } from './documentViewer';
 import { machineryAddToRecentFile, machineryRemoveFolder, machineryRemoveFolderContents, machineryRemoveFolderInner, machineryRemoveSmartFolder, machineryRemoveSmartFolderInner, machineryResetFolderCover, machineryToggleCurrentLevelSmartFoldersInner } from './libraryDomain';
 import { machineryRemoveTagGroup } from './tagManagerDomain';
 
@@ -975,6 +976,10 @@ export function machinerySelectNext(event?: any): void {
     syncInspectorFromScope();
     writeIsGifReady(false);
     syncDetailFromScope();
+    // F-DOC-4：current 已推进 → 同步文档分支（文档→文档原地切页；文档→图片/视频等
+    // 关 overlay 露出原生详情；图片/视频→文档挂 overlay）。查看器渲染与原生详情由此
+    // 共用同一条导航权威。
+    syncDocumentViewerWithDetailItem(useSelectionState.getState().current);
   }
 
   machineryAutoScroll(end);
@@ -1047,6 +1052,8 @@ export function machinerySelectPrev(event?: any): void {
   writeSelectedFolderMappings({});
   syncListFromScope();
   writeCurrentFocus("content");
+  // F-DOC-4：同 machinerySelectNext——current 已推进，同步文档分支 overlay 的开/关/切页。
+  syncDocumentViewerWithDetailItem(useSelectionState.getState().current);
   if (useSelectionState.getState().current) {
     detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {

@@ -6,11 +6,9 @@
  *    leaveDetailMode/raw/selected/inspector）；
  *  - `documentViewerExtensions` 白名单逐字（.pages/.xla/.xlam 有意缺席——后端无法转换，
  *    路由进 viewer 只会劣化预览）；
- *  - 侧栏/检查器测量、MutationObserver/ResizeObserver/轮询兜底、fallback 回原详情流、
- *    postMessage 握手（source === 'eagle-document-viewer'）全部保持不变；
- *  - F-DOC-1：入口由**唯一钩子函数** `maybeOpenDocumentViewer()` 承担，由
- *    `miscDomain.machineryEnterDetailMode` 在任何分流之前同步调用——UI/检查器/驱动面三条
- *    入口从此对齐。
+ *  - 侧栏/检查器测量、MutationObserver/ResizeObserver/轮询兜底、postMessage 握手
+ *    （source === 'eagle-document-viewer'）全部保持不变；
+ *  - F-DOC-1：入口由 `machineryEnterDetailMode` 同步调用（UI/检查器/驱动面三条入口对齐）。
  *
  * F-DOC-1 背景（原设计缺陷）：迁入时曾仅保留 scope.enterDetailMode 包装，注释断言「UI 面
  * 点击文档仍走各自 viewer 路由」。但 React 侧所有入口（selectionService / inspectorActions /
@@ -18,8 +16,24 @@
  * `scope.enterDetailMode` 非同一函数对象 —— 包装从未生效；而所承诺的「React 侧 viewer 路由」
  * 在 DetailViewer 分支链中并不存在（无 document 分支），导致 md/json/csv 等点开完全空白、
  * office 类只剩缩略图占位。现改为与 P2 交付门控同构的直挂方式（见 detailDeliveryGate.ts）。
+ *
+ * F-DOC-4（2026-09-19）：从「详情模式之外的平行模式」并入详情模式框架 —— 查看器成为
+ * **文档类条目的详情渲染分支**，原生详情机制（选区/current/上下篇/检查器/计数器）是唯一权威：
+ *  - `machineryEnterDetailMode` 对文档类条目不再 early-return，而是挂上 overlay 后继续走
+ *    原生详情初始化（isDetailMode 置位、selection/current/检查器同步）——查看器只是盖在
+ *    原生详情之上的文档渲染层；
+ *  - `machinerySelectNext/Prev` 更新 current 后调用 `syncDocumentViewerWithDetailItem`：
+ *    目标仍是文档 → 原地切页（navigate 指令）；目标不是文档 → 关闭 overlay，原生详情
+ *    （图片/视频/音频…分支）自然露出 —— 这正是「下一个素材是图片就直接换图片详情」的闭环；
+ *  - 反向同样成立：原生详情里左右切到文档类条目时，sync 层自动挂上 overlay；
+ *  - iframe 侧在 external chrome 模式下不再自行导航（键盘/内部列表已废弃），左右键
+ *    postMessage `navRequest` 上交宿主，由原生 machinery 推进 —— 两侧行为永远一致；
+ *  - 顶栏（DocumentToolbarBranch）的计数器/上下篇禁用态改由宿主 detail 快照计算，
+ *    与 DetailToolbar 同源（iframe 上报的 header 只保留表面状态：字体/配色/编辑/收藏）。
  */
 import { getWindowScope } from './scopeFace';
+import { useBodyState } from '../store/bodyState';
+import { cssSet } from '../utils/domQuery';
 import {
   emptyDocumentViewerHeader,
   writeDocumentViewerClosed,
@@ -36,12 +50,6 @@ const documentViewerExtensions = new Set([
   'pot', 'potm', 'potx', 'pps', 'ppsm', 'ppsx', 'ppt', 'pptm', 'rtf', 'wps',
   'xls', 'xlsb', 'xlsm', 'xlt', 'xltm', 'xltx',
 ]);
-
-/**
- * F-DOC-1：兜底重入抑制。查看器握手失败回落到原详情流时置位，避免 `machineryEnterDetailMode`
- * 内再次命中文档分支 → 又开查看器 → 又握手失败，形成无限循环。
- */
-let inDocumentFallback = false;
 
 /**
  * F-DOC-2：header 状态累加器。stage 层（标题/序号/上下篇）与 surface 层（字体/配色/
@@ -122,14 +130,22 @@ function suppressSidebarHoverStrip(): void {
 // action lives inside the viewer's editor toolbar (preview → ×).
 function sidebarVisibilityState(): { hidden: boolean; width: number } {
   const sidebar = document.querySelector('#sidebar') as HTMLElement | null;
+  // F-DOC-4：优先读 store（bodyState.isHideSidebar），body class 仅作回落——class 由
+  // BodyBindings 的 React effect 落盘，存在滞后/丢失窗口；overlay 的重排（250ms 轮询）
+  // 必须跟随唯一权威（store），否则侧栏开关后 overlay 不回流。
+  let hidden = false;
+  try {
+    hidden = !!useBodyState.getState().isHideSidebar;
+  } catch (err) {
+    hidden = document.body.classList.contains('hide-sidebar');
+  }
   if (!sidebar) return { hidden: true, width: 0 };
-  let hidden = document.body.classList.contains('hide-sidebar');
   let width = sidebar.offsetWidth || 0;
   try {
     const rect = sidebar.getBoundingClientRect();
     if (rect.width > 0) hidden = rect.right <= 0;
   } catch (err) {
-    // Keep the class-based value.
+    // Keep the store/class-based value.
   }
   return { hidden, width };
 }
@@ -283,19 +299,71 @@ export function sendDocumentViewerCommand(command: DocumentViewerCommand): void 
 }
 
 /**
- * F-DOC-1：文档类条目入口钩子（唯一）。由 `machineryEnterDetailMode` 在**任何分流之前**同步调用。
- *
- * 判据与 shims 原包装体逐字一致：目标可解析 && 总开关开 && ext 命中白名单。
- * 返回 true 表示已接管（调用方须立即 return，不得再走图片详情流程）。
+ * F-DOC-4：文档类条目判据（详情分支归属）。
+ * 目标可解析 && 总开关开 && ext 命中白名单。machineryEnterDetailMode / sync 层 /
+ * DetailViewer 分支链共用这一个判据，保证「谁能渲染这个条目」全仓只有一个答案。
  */
-export function maybeOpenDocumentViewer(item: any): boolean {
-  if (inDocumentFallback) return false;
+export function isDocumentViewerItem(item: any): boolean {
   if (!item || !item.id || !documentViewerEnabled()) return false;
   const extension = String(item.ext || '').toLowerCase();
-  if (!documentViewerExtensions.has(extension)) return false;
-  // 已在查看器内：不重开（避免同一文档重复挂载 iframe）。
-  if (documentViewerState.itemId && documentViewerState.itemId === item.id) return true;
-  return openDocumentViewer(item, 'workspace');
+  return documentViewerExtensions.has(extension);
+}
+
+/**
+ * F-DOC-4：详情模式入口挂载（由 `machineryEnterDetailMode` 调用）。
+ *
+ * 与 F-DOC-1 时代的 early-return 门不同：这里**不再截断**原生详情流 —— 文档类条目照常走
+ * machineryEnterDetailMode 的选区/current/isDetailMode 初始化，查看器 overlay 只是随后
+ * 盖上来的文档渲染分支。这样：
+ *  - 检查器/计数器/选区高亮由原生机制持有（修掉「查看器内切篇后检查器停在上一个素材」）；
+ *  - 上下篇可以直接复用 machinerySelectNext/Prev（与图像详情同一条代码路径）；
+ *  - 握手失败回落时原生详情已在底下，无需再模拟一次进入。
+ */
+export function openDocumentViewerForDetailItem(item: any): void {
+  if (!isDocumentViewerItem(item)) return;
+  // 已在查看器内且就是同一篇：不重开（避免同一文档重复挂载 iframe）。
+  if (documentViewerState.itemId && documentViewerState.itemId === item.id && documentViewerState.container) return;
+  openDocumentViewer(item, 'workspace');
+}
+
+/**
+ * F-DOC-4：详情 current 与查看器 overlay 的同步层（唯一权威在原生 selection machinery）。
+ *
+ * 由 `machinerySelectNext/Prev` 在更新 current 后调用（isDetailMode 下）；enterDetailMode
+ * 的入口挂载走 `openDocumentViewerForDetailItem`。语义：
+ *  - current 是文档 → overlay 已开且同篇：no-op；已开异篇：原地切页（navigate 指令，不重建
+ *    iframe，顶栏控件组不闪）；未开：挂 overlay（原生详情 → 文档分支的切换）。
+ *  - current 不是文档 → overlay 开着就关掉，原生详情分支（图片/视频/音频…）自然露出。
+ */
+export function syncDocumentViewerWithDetailItem(item: any): void {
+  if (!useBodyState.getState().isDetailMode) return;
+  if (isDocumentViewerItem(item)) {
+    if (documentViewerState.container && documentViewerState.itemId === item.id) return;
+    if (documentViewerState.container) {
+      switchDocumentViewerAsset(item);
+    } else {
+      openDocumentViewer(item, 'workspace');
+    }
+    return;
+  }
+  if (documentViewerState.container) {
+    closeDocumentViewer();
+    // F-DOC-4 防御：首个详情条目是文档时，zoom 引擎的图片绑定不会触发 on_IMAGE_LOAD，
+    // `#detail-container` 可能停在 enterDetailMode 置的 opacity:0（overlay 期间不可见，
+    // 此刻关掉 overlay 就露馅了）。原生机制在图片载入后同样会置 1，这里只是提前补齐，
+    // 保证「文档 → 视频/字体等非位图条目」首跳也能看见原生详情。
+    cssSet('#detail-container', { opacity: 1 });
+  }
+}
+
+/** F-DOC-4：查看器开着时把 iframe 原地切到另一篇文档（不重建容器、不重握手）。 */
+function switchDocumentViewerAsset(item: any): void {
+  const state = documentViewerState;
+  if (!state.iframe || !state.container) return;
+  state.itemId = item.id;
+  viewerHeaderAccumulator = null;
+  applyViewerMode(state.mode);
+  sendDocumentViewerCommand({ type: 'navigate', value: item.id });
 }
 
 function openDocumentViewer(item: any, mode: string): boolean {
@@ -322,37 +390,19 @@ function openDocumentViewer(item: any, mode: string): boolean {
   state.pendingFallbackTimer = window.setTimeout(() => {
     if (documentViewerState.itemId !== item.id) return;
     if (documentViewerState.container && documentViewerState.container.hasAttribute('data-viewer-ready')) return;
+    // F-DOC-4：详情模式已由 machineryEnterDetailMode 正常激活（overlay 只是文档分支），
+    // 握手失败时关掉 overlay 即可露出原生详情，不再需要模拟一次 enterDetailMode。
     closeDocumentViewer();
-    fallbackToOriginalDetail(item.id);
   }, 4000);
   return true;
 }
 
-function fallbackToOriginalDetail(itemId: string): void {
-  try {
-    const scope: any = getWindowScope();
-    const item = (scope && Array.isArray(scope.raw))
-      ? scope.raw.find((entry: any) => entry && entry.id === itemId)
-      : null;
-    if (!item) return;
-    // F-DOC-1：原先回落到 `scope.enterDetailMode`（被包装前的原函数），但 React 侧入口并不经
-    // scope 面，该引用在直挂改造后恒为 null → 兜底静默失效。改为直接调用同一挂载函数，
-    // 并用 inFallback 抑制再次进入文档分支（否则握手失败会无限重开查看器）。
-    const machinery: any = (window as any).__eagleMachinery;
-    const enterDetailMode = machinery && machinery.enterDetailMode;
-    if (typeof enterDetailMode !== 'function') return;
-    inDocumentFallback = true;
-    try {
-      enterDetailMode(null, item);
-    } finally {
-      inDocumentFallback = false;
-    }
-  } catch (err) {
-    console.warn('[documentViewer] fallback failed', err);
-  }
-}
-
-function closeDocumentViewer(): void {
+/**
+ * F-DOC-4：卸载查看器 overlay。由 machineryLeaveDetailMode（退出详情）、sync 层（切到
+ * 非文档条目）、iframe close 消息、握手超时兜底与 shims 卸载桥（__eagleCloseDocumentViewer）
+ * 共用；幂等。
+ */
+export function closeDocumentViewer(): void {
   window.clearTimeout(documentViewerState.pendingFallbackTimer);
   if (documentViewerState.sidebarPollTimer) {
     window.clearInterval(documentViewerState.sidebarPollTimer);
@@ -416,9 +466,20 @@ function handleDocumentViewerMessage(event: MessageEvent): void {
     applyViewerMode(message.mode);
     return;
   }
+  // F-DOC-4：external chrome 模式下 iframe 不再自行导航（它那份 URL 烘干的列表已废弃），
+  // 键盘 ←/→ 上交宿主，由原生 machinerySelectPrev/Next 推进——与顶栏按钮同一条路径。
+  // 经 window.__eagleMachinery 解析（machineryInfra 挂载面），避免 core 模块间静态环。
+  if (message.type === 'navRequest') {
+    const machinery: any = (window as any).__eagleMachinery;
+    const direction = message.direction === 'prev' ? 'selectPrev' : 'selectNext';
+    if (machinery && typeof machinery[direction] === 'function') machinery[direction]();
+    return;
+  }
   if (message.type === 'close') {
     closeDocumentViewer();
     // Restore any non-detail grid state left behind by the original app.
+    // F-DOC-4：查看器只存在于详情模式内，close 意味着退出详情回网格
+    // （machineryLeaveDetailMode 自身也会关查看器，这里先关一次只为立刻卸 iframe）。
     try {
       const scope: any = getWindowScope();
       if (scope && typeof scope.leaveDetailMode === 'function' && scope.isDetailMode) {
@@ -432,7 +493,7 @@ function handleDocumentViewerMessage(event: MessageEvent): void {
 
 let installed = false;
 
-/** 安装文档工作区编排（主窗调用一次；幂等）。入口钩子见 `maybeOpenDocumentViewer`。 */
+/** 安装文档工作区编排（主窗调用一次；幂等）。入口与同步见 F-DOC-4 注释块。 */
 export function installDocumentViewer(): void {
   if (installed) return;
   installed = true;
@@ -446,22 +507,9 @@ export function installDocumentViewer(): void {
   window.addEventListener('beforeunload', () => closeDocumentViewer());
 
   // ── 文档工作区入口 ──
-  // F-DOC-1：不再包装 `scope.enterDetailMode`（React 侧入口直调 machineryEnterDetailMode，
-  // 与 scope 面非同一函数对象，包装恒不生效）；改由 miscDomain.machineryEnterDetailMode
-  // 在任何分流之前同步调用 `maybeOpenDocumentViewer`，与 P2 交付门控同构。
-  // `scope.leaveDetailMode` 仍包装：退出详情需顺带关闭工作区容器。
-  const hookTimer = setInterval(() => {
-    const scope: any = getWindowScope();
-    if (!scope || typeof scope.leaveDetailMode !== 'function' || scope.leaveDetailMode.__eagleDocumentEntry) {
-      if (scope && scope.leaveDetailMode && scope.leaveDetailMode.__eagleDocumentEntry) clearInterval(hookTimer);
-      return;
-    }
-    const leaveDetailMode = scope.leaveDetailMode;
-    scope.leaveDetailMode = function () {
-      closeDocumentViewer();
-      return leaveDetailMode.apply(this, arguments as any);
-    };
-    scope.leaveDetailMode.__eagleDocumentEntry = true;
-    clearInterval(hookTimer);
-  }, 25);
+  // F-DOC-4：入口与同步全部收口到原生详情机制 —— machineryEnterDetailMode 调
+  // openDocumentViewerForDetailItem（挂 overlay、详情流继续），machinerySelectNext/Prev 调
+  // syncDocumentViewerWithDetailItem（current 变化驱动开/关/切页），machineryLeaveDetailMode
+  // 直接 closeDocumentViewer。scope.leaveDetailMode 的包装轮询随之退役——三处 machinery
+  // 函数是所有路径（UI/驱动面/scope 面）的共同落点。
 }

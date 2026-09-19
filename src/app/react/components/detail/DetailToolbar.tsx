@@ -30,6 +30,8 @@ import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/m
 import { machineryToggleAll } from '../../services/gridService';
 import { applyDataMachineryScope } from '../../core/machineryInfra';
 import { useMiscRawState, writeSliderZoomRatio } from '../../store/miscRawState';
+import { useDocumentViewerHostState } from '../../store/documentViewerState';
+import { DocumentToolbarBranch } from '../toolbar/DocumentToolbar';
 
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
@@ -180,6 +182,13 @@ export function WebviewToolbar({ snapshot, webviewId }: { snapshot: DetailSnapsh
 
 export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
   const toolbarSnapshot = useToolbarState((s: any) => s.snapshot);
+  // F-DOC-4：文档控件分支挂在**详情工具栏**上 —— 文档详情是详情模式内的分支，
+  // 顶栏沿用 DetailToolbar 的宿主与 .toolbar 根（与图像详情同一位置、同一 DOM 根，
+  // 双击最大化等行为一致）。原生内容此刻根本不渲染。
+  // 注意：documentChromeActive 只作**渲染分派**标记（读取必须在所有 hook 之前、
+  // 使用必须在全部 hook 之后），不得在 hook 之间 early-return —— 否则 chromeActive
+  // 翻转时 hook 数量骤减，React 以「Rendered fewer hooks than expected」卸载整树。
+  const documentChromeActive = useDocumentViewerHostState((s) => s.chromeActive);
   const {
     theme,
     keybinds,
@@ -248,6 +257,15 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
   }, [pinnedPlugins.length]);
 
   const stopDbl = (e: any) => e.stopPropagation();
+
+  // F-DOC-4：文档控件分支（全部 hook 已在上方无条件执行，此处分派是纯渲染分支）。
+  if (documentChromeActive) {
+    return (
+      <div className="toolbar has-border" onDoubleClick={(e) => { e.stopPropagation(); call(maximize)(e); }}>
+        <DocumentToolbarBranch theme={snapshot.theme} />
+      </div>
+    );
+  }
 
   return (
     <div className="toolbar has-border" ref={toolbarRef} onDoubleClick={(e) => { e.stopPropagation(); call(maximize)(e); }}>
